@@ -1,0 +1,12 @@
+server:
+  port: { { tomcat_port } }
+  servlet:
+    context-path: /api
+
+spring:
+  mongodb:
+    host: { { mongo_host } }
+    port: { { mongo_port } }
+    database: { { mongo_db } }
+    username: { { mongo_user } }
+    password: { { mongo_password } }

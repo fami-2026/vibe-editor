@@ -20,10 +20,7 @@ tasks:
     cmds:
       - task: server:publish
       - task: client:publish
-  setup:
-    cmds:
-      - docker network create vge || true
   deploy:
     cmds:
-      - task: setup
+      - docker network create vge || true
       - docker compose up -d

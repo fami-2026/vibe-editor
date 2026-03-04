@@ -9,24 +9,19 @@ tasks:
       - docker push {{.REGISTRY}}/vge.client:latest
   deploy:
     cmds:
+      - docker network create vge || true
       - docker compose up -d
   ci:
     cmds:
       - npm ci
-  ci:build:
+  build:
     env:
-      BASE: /vector-graphic-editor/
-    deps:
-      - ci
+      BASE: '{{.BASE | default "/"}}'
     cmds:
       - npm run build-ci
-  ci:format:
-    deps:
-      - ci
+  format:
     cmds:
       - npm run format
-  ci:lint:
-    deps:
-      - ci
+  lint:
     cmds:
       - npm run lint

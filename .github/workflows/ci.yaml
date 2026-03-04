@@ -25,12 +25,12 @@ jobs:
         run: task client:ci
 
       - name: Lint
-        run: task client:ci:lint
+        run: task client:lint
 
       - name: Format
         run: |
-          task server:ci:format
-          task client:ci:format
+          task server:format
+          task client:format
 
       - name: Commit
         uses: EndBug/add-and-commit@v9

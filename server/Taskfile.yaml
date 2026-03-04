@@ -9,7 +9,8 @@ tasks:
       - docker push {{.REGISTRY}}/vge.server:latest
   deploy:
     cmds:
+      - docker network create vge || true
       - docker compose up -d
-  ci:format:
+  format:
     cmds:
-      - gradle spotlessApply
+      - gradle --no-daemon spotlessApply

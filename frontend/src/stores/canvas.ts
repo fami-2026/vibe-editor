@@ -34,6 +34,21 @@ export const useCanvasStore = defineStore('canvas', () => {
         if (selectedId.value === id) selectedId.value = null;
     }
 
+    function moveShape(fromIndex: number, toIndex: number) {
+        if (
+            fromIndex < 0 ||
+            toIndex < 0 ||
+            fromIndex >= shapes.value.length ||
+            toIndex >= shapes.value.length
+        ) {
+            return;
+        }
+        const next = [...shapes.value];
+        const [item] = next.splice(fromIndex, 1);
+        next.splice(toIndex, 0, item);
+        shapes.value = next;
+    }
+
     function selectShape(id: string | null) {
         selectedId.value = id;
     }
@@ -46,5 +61,6 @@ export const useCanvasStore = defineStore('canvas', () => {
         updateShape,
         deleteShape,
         selectShape,
+        moveShape,
     };
 });

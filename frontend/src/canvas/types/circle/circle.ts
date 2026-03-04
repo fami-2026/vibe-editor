@@ -18,8 +18,26 @@ export class CircleShape extends BaseShape {
     @Editable({ label: 'Fill', type: 'color' })
     fill: string;
 
+    @Editable({
+        label: 'Fill Opacity',
+        type: 'number',
+        min: 0,
+        max: 1,
+        step: 0.05,
+    })
+    fillOpacity: number = 1;
+
     @Editable({ label: 'Stroke', type: 'color' })
     stroke: string;
+
+    @Editable({
+        label: 'Stroke Opacity',
+        type: 'number',
+        min: 0,
+        max: 1,
+        step: 0.05,
+    })
+    strokeOpacity: number = 1;
 
     @Editable({
         label: 'Stroke Width',
@@ -77,10 +95,12 @@ export class CircleShape extends BaseShape {
     }
 
     render(ctx: CanvasRenderingContext2D): void {
+        // Заливка
+        ctx.save();
         ctx.fillStyle = this.fill;
-        ctx.strokeStyle = this.stroke;
-        ctx.lineWidth = this.strokeWidth;
-
+        if (typeof this.fillOpacity === 'number') {
+            ctx.globalAlpha = this.fillOpacity;
+        }
         ctx.beginPath();
         ctx.ellipse(
             this.position.x,
@@ -92,7 +112,27 @@ export class CircleShape extends BaseShape {
             Math.PI * 2
         );
         ctx.fill();
+        ctx.restore();
+
+        // Обводка
+        ctx.save();
+        ctx.strokeStyle = this.stroke;
+        ctx.lineWidth = this.strokeWidth;
+        if (typeof this.strokeOpacity === 'number') {
+            ctx.globalAlpha = this.strokeOpacity;
+        }
+        ctx.beginPath();
+        ctx.ellipse(
+            this.position.x,
+            this.position.y,
+            this.radiusX,
+            this.radiusY,
+            0,
+            0,
+            Math.PI * 2
+        );
         ctx.stroke();
+        ctx.restore();
     }
 
     move(delta: Point): void {

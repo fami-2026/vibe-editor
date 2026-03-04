@@ -1,6 +1,7 @@
 import { ref, type Ref } from 'vue';
 import type { Shape, Point } from '@/canvas/types';
 import { useCanvasStore } from '@/stores/canvas';
+import { useToolsStore } from '@/stores/tools';
 
 /**
  * Composable для управления взаимодействиями пользователя (мышь, drag&drop).
@@ -10,6 +11,7 @@ export function useInteractions(
     shapes: Ref<Shape[]>
 ) {
     const canvasStore = useCanvasStore();
+    const toolsStore = useToolsStore();
     const isDragging = ref(false);
     const dragStart = ref<Point>({ x: 0, y: 0 });
     const activeShape = ref<Shape | null>(null);
@@ -35,7 +37,17 @@ export function useInteractions(
     function onMouseDown(e: MouseEvent) {
         const point = getLocalPoint(e);
         const shape = hitTest(point);
+        const activeTool = toolsStore.activeTool;
 
+        // режим ластика — удаляем фигуру под курсором
+        if (activeTool === 'eraser') {
+            if (shape) {
+                canvasStore.deleteShape(shape.id);
+            }
+            return;
+        }
+
+        // обычный режим выбора и перетаскивания
         canvasStore.selectShape(shape?.id ?? null);
 
         if (shape) {

@@ -14,6 +14,15 @@ export class LineShape extends BaseShape {
     stroke: string;
 
     @Editable({
+        label: 'Stroke Opacity',
+        type: 'number',
+        min: 0,
+        max: 1,
+        step: 0.05,
+    })
+    strokeOpacity: number = 1;
+
+    @Editable({
         label: 'Stroke Width',
         type: 'number',
         min: 1,
@@ -131,14 +140,22 @@ export class LineShape extends BaseShape {
     }
 
     render(ctx: CanvasRenderingContext2D): void {
+        ctx.save();
+
         ctx.strokeStyle = this.stroke;
         ctx.lineWidth = this.strokeWidth;
         ctx.lineCap = 'round';
+
+        if (typeof this.strokeOpacity === 'number') {
+            ctx.globalAlpha = this.strokeOpacity;
+        }
 
         ctx.beginPath();
         ctx.moveTo(this.position.x, this.position.y);
         ctx.lineTo(this.endPoint.x, this.endPoint.y);
         ctx.stroke();
+
+        ctx.restore();
     }
 
     move(delta: Point): void {

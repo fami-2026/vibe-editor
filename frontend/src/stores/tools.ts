@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 
-export type ToolType = 'select' | 'rect' | 'circle' | 'line';
+export type ToolType = 'select' | 'rect' | 'circle' | 'line' | 'eraser';
 
 /**
  * Хранилище состояния активного инструмента редактора.

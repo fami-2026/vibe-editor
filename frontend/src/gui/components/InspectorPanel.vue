@@ -81,28 +81,28 @@
                 />
             </div>
             <div class="fieldLabel">Отражение</div>
-            <div class="grid2" style="margin-top: 4px;">
-                <button 
-                    class="iconBtnSmall" 
+            <div class="grid2" style="margin-top: 4px">
+                <button
+                    class="iconBtnSmall"
                     :disabled="!selectedShape"
                     @click="onFlip('scaleX')"
                     title="Отразить по горизонтали"
                 >
-                    <span style="transform: scaleX(-1);">⇄</span>
+                    <span style="transform: scaleX(-1)">⇄</span>
                 </button>
-                <button 
-                    class="iconBtnSmall" 
+                <button
+                    class="iconBtnSmall"
                     :disabled="!selectedShape"
                     @click="onFlip('scaleY')"
                     title="Отразить по вертикали"
                 >
-                    <span style="transform: rotate(90deg) scaleX(-1);">⇄</span>
+                    <span style="transform: rotate(90deg) scaleX(-1)">⇄</span>
                 </button>
             </div>
         </div>
 
         <!-- Поворот -->
-        <div v-if="selectedShape?.type !== 'line'" class="fieldBlock">  
+        <div v-if="selectedShape?.type !== 'line'" class="fieldBlock">
             <div class="fieldBlock">
                 <div class="fieldLabel">Поворот</div>
                 <div class="grid2">
@@ -126,7 +126,7 @@
         <!-- Фигура -->
         <section class="group">
             <h3 class="groupTitle">Фигура</h3>
-            
+
             <div class="grid2Blocks">
                 <div class="fieldBlock">
                     <div class="fieldLabel">Цвет заливки</div>
@@ -311,7 +311,6 @@ function onNumberChange(key: NumberFieldKey, event: Event) {
     const target = event.target as HTMLInputElement;
     const value = Number(target.value);
     if (Number.isNaN(value)) return;
-    
 
     canvasStore.updateShape(selectedShape.value.id, {
         [key]: value,
@@ -319,18 +318,20 @@ function onNumberChange(key: NumberFieldKey, event: Event) {
 }
 
 function onFlip(key: 'scaleX' | 'scaleY') {
-    if (!selectedShape.value ) return;
-    
+    if (!selectedShape.value) return;
+
     const currentScale = Number((selectedShape.value as Partial<Shape>)[key]);
     const currentRotation = selectedShape.value.rotation;
-    
-    const newRotation = key === 'scaleX' 
-        ? (360 - currentRotation) % 360 
-        : (180 - currentRotation + 360) % 360;
+
+    const newRotation =
+        key === 'scaleX'
+            ? (360 - currentRotation) % 360
+            : (180 - currentRotation + 360) % 360;
 
     canvasStore.updateShape(selectedShape.value.id, {
         [key]: currentScale * -1,
-        rotation: selectedShape.value.type === 'line' ? currentRotation : newRotation
+        rotation:
+            selectedShape.value.type === 'line' ? currentRotation : newRotation,
     });
 }
 

@@ -23,13 +23,21 @@ export abstract class BaseShape {
 
     constructor(
         public id: string,
-        public position: Point 
+        public position: Point
     ) {}
 
-    get x(): number { return this.position.x; }
-    set x(v: number) { this.position.x = v; }
-    get y(): number { return this.position.y; }
-    set y(v: number) { this.position.y = v; }
+    get x(): number {
+        return this.position.x;
+    }
+    set x(v: number) {
+        this.position.x = v;
+    }
+    get y(): number {
+        return this.position.y;
+    }
+    set y(v: number) {
+        this.position.y = v;
+    }
     rotation: number = 0;
 
     points?: Point[];
@@ -70,15 +78,15 @@ export abstract class BaseShape {
     /**
      * Отражение.
      */
-    flipX = () => {  
+    flipX = () => {
         this.scaleX *= -1;
         this.rotation = (360 - this.rotation) % 360;
-    }
+    };
 
     flipY = () => {
         this.scaleY *= -1;
         this.rotation = (180 - this.rotation + 360) % 360;
-    }
+    };
 
     /**
      * Полная матрица (со скейлом).
@@ -94,7 +102,6 @@ export abstract class BaseShape {
         return this.getMatrix().inverse();
     }
 
-
     /**
      * Возвращает аффинную матрицу трансформации для фигуры.
      * Матрица "Вида" (Позиция и Поворот) — для интерфейса и корректной обводки
@@ -105,26 +112,28 @@ export abstract class BaseShape {
         m.rotateSelf(this.rotation);
         return m;
     }
-    
+
     getInverseVMatrix(): DOMMatrix {
         return this.getVMatrix().inverse();
     }
-    
+
     /**
      * Переводит точку из глобальных координат в локальные координаты фигуры.
      */
     toLocalPoint(globalPoint: Point): Point {
-        const local = new DOMPoint(globalPoint.x, globalPoint.y).matrixTransform(
-            this.getInverseMatrix()
-        );
+        const local = new DOMPoint(
+            globalPoint.x,
+            globalPoint.y
+        ).matrixTransform(this.getInverseMatrix());
 
         return { x: local.x, y: local.y };
     }
 
     toVLocalPoint(globalPoint: Point): Point {
-        const local = new DOMPoint(globalPoint.x, globalPoint.y).matrixTransform(
-            this.getInverseVMatrix()
-        );
+        const local = new DOMPoint(
+            globalPoint.x,
+            globalPoint.y
+        ).matrixTransform(this.getInverseVMatrix());
 
         return { x: local.x, y: local.y };
     }

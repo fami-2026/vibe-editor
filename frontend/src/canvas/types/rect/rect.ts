@@ -50,11 +50,17 @@ export class RectShape extends BaseShape {
     }
 
     hitTest(globalPoint: Point): boolean {
-        const localPoint = this.toVLocalPoint(globalPoint);       
+        const localPoint = this.toVLocalPoint(globalPoint);
         const padding = this.strokeWidth / 2 + 3;
-         const minHalfHit = 6;
-        const halfW = Math.max(Math.abs(this.width * this.scaleX) / 2, minHalfHit);
-        const halfH = Math.max(Math.abs(this.height * this.scaleY) / 2, minHalfHit);
+        const minHalfHit = 6;
+        const halfW = Math.max(
+            Math.abs(this.width * this.scaleX) / 2,
+            minHalfHit
+        );
+        const halfH = Math.max(
+            Math.abs(this.height * this.scaleY) / 2,
+            minHalfHit
+        );
 
         return (
             localPoint.x >= -halfW - padding &&
@@ -92,7 +98,7 @@ export class RectShape extends BaseShape {
         const m = this.getVMatrix();
         const w = Math.abs(this.width * this.scaleX);
         const h = Math.abs(this.height * this.scaleY);
-        
+
         ctx.transform(m.a, m.b, m.c, m.d, m.e, m.f);
         ctx.scale(Math.sign(this.scaleX), Math.sign(this.scaleY));
 

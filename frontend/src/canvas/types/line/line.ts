@@ -31,7 +31,10 @@ export class LineShape extends BaseShape {
         strokeWidth: number = 2
     ) {
         super(id, position);
-        this.localEndPoint = { x: endPoint.x - position.x, y: endPoint.y - position.y };
+        this.localEndPoint = {
+            x: endPoint.x - position.x,
+            y: endPoint.y - position.y,
+        };
         this.stroke = stroke;
         this.strokeWidth = strokeWidth;
     }
@@ -65,7 +68,10 @@ export class LineShape extends BaseShape {
 
         const projX = t * dx;
         const projY = t * dy;
-        return Math.hypot(localPoint.x - projX, localPoint.y - projY) <= this.strokeWidth / 2 + 5;
+        return (
+            Math.hypot(localPoint.x - projX, localPoint.y - projY) <=
+            this.strokeWidth / 2 + 5
+        );
     }
 
     getLocalBox(): BoundingBox {
@@ -108,7 +114,10 @@ export class LineShape extends BaseShape {
 
         ctx.beginPath();
         ctx.moveTo(0, 0);
-        ctx.lineTo(this.localEndPoint.x * this.scaleX, this.localEndPoint.y * this.scaleY);
+        ctx.lineTo(
+            this.localEndPoint.x * this.scaleX,
+            this.localEndPoint.y * this.scaleY
+        );
         ctx.stroke();
         ctx.globalAlpha = alpha;
         ctx.restore();

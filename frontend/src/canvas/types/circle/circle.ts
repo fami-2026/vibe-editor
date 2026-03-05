@@ -43,11 +43,19 @@ export class CircleShape extends BaseShape {
         this.strokeWidth = strokeWidth;
     }
 
-    get width(): number { return this.radiusX * 2; }
-    set width(v: number) { this.radiusX = v / 2; }
+    get width(): number {
+        return this.radiusX * 2;
+    }
+    set width(v: number) {
+        this.radiusX = v / 2;
+    }
 
-    get height(): number { return this.radiusY * 2; }
-    set height(v: number) { this.radiusY = v / 2; }
+    get height(): number {
+        return this.radiusY * 2;
+    }
+    set height(v: number) {
+        this.radiusY = v / 2;
+    }
 
     setSize(width: number, height: number): void {
         this.width = width;
@@ -58,19 +66,26 @@ export class CircleShape extends BaseShape {
         const localPoint = this.toVLocalPoint(globalPoint);
         const padding = this.strokeWidth / 2 + 3;
         const minRadiusHit = 6;
-        const rX = Math.max(Math.abs(this.width / 2 * this.scaleX), minRadiusHit) + padding;
-        const rY = Math.max(Math.abs(this.height / 2 * this.scaleY), minRadiusHit) + padding;
+        const rX =
+            Math.max(Math.abs((this.width / 2) * this.scaleX), minRadiusHit) +
+            padding;
+        const rY =
+            Math.max(Math.abs((this.height / 2) * this.scaleY), minRadiusHit) +
+            padding;
 
-        return (localPoint.x * localPoint.x) / (rX * rX) + 
-               (localPoint.y * localPoint.y) / (rY * rY) <= 1;
+        return (
+            (localPoint.x * localPoint.x) / (rX * rX) +
+                (localPoint.y * localPoint.y) / (rY * rY) <=
+            1
+        );
     }
 
     getLocalBox(): BoundingBox {
-        return { 
-            minX: -this.radiusX, 
-            minY: -this.radiusY, 
-            maxX: this.radiusX, 
-            maxY: this.radiusY 
+        return {
+            minX: -this.radiusX,
+            minY: -this.radiusY,
+            maxX: this.radiusX,
+            maxY: this.radiusY,
         };
     }
 
@@ -96,7 +111,7 @@ export class CircleShape extends BaseShape {
         const m = this.getVMatrix();
         const rX = Math.abs(this.radiusX * this.scaleX);
         const rY = Math.abs(this.radiusY * this.scaleY);
-        
+
         ctx.transform(m.a, m.b, m.c, m.d, m.e, m.f);
         ctx.scale(Math.sign(this.scaleX), Math.sign(this.scaleY));
 

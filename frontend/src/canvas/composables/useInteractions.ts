@@ -351,8 +351,8 @@ export function useInteractions(
                 const effY = deltaY * dirY;
 
                 // коэффициент масштабирования, ==1 при отсутствии движения
-                let kx = origW ? 1 + effX / origW : 1;
-                let ky = origH ? 1 + effY / origH : 1;
+                const kx = origW ? 1 + effX / origW : 1;
+                const ky = origH ? 1 + effY / origH : 1;
                 let k = Math.max(Math.abs(kx), Math.abs(ky));
                 k = Math.max(k, 0.01); // не допускать нулевого размера
 

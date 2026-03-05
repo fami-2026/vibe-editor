@@ -4,6 +4,7 @@ export { CircleShape } from './circle';
 export { RectShape } from './rect';
 export { LineShape } from './line';
 export { shapeRegistry } from './registry';
+export { SELECTION_PADDING } from './base';
 
 export type Shape = import('./base').BaseShape;
 export type ShapeType = string;

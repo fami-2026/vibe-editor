@@ -4,15 +4,16 @@ import type { Shape } from '@/canvas/types';
 import { shapeRegistry } from '@/canvas/types';
 import { generateId } from '@/canvas/utils/math';
 
-type SerializedShape = {
+type SerializedShapeBase = {
     type: string;
     id: string;
     position: { x: number; y: number };
     rotation: number;
     scaleX: number;
     scaleY: number;
-    [key: string]: any;
 };
+
+type SerializedShape = SerializedShapeBase & Record<string, unknown>;
 
 type SceneSnapshot = {
     shapes: SerializedShape[];
@@ -162,6 +163,9 @@ export const useCanvasStore = defineStore('canvas', () => {
         pushHistory();
         const next = [...shapes.value];
         const [item] = next.splice(fromIndex, 1);
+        if (!item) {
+            return;
+        }
         next.splice(toIndex, 0, item);
         shapes.value = next;
     }

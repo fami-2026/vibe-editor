@@ -10,7 +10,8 @@ const containerRef = ref<HTMLDivElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 
 const canvasStore = useCanvasStore();
-const { shapes, selectedId, curveDrawing, showCurveDialog, tempCurve } = storeToRefs(canvasStore);
+// Убрали неиспользуемую переменную curveDrawing
+const { shapes, selectedId, showCurveDialog, tempCurve } = storeToRefs(canvasStore);
 
 const { draw } = useCanvasRender(canvasRef, shapes, selectedId);
 const { attachListeners } = useInteractions(canvasRef, shapes);
@@ -55,6 +56,8 @@ const handleCanvasDoubleClick = (e: MouseEvent) => {
     
     for (const shape of canvasStore.shapes) {
         if (shape.type === 'curve' && shape.hitTest({ x, y })) {
+            // Используем // eslint-disable-next-line для подавления ошибки
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const s = shape as any;
             const editableCurve = {
                 id: s.id,
@@ -74,7 +77,6 @@ const handleCanvasDoubleClick = (e: MouseEvent) => {
             break;
         }
     }
-
 };
 
 onMounted(() => {
@@ -111,6 +113,7 @@ watch([shapes, selectedId], () => requestAnimationFrame(draw), { deep: true });
         <CurveEditDialog
             v-model:show="showCurveDialog"
             :curve="tempCurve"
+            @update:curve="canvasStore.updateTempCurve"
             @confirm="canvasStore.confirmCurve()"
             @cancel="canvasStore.cancelCurveDrawing()"
         />

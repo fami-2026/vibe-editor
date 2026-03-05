@@ -240,7 +240,9 @@ export const useCanvasStore = defineStore('canvas', () => {
     function selectShape(id: string | null) {
         selectedId.value = id;
     }
-
+    function updateTempCurve(updatedCurve: any) {
+    tempCurve.value = updatedCurve;
+    }
     return {
         shapes,
         selectedId,

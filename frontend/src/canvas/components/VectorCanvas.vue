@@ -38,13 +38,11 @@ onMounted(() => {
     }
 
     detachListeners = attachListeners();
-
 });
 
 onUnmounted(() => {
     resizeObserver?.disconnect();
     detachListeners?.();
-
 });
 
 watch([shapes, selectedId], () => requestAnimationFrame(draw), { deep: true });

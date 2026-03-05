@@ -206,50 +206,49 @@
 import { computed, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useCanvasStore } from '@/stores/canvas';
+import type { Shape } from '@/canvas/types';
 
 const canvasStore = useCanvasStore();
 const { selectedShape, shapes } = storeToRefs(canvasStore);
 
+function getShapeNumberProp(key: string, fallback: number | '') {
+  if (!selectedShape.value) return fallback;
+  const value = (selectedShape.value as unknown as Record<string, unknown>)[key];
+  return typeof value === 'number' ? value : fallback;
+}
+
+function getShapeStringProp(key: string, fallback: string) {
+  if (!selectedShape.value) return fallback;
+  const value = (selectedShape.value as unknown as Record<string, unknown>)[key];
+  return typeof value === 'string' ? value : fallback;
+}
+
 const shapeWidth = computed(() =>
-  selectedShape.value && 'width' in selectedShape.value
-    ? (selectedShape.value as any).width
-    : ''
+  getShapeNumberProp('width', '')
 );
 
 const shapeHeight = computed(() =>
-  selectedShape.value && 'height' in selectedShape.value
-    ? (selectedShape.value as any).height
-    : ''
+  getShapeNumberProp('height', '')
 );
 
 const fillColor = computed(() =>
-  selectedShape.value && 'fill' in selectedShape.value
-    ? (selectedShape.value as any).fill
-    : '#000000'
+  getShapeStringProp('fill', '#000000')
 );
 
 const strokeColor = computed(() =>
-  selectedShape.value && 'stroke' in selectedShape.value
-    ? (selectedShape.value as any).stroke
-    : '#000000'
+  getShapeStringProp('stroke', '#000000')
 );
 
 const fillOpacity = computed(() =>
-  selectedShape.value && 'fillOpacity' in selectedShape.value
-    ? (selectedShape.value as any).fillOpacity
-    : 1
+  getShapeNumberProp('fillOpacity', 1)
 );
 
 const strokeOpacity = computed(() =>
-  selectedShape.value && 'strokeOpacity' in selectedShape.value
-    ? (selectedShape.value as any).strokeOpacity
-    : 1
+  getShapeNumberProp('strokeOpacity', 1)
 );
 
 const strokeWidth = computed(() =>
-  selectedShape.value && 'strokeWidth' in selectedShape.value
-    ? (selectedShape.value as any).strokeWidth
-    : ''
+  getShapeNumberProp('strokeWidth', '')
 );
 
 // список слоёв — снизу вверх по очередности в массиве shapes
@@ -273,7 +272,7 @@ function onNumberChange(key: NumberFieldKey, event: Event) {
 
   canvasStore.updateShape(selectedShape.value.id, {
     [key]: value,
-  } as any);
+  } as Partial<Shape>);
 }
 
 type ColorFieldKey = 'fill' | 'stroke';
@@ -285,7 +284,7 @@ function onColorChange(key: ColorFieldKey, event: Event) {
 
   canvasStore.updateShape(selectedShape.value.id, {
     [key]: value,
-  } as any);
+  } as Partial<Shape>);
 }
 
 type OpacityFieldKey = 'fillOpacity' | 'strokeOpacity';
@@ -298,7 +297,7 @@ function onOpacityChange(key: OpacityFieldKey, event: Event) {
 
   canvasStore.updateShape(selectedShape.value.id, {
     [key]: value,
-  } as any);
+  } as Partial<Shape>);
 }
 
 function shapeThumb(type: string) {

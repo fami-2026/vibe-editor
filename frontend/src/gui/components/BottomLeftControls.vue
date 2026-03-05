@@ -27,10 +27,8 @@ git <template>
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Minus, Plus, Undo2, Redo2 } from 'lucide-vue-next'
-import { useCanvasStore } from '@/stores/canvas'
 
 const zoom = ref(60)
-const canvasStore = useCanvasStore()
 
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n))

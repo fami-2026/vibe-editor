@@ -23,6 +23,39 @@ export function useCanvasRender(
     }
 
     /**
+     * Рисует точки трансформации.
+     */
+    function drawTransformHandles(ctx: CanvasRenderingContext2D, shape: Shape) {
+        const handles = shape.getTransformHandles().getAll();
+
+        ctx.save();
+
+        for (const handle of handles) {
+            if (handle.id === 'rotate') {
+                // Желтая точка для поворота (больше радиус, чтобы соответствовать hit area)
+                ctx.fillStyle = '#FFC107';
+                ctx.strokeStyle = '#FFA000';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(handle.position.x, handle.position.y, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            } else {
+                // Синие точки для остальных handle'ов (слегка больше для удобства)
+                ctx.fillStyle = '#2196F3';
+                ctx.strokeStyle = '#1976D2';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(handle.position.x, handle.position.y, 6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            }
+        }
+
+        ctx.restore();
+    }
+
+    /**
      * Основной цикл отрисовки. Очищает канвас и отрисовывает все фигуры.
      */
     function draw() {
@@ -39,6 +72,7 @@ export function useCanvasRender(
 
             if (shape.id === selectedId.value) {
                 drawSelectionBox(ctx, shape);
+                drawTransformHandles(ctx, shape);
             }
         }
     }

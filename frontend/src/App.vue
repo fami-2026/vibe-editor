@@ -44,7 +44,7 @@ body,
         'header header header'
         'toolbar viewport properties';
     grid-template-rows: 40px 1fr; /* Шапка и остальное пространство */
-    grid-template-columns: 60px 1fr 280px; /* Узкий тулбар, холст, широкая панель свойств */
+    grid-template-columns: 80px 1fr 280px; /* Узкий тулбар, холст, широкая панель свойств */
 }
 
 .header {

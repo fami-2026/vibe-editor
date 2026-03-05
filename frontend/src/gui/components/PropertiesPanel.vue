@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia';
 import { getEditableProperties } from '@/canvas/types/property';
 import type { Shape } from '@/canvas/types';
 import FieldComponent from './fields/FieldComponent.vue';
+import TransformPanel from './TransformPanel.vue';
 
 const canvasStore = useCanvasStore();
 const { selectedShape } = storeToRefs(canvasStore);
@@ -57,6 +58,9 @@ function updateProperty(key: string, value: unknown) {
                 />
             </div>
 
+            <TransformPanel />
+
+
             <button class="delete-btn" @click="deleteSelected">Удалить</button>
         </template>
 
@@ -70,6 +74,7 @@ function updateProperty(key: string, value: unknown) {
     background: #f0f0f0;
     border-left: 1px solid #ccc;
     min-width: 250px;
+    max-height: 100vh;
     overflow-y: auto;
 }
 
@@ -84,24 +89,42 @@ h3 {
 }
 
 .property-group {
-    margin-bottom: 1rem;
+    margin-bottom: 0.2rem;
     display: flex;
     flex-direction: column;
-    gap: 0.3rem;
+    gap: 0.1rem;
 }
 
 label {
     font-size: 0.8rem;
     color: #666;
     font-weight: 500;
+    margin: 0;
 }
 
 .readonly-input {
-    padding: 0.4rem;
+    padding: 0.3rem 0.4rem;
     border: 1px solid #ddd;
     border-radius: 3px;
     background: #e8e8e8;
     color: #666;
+    font-size: 0.75rem;
+    margin: 0;
+}
+
+/* Стили для всех input элементов в панели свойств */
+:deep(input[type="number"]),
+:deep(input[type="text"]),
+:deep(input[type="color"]) {
+    width: 100%;
+    padding: 0.3rem 0.4rem;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    background: white;
+    color: #333;
+    font-size: 0.75rem;
+    margin: 0;
+    box-sizing: border-box;
 }
 
 .delete-btn {

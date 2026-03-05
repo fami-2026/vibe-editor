@@ -14,3 +14,14 @@ export interface Viewport {
     offsetX: number;
     offsetY: number;
 }
+
+// Transform utilities
+export { AffineMatrix, TransformUtils } from '@/canvas/utils/transform';
+export type { TransformState } from '@/canvas/utils/handles';
+export {
+    TransformHandles,
+    TransformHandle,
+    HandleType,
+    createRectHandles,
+    createCircleHandles,
+} from '@/canvas/utils/handles';

@@ -8,7 +8,14 @@ import { generateId } from '@/canvas/utils/math';
  * Хранилище состояния сцены: фигуры, выделение, операции.
  */
 export const useCanvasStore = defineStore('canvas', () => {
-    const shapes = ref<Shape[]>([]);
+    // Инициализируем с тестовыми фигурами для проверки рендеринга
+    const testShapes = [
+        shapeRegistry.create('rect', generateId(), { x: 200, y: 200 }),
+        shapeRegistry.create('circle', generateId(), { x: 450, y: 250 }),
+        shapeRegistry.create('line', generateId(), { x: 100, y: 100 }),
+    ];
+    
+    const shapes = ref<Shape[]>(testShapes);
     const selectedId = ref<string | null>(null);
 
     const selectedShape = computed(

@@ -41,7 +41,6 @@ export function useInteractions(
     const resizeStartScale = ref<Point>({ x: 1, y: 1 });
     const lineStartLocal = ref<Point | null>(null);
 
-
     // Синхронизация выделенной фигуры из стора
     watch(
         [() => canvasStore.selectedId, shapes],

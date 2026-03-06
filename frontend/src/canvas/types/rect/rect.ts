@@ -13,7 +13,7 @@ export class RectShape extends BaseShape {
     height: number;
 
     fill: string;
-    fillOpacity: number = 1;
+    fillOpacity: number = 0;
     stroke: string;
     strokeOpacity: number = 1;
     strokeWidth: number;

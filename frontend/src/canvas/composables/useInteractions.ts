@@ -40,6 +40,7 @@ export function useInteractions(
     const resizeStartInverse = ref<DOMMatrix | null>(null);
     const resizeStartScale = ref<Point>({ x: 1, y: 1 });
     const lineStartLocal = ref<Point | null>(null);
+    const hasRecordedInteraction = ref(false);
 
     // Синхронизация выделенной фигуры из стора
     watch(
@@ -202,8 +203,6 @@ export function useInteractions(
         const point = getLocalPoint(e);
         const topShape = hitTest(point);
 
-        canvasStore.startInteraction();
-
         if (toolsStore.activeTool === 'eraser') {
             if (topShape) {
                 canvasStore.deleteShape(topShape.id);
@@ -254,6 +253,10 @@ export function useInteractions(
 
             // 1. Поворот
             if (handle === 'rot') {
+                if (!hasRecordedInteraction.value) {
+                    canvasStore.startInteraction();
+                    hasRecordedInteraction.value = true;
+                }
                 const center = activeShape.value.position;
                 const angle = Math.atan2(
                     point.y - center.y,
@@ -288,6 +291,10 @@ export function useInteractions(
                 activeShape.value.type === 'line' &&
                 (handle === 's' || handle === 'e')
             ) {
+                if (!hasRecordedInteraction.value) {
+                    canvasStore.startInteraction();
+                    hasRecordedInteraction.value = true;
+                }
                 const line = activeShape.value as LineShape;
 
                 if (lineStartLocal.value) {
@@ -317,6 +324,10 @@ export function useInteractions(
             }
 
             // 3. Общий ресайз рамкой (для всего остального)
+            if (!hasRecordedInteraction.value) {
+                canvasStore.startInteraction();
+                hasRecordedInteraction.value = true;
+            }
             let nMinX = startBox.minX,
                 nMaxX = startBox.maxX;
             let nMinY = startBox.minY,
@@ -420,6 +431,10 @@ export function useInteractions(
         if (isDragging.value && activeShape.value) {
             const dx = point.x - dragStart.value.x;
             const dy = point.y - dragStart.value.y;
+            if (!hasRecordedInteraction.value && (dx !== 0 || dy !== 0)) {
+                canvasStore.startInteraction();
+                hasRecordedInteraction.value = true;
+            }
             activeShape.value.move({ x: dx, y: dy });
             dragStart.value = point;
             canvas.style.cursor = 'grabbing';
@@ -439,7 +454,10 @@ export function useInteractions(
     }
 
     function onMouseUp(e: MouseEvent) {
-        canvasStore.endInteraction();
+        if (hasRecordedInteraction.value) {
+            canvasStore.endInteraction();
+        }
+        hasRecordedInteraction.value = false;
         isDragging.value = false;
         isResizing.value = false;
         resizeHandle.value = null;

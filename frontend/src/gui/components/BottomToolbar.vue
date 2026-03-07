@@ -31,7 +31,7 @@ type ToolId =
     | 'star'
     | 'hexagon'
     | 'arrow'
-    | 'curve'    
+    | 'curve'
     | 'eraser'
     | 'text';
 
@@ -134,7 +134,7 @@ const activeId = computed<ToolId>(() => {
     if (active === 'star') return 'star';
     if (active === 'hexagon') return 'hexagon';
     if (active === 'arrow') return 'arrow';
-    if (active === 'curve') return 'curve'; 
+    if (active === 'curve') return 'curve';
     if (active === 'eraser') return 'eraser';
     return 'cursor';
 });

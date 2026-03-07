@@ -49,6 +49,7 @@ const updateCanvasSize = () => {
 const drawTemporaryPoints = () => {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> ddd8286 (правка)
     if (!canvasRef.value) return;
@@ -105,6 +106,12 @@ const drawTemporaryPoints = () => {
 
     const ctx = canvasRef.value.getContext('2d');
     if (!ctx) return;
+=======
+    if (!canvasRef.value || !curveDrawing.value) return;
+
+    const ctx = canvasRef.value.getContext('2d');
+    if (!ctx) return;
+>>>>>>> a454dd7 (ops/bot: #25: format and lint)
 
     const points = curveDrawing.value.points;
 
@@ -564,12 +571,15 @@ watch(
     () => requestAnimationFrame(customDraw),
     { deep: true }
 );
+<<<<<<< HEAD
 =======
     isEditInteraction.value = false;
 });
 
 watch([shapes, selectedId, curveDrawing, isEditingMode], () => requestAnimationFrame(customDraw), { deep: true });
 >>>>>>> ddd8286 (правка)
+=======
+>>>>>>> a454dd7 (ops/bot: #25: format and lint)
 </script>
 
 <template>
@@ -609,6 +619,7 @@ watch([shapes, selectedId, curveDrawing, isEditingMode], () => requestAnimationF
     height: 100%;
     cursor: default;
 }
+<<<<<<< HEAD
 .hints {
     position: absolute;
     top: 20px;
@@ -639,3 +650,6 @@ watch([shapes, selectedId, curveDrawing, isEditingMode], () => requestAnimationF
     to { opacity: 1; transform: translateY(0); }
 }
 </style>
+=======
+</style>
+>>>>>>> a454dd7 (ops/bot: #25: format and lint)

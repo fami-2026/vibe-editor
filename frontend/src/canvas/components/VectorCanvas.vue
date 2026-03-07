@@ -38,6 +38,7 @@ const updateCanvasSize = () => {
 };
 
 const drawTemporaryPoints = () => {
+<<<<<<< HEAD
     if (!canvasRef.value) return;
     const ctx = canvasRef.value.getContext('2d');
     if (!ctx) return;
@@ -91,6 +92,32 @@ const drawTemporaryPoints = () => {
             }
         });
         
+=======
+    if (!canvasRef.value || !curveDrawing.value) return;
+
+    const ctx = canvasRef.value.getContext('2d');
+    if (!ctx) return;
+
+    const points = curveDrawing.value.points;
+
+    points.forEach((point, index) => {
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, 6, 0, 2 * Math.PI);
+
+        if (index === 0) {
+            ctx.fillStyle = '#4CAF50';
+        } else {
+            ctx.fillStyle = '#F44336';
+        }
+
+        ctx.fill();
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    });
+
+    if (points.length === 1) {
+>>>>>>> a454dd7 (ops/bot: #25: format and lint)
         ctx.font = '14px Arial';
         ctx.fillStyle = '#666';
         ctx.fillText('Режим редактирования: перетаскивайте точки, Enter для выхода', 20, 30);
@@ -388,10 +415,28 @@ onMounted(() => {
 onUnmounted(() => {
     resizeObserver?.disconnect();
     detachListeners?.();
+<<<<<<< HEAD
     isEditInteraction.value = false;
 });
 
 watch([shapes, selectedId, curveDrawing, isEditingMode], () => requestAnimationFrame(customDraw), { deep: true });
+=======
+
+    if (canvasRef.value) {
+        canvasRef.value.removeEventListener('click', handleCanvasClick);
+        canvasRef.value.removeEventListener(
+            'dblclick',
+            handleCanvasDoubleClick
+        );
+    }
+});
+
+watch(
+    [shapes, selectedId, curveDrawing],
+    () => requestAnimationFrame(customDraw),
+    { deep: true }
+);
+>>>>>>> a454dd7 (ops/bot: #25: format and lint)
 </script>
 
 <template>

@@ -5,23 +5,43 @@ import { generateId } from '@/canvas/utils/math';
 import { PolygonShape } from '@/canvas/types/polygon/polygon';
 import type { Shape, Point } from '@/canvas/types';
 import { CurveShapeWrapper } from '@/canvas/types/curve/curve';
-
 interface ShapeParams extends Record<string, unknown> {
     sides?: number;
+    width?: number;
+    height?: number;
+    radius?: number;
+    fill?: string;
+    fillOpacity?: number;
+    stroke?: string;
+    strokeOpacity?: number;
+    strokeWidth?: number;
+    rotation?: number;
 }
-
 interface CurveDrawingState {
-    points: Point[];
+    points: Point[];  // Точки [start, end]
 }
 
-export interface EditableCurve {
+interface EditableCurve {
     id?: string;
-    points: Point[];
+    startX: number;
+    startY: number;
+    endX: number;
+    endY: number;
+    cp1X: number;
+    cp1Y: number;
+    cp2X: number;
+    cp2Y: number;
     stroke: string;
     strokeOpacity: number;
     strokeWidth: number;
+    bendCount: number;
+    originalStartX?: number;
+    originalStartY?: number;
+    originalEndX?: number;
+    originalEndY?: number;
+    offsetX?: number;
+    offsetY?: number;
 }
-
 type SerializedShapeBase = {
     type: string;
     id: string;
@@ -37,9 +57,11 @@ type SceneSnapshot = { shapes: SerializedShape[]; selectedId: string | null };
 export const useCanvasStore = defineStore('canvas', () => {
     const shapes = ref<Shape[]>([]);
     const selectedId = ref<string | null>(null);
+
     const curveDrawing = ref<CurveDrawingState | null>(null);
-    const editingCurve = ref<CurveShapeWrapper | null>(null);
-    const isEditingMode = ref(false);
+    const tempCurve = ref<EditableCurve | null>(null);
+    const showCurveDialog = ref(false);
+
     const undoStack = ref<SceneSnapshot[]>([]);
     const redoStack = ref<SceneSnapshot[]>([]);
     const isInteractionActive = ref(false);
@@ -197,177 +219,160 @@ export const useCanvasStore = defineStore('canvas', () => {
         shapes.value = next;
     }
 
-    function selectShape(id: string | null) { selectedId.value = id; }
-
-<<<<<<< HEAD
-    function startCurveDrawing() { curveDrawing.value = { points: [] }; }
-
-    function handleCanvasClick(x: number, y: number) {
-        if (!curveDrawing.value) return;
-        curveDrawing.value.points.push({ x, y });
-        if (curveDrawing.value.points.length === 2) createStraightCurve();
+    function selectShape(id: string | null) {
+        selectedId.value = id;
     }
+function startCurveDrawing() {
+    curveDrawing.value = {
+        points: []
+    };
+}
 
-    function createStraightCurve() {
-        if (!curveDrawing.value || curveDrawing.value.points.length !== 2) return;
+function handleCanvasClick(x: number, y: number) {
+    
+    if (!curveDrawing.value) {
+        return;
+    }
+    
+    curveDrawing.value.points.push({ x, y });
+    
+    if (curveDrawing.value.points.length === 2) {
+        createStraightCurve();
+    }
+}
+
+function createStraightCurve() {
+    
+    if (!curveDrawing.value) return;
+    if (curveDrawing.value.points.length === 2) {
         const points = curveDrawing.value.points;
         const start = points[0];
         const end = points[1];
         
+        console.log('📌 start:', start, 'end:', end);
+        
         if (start && end) {
-            const curve = new CurveShapeWrapper(generateId(), start);
-            curve.setGlobalPoints([start, { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 }, end]);
+            const curve = new CurveShapeWrapper(
+                generateId(),
+                start
+            );
+            
+            curve.endX = end.x;
+            curve.endY = end.y;
+            
+            const dx = end.x - start.x;
+            const dy = end.y - start.y;
+            curve.cp1X = start.x + dx / 3;
+            curve.cp1Y = start.y + dy / 3;
+            curve.cp2X = start.x + 2 * dx / 3;
+            curve.cp2Y = start.y + 2 * dy / 3;
+            
             shapes.value.push(curve);
+            
             curveDrawing.value = null;
-=======
-    function startCurveDrawing() {
-        curveDrawing.value = {
-            points: [],
-        };
-    }
-
-    function handleCanvasClick(x: number, y: number) {
-        if (!curveDrawing.value) {
-            return;
-        }
-
-        curveDrawing.value.points.push({ x, y });
-
-        if (curveDrawing.value.points.length === 2) {
-            createStraightCurve();
+            
+            console.log('✅ Curve created and added to canvas');
         }
     }
-
-    function createStraightCurve() {
-        if (!curveDrawing.value) return;
-        if (curveDrawing.value.points.length === 2) {
-            const points = curveDrawing.value.points;
-            const start = points[0];
-            const end = points[1];
-
-            if (start && end) {
-                const curve = new CurveShapeWrapper(generateId(), start);
-
-                curve.endX = end.x;
-                curve.endY = end.y;
-
-                const dx = end.x - start.x;
-                const dy = end.y - start.y;
-                curve.cp1X = start.x + dx / 3;
-                curve.cp1Y = start.y + dy / 3;
-                curve.cp2X = start.x + (2 * dx) / 3;
-                curve.cp2Y = start.y + (2 * dy) / 3;
-
-                shapes.value.push(curve);
-                curveDrawing.value = null;
-            }
->>>>>>> a454dd7 (ops/bot: #25: format and lint)
-        }
+}
+function updateCurve(updatedCurve: EditableCurve) {
+    
+    const index = shapes.value.findIndex(s => s.id === updatedCurve.id);
+    if (index !== -1) {
+        const shape = shapes.value[index] as any;
+        
+        shape.startX = updatedCurve.startX;
+        shape.startY = updatedCurve.startY;
+        shape.endX = updatedCurve.endX;
+        shape.endY = updatedCurve.endY;
+        shape.cp1X = updatedCurve.cp1X;
+        shape.cp1Y = updatedCurve.cp1Y;
+        shape.cp2X = updatedCurve.cp2X;
+        shape.cp2Y = updatedCurve.cp2Y;
+        shape.bendCount = updatedCurve.bendCount;
+        
+        shapes.value = [...shapes.value];
     }
+}
 
-    function updateCurve(updatedCurve: EditableCurve) {
-        if (!updatedCurve.id) return;
-<<<<<<< HEAD
-        const index = shapes.value.findIndex(s => s.id === updatedCurve.id);
-        if (index !== -1) {
-            const shape = shapes.value[index] as unknown as CurveShapeWrapper;
-            shape.setGlobalPoints(updatedCurve.points);
-=======
-
-        const index = shapes.value.findIndex((s) => s.id === updatedCurve.id);
-        if (index !== -1) {
-            const shape = shapes.value[index] as unknown as CurveShapeWrapper;
-
-            shape.startX = updatedCurve.startX;
-            shape.startY = updatedCurve.startY;
-            shape.endX = updatedCurve.endX;
-            shape.endY = updatedCurve.endY;
-            shape.cp1X = updatedCurve.cp1X;
-            shape.cp1Y = updatedCurve.cp1Y;
-            shape.cp2X = updatedCurve.cp2X;
-            shape.cp2Y = updatedCurve.cp2Y;
-            shape.bendCount = updatedCurve.bendCount;
-
->>>>>>> a454dd7 (ops/bot: #25: format and lint)
-            shapes.value = [...shapes.value];
-        }
-    }
-
-    function editCurve(shape: CurveShapeWrapper) {
-<<<<<<< HEAD
-        const points = shape.getGlobalPoints();
-        if (points.length === 2) {
-            points.splice(1, 0, { x: (points[0].x + points[1].x) / 2, y: (points[0].y + points[1].y) / 2 });
-            shape.setGlobalPoints(points);
-=======
-        const editableCurve: EditableCurve = {
-            id: shape.id,
-            startX: shape.startX,
-            startY: shape.startY,
-            endX: shape.endX,
-            endY: shape.endY,
-            cp1X: shape.cp1X,
-            cp1Y: shape.cp1Y,
-            cp2X: shape.cp2X,
-            cp2Y: shape.cp2Y,
-            stroke: shape.stroke,
-            strokeOpacity: shape.strokeOpacity || 1,
-            strokeWidth: shape.strokeWidth,
-            bendCount: shape.bendCount || 0,
-            originalStartX: shape.startX,
-            originalStartY: shape.startY,
-            originalEndX: shape.endX,
-            originalEndY: shape.endY,
-            offsetX: 0,
-            offsetY: 0,
-        };
-
-        tempCurve.value = editableCurve;
-        showCurveDialog.value = true;
-    }
-
-    function cancelCurveDrawing() {
-        curveDrawing.value = null;
-        tempCurve.value = null;
-        showCurveDialog.value = false;
-    }
-
-    function confirmCurve() {
-        if (tempCurve.value) {
-            const c = tempCurve.value;
-            const curve = new CurveShapeWrapper(generateId(), {
-                x: c.originalStartX!,
-                y: c.originalStartY!,
-            });
-
-            curve.cp1X = c.cp1X;
-            curve.cp1Y = c.cp1Y;
-            curve.cp2X = c.cp2X;
-            curve.cp2Y = c.cp2Y;
-
-            shapes.value.push(curve);
-            tempCurve.value = null;
->>>>>>> a454dd7 (ops/bot: #25: format and lint)
-        }
-        editingCurve.value = shape;
-        isEditingMode.value = true;
-        selectedId.value = shape.id;
-    }
-
-    function exitEditMode() {
-        editingCurve.value = null;
-        isEditingMode.value = false;
-        selectedId.value = null;
-    }
-
-    function pushHistoryForCurve() { if (editingCurve.value) pushHistory(); }
-
-    function cancelCurveDrawing() { curveDrawing.value = null; }
-
-    return {
-        shapes, selectedId, selectedShape, addShape, updateShape, deleteShape, selectShape, moveShape,
-        undo, redo, canUndo, canRedo, startInteraction, endInteraction,
-        curveDrawing, startCurveDrawing, handleCanvasClick, cancelCurveDrawing,
-        editCurve, updateCurve, editingCurve, isEditingMode, exitEditMode, pushHistoryForCurve,
+function editCurve(shape: any) {
+    
+    const editableCurve: EditableCurve = {
+        id: shape.id,
+        startX: shape.startX,
+        startY: shape.startY,
+        endX: shape.endX,
+        endY: shape.endY,
+        cp1X: shape.cp1X,
+        cp1Y: shape.cp1Y,
+        cp2X: shape.cp2X,
+        cp2Y: shape.cp2Y,
+        stroke: shape.stroke,
+        strokeOpacity: shape.strokeOpacity || 1,
+        strokeWidth: shape.strokeWidth,
+        bendCount: shape.bendCount || 0,
+        originalStartX: shape.startX,
+        originalStartY: shape.startY,
+        originalEndX: shape.endX,
+        originalEndY: shape.endY,
+        offsetX: 0,
+        offsetY: 0
     };
+    
+    tempCurve.value = editableCurve;
+    showCurveDialog.value = true;
+}
+
+function cancelCurveDrawing() {
+    curveDrawing.value = null;
+    tempCurve.value = null;
+    showCurveDialog.value = false;
+}
+
+function confirmCurve() {
+    if (tempCurve.value) {
+        const c = tempCurve.value;
+        const curve = new CurveShapeWrapper(
+            generateId(),
+            { x: c.originalStartX!, y: c.originalStartY! }
+        );
+        
+        curve.cp1X = c.cp1X;
+        curve.cp1Y = c.cp1Y;
+        curve.cp2X = c.cp2X;
+        curve.cp2Y = c.cp2Y;
+        
+        shapes.value.push(curve);
+        tempCurve.value = null;
+    }
+    showCurveDialog.value = false;
+}
+
+
+
+return {
+    shapes,
+    selectedId,
+    selectedShape,
+    addShape,
+    updateShape,
+    deleteShape,
+    selectShape,
+    moveShape,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    startInteraction,
+    endInteraction,
+    curveDrawing,
+    tempCurve,
+    showCurveDialog,
+    startCurveDrawing,
+    handleCanvasClick,
+    cancelCurveDrawing,
+    confirmCurve,
+    editCurve,
+    updateCurve,
+};
 });

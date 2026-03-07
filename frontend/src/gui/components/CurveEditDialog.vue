@@ -50,29 +50,29 @@ const currentHistoryIndex = ref(-1);
 
 function saveToHistory() {
     if (!localCurve.value) return;
-
+    
     const snapshot: CurveSnapshot = {
         cp1X: localCurve.value.cp1X,
         cp1Y: localCurve.value.cp1Y,
         cp2X: localCurve.value.cp2X,
         cp2Y: localCurve.value.cp2Y,
-        bendCount: bendCount.value,
+        bendCount: bendCount.value
     };
-
+    
     if (currentHistoryIndex.value < history.value.length - 1) {
         history.value = history.value.slice(0, currentHistoryIndex.value + 1);
     }
-
+    
     history.value.push(snapshot);
     currentHistoryIndex.value = history.value.length - 1;
 }
 
 function loadFromHistory(index: number) {
     if (!localCurve.value || index < 0 || index >= history.value.length) return;
-
+    
     const snapshot = history.value[index];
     if (!snapshot) return;
-
+    
     localCurve.value.cp1X = snapshot.cp1X;
     localCurve.value.cp1Y = snapshot.cp1Y;
     localCurve.value.cp2X = snapshot.cp2X;
@@ -80,7 +80,7 @@ function loadFromHistory(index: number) {
     bendCount.value = snapshot.bendCount;
     localCurve.value.bendCount = snapshot.bendCount;
     isLocked.value = snapshot.bendCount >= 2;
-
+    
     currentHistoryIndex.value = index;
 }
 
@@ -90,36 +90,30 @@ function undo() {
     }
 }
 
-watch(
-    () => props.curve,
-    (newCurve) => {
-        if (newCurve) {
-            localCurve.value = JSON.parse(JSON.stringify(newCurve));
-            bendCount.value = newCurve.bendCount || 0;
-            isLocked.value = bendCount.value >= 2;
-
-            history.value = [
-                {
-                    cp1X: newCurve.cp1X,
-                    cp1Y: newCurve.cp1Y,
-                    cp2X: newCurve.cp2X,
-                    cp2Y: newCurve.cp2Y,
-                    bendCount: bendCount.value,
-                },
-            ];
-            currentHistoryIndex.value = 0;
-        } else {
-            localCurve.value = null;
-            history.value = [];
-            currentHistoryIndex.value = -1;
-        }
-    },
-    { immediate: true, deep: true }
-);
+watch(() => props.curve, (newCurve) => {
+    if (newCurve) {
+        localCurve.value = JSON.parse(JSON.stringify(newCurve));
+        bendCount.value = newCurve.bendCount || 0;
+        isLocked.value = bendCount.value >= 2;
+        
+        history.value = [{
+            cp1X: newCurve.cp1X,
+            cp1Y: newCurve.cp1Y,
+            cp2X: newCurve.cp2X,
+            cp2Y: newCurve.cp2Y,
+            bendCount: bendCount.value
+        }];
+        currentHistoryIndex.value = 0;
+    } else {
+        localCurve.value = null;
+        history.value = [];
+        currentHistoryIndex.value = -1;
+    }
+}, { immediate: true, deep: true });
 
 function getPointOnCurve(t: number): { x: number; y: number } {
     if (!localCurve.value) return { x: 0, y: 0 };
-
+    
     const x = cubicBezier(
         localCurve.value.startX,
         localCurve.value.cp1X,
@@ -127,7 +121,7 @@ function getPointOnCurve(t: number): { x: number; y: number } {
         localCurve.value.endX,
         t
     );
-
+    
     const y = cubicBezier(
         localCurve.value.startY,
         localCurve.value.cp1Y,
@@ -135,61 +129,48 @@ function getPointOnCurve(t: number): { x: number; y: number } {
         localCurve.value.endY,
         t
     );
-
+    
     return { x, y };
 }
 
-function cubicBezier(
-    p0: number,
-    p1: number,
-    p2: number,
-    p3: number,
-    t: number
-): number {
+function cubicBezier(p0: number, p1: number, p2: number, p3: number, t: number): number {
     const mt = 1 - t;
-    return (
-        mt * mt * mt * p0 +
-        3 * mt * mt * t * p1 +
-        3 * mt * t * t * p2 +
-        t * t * t * p3
-    );
+    return mt * mt * mt * p0 + 3 * mt * mt * t * p1 + 3 * mt * t * t * p2 + t * t * t * p3;
 }
 
 function findClosestPointOnCurve(x: number, y: number): number {
     if (!localCurve.value) return 0.5;
-
+    
     const steps = 50;
     let minDist = Infinity;
     let bestT = 0.5;
-
+    
     for (let i = 0; i <= steps; i++) {
         const t = i / steps;
         const point = getPointOnCurve(t);
         const dist = Math.hypot(point.x - x, point.y - y);
-
+        
         if (dist < minDist) {
             minDist = dist;
             bestT = t;
         }
     }
-
+    
     return bestT;
 }
 
 function startDrag(event: MouseEvent) {
     if (!localCurve.value || !svgRef.value || isLocked.value) return;
-
+    
     event.preventDefault();
-
+    
     const svg = svgRef.value;
     const rect = svg.getBoundingClientRect();
     const viewBox = svg.viewBox.baseVal;
-
-    const x =
-        ((event.clientX - rect.left) * viewBox.width) / rect.width + viewBox.x;
-    const y =
-        ((event.clientY - rect.top) * viewBox.height) / rect.height + viewBox.y;
-
+    
+    const x = ((event.clientX - rect.left) * viewBox.width) / rect.width + viewBox.x;
+    const y = ((event.clientY - rect.top) * viewBox.height) / rect.height + viewBox.y;
+    
     const t = findClosestPointOnCurve(x, y);
     dragT.value = t;
     lastMousePos.value = { x, y };
@@ -197,53 +178,43 @@ function startDrag(event: MouseEvent) {
 }
 
 function onDrag(event: MouseEvent) {
-    if (
-        !isDragging.value ||
-        dragT.value === null ||
-        !localCurve.value ||
-        !svgRef.value ||
-        !lastMousePos.value ||
-        isLocked.value
-    )
-        return;
-
+    if (!isDragging.value || dragT.value === null || !localCurve.value || !svgRef.value || !lastMousePos.value || isLocked.value) return;
+    
     const svg = svgRef.value;
     const rect = svg.getBoundingClientRect();
     const viewBox = svg.viewBox.baseVal;
-
-    const x =
-        ((event.clientX - rect.left) * viewBox.width) / rect.width + viewBox.x;
-    const y =
-        ((event.clientY - rect.top) * viewBox.height) / rect.height + viewBox.y;
-
+    
+    const x = ((event.clientX - rect.left) * viewBox.width) / rect.width + viewBox.x;
+    const y = ((event.clientY - rect.top) * viewBox.height) / rect.height + viewBox.y;
+    
     const deltaX = x - lastMousePos.value.x;
     const deltaY = y - lastMousePos.value.y;
-
+    
     const t = dragT.value;
-
+    
     const influence1 = 1 - t;
     const influence2 = t;
-
+    
     localCurve.value.cp1X += deltaX * influence1;
     localCurve.value.cp1Y += deltaY * influence1;
     localCurve.value.cp2X += deltaX * influence2;
     localCurve.value.cp2Y += deltaY * influence2;
-
+    
     lastMousePos.value = { x, y };
 }
 
 function stopDrag() {
     if (isDragging.value && localCurve.value && !isLocked.value) {
         bendCount.value++;
-
+        
         saveToHistory();
-
+        
         if (bendCount.value <= 2) {
             localCurve.value.bendCount = bendCount.value;
             isLocked.value = bendCount.value >= 2;
         }
     }
-
+    
     isDragging.value = false;
     dragT.value = null;
     lastMousePos.value = null;
@@ -251,10 +222,10 @@ function stopDrag() {
 
 function addBend() {
     if (!localCurve.value || bendCount.value >= 2) return;
-
+    
     const midX = (localCurve.value.startX + localCurve.value.endX) / 2;
     const midY = (localCurve.value.startY + localCurve.value.endY) / 2;
-
+    
     if (bendCount.value === 0) {
         localCurve.value.cp1X = midX;
         localCurve.value.cp1Y = midY;
@@ -262,10 +233,10 @@ function addBend() {
         localCurve.value.cp2X = midX;
         localCurve.value.cp2Y = midY;
     }
-
+    
     bendCount.value++;
     saveToHistory();
-
+    
     localCurve.value.bendCount = bendCount.value;
     isLocked.value = bendCount.value >= 2;
 }
@@ -283,33 +254,29 @@ function cancel() {
 
 function getCurvePath(): string {
     if (!localCurve.value) return '';
-
+    
     return `M ${localCurve.value.startX} ${localCurve.value.startY} C ${localCurve.value.cp1X} ${localCurve.value.cp1Y}, ${localCurve.value.cp2X} ${localCurve.value.cp2Y}, ${localCurve.value.endX} ${localCurve.value.endY}`;
 }
 
 const viewBox = computed(() => {
     if (!localCurve.value) return '0 0 500 300';
-
+    
     const points = [
-        localCurve.value.startX,
-        localCurve.value.startY,
-        localCurve.value.endX,
-        localCurve.value.endY,
-        localCurve.value.cp1X,
-        localCurve.value.cp1Y,
-        localCurve.value.cp2X,
-        localCurve.value.cp2Y,
+        localCurve.value.startX, localCurve.value.startY,
+        localCurve.value.endX, localCurve.value.endY,
+        localCurve.value.cp1X, localCurve.value.cp1Y,
+        localCurve.value.cp2X, localCurve.value.cp2Y
     ];
-
+    
     const minX = Math.min(...points.filter((_, i) => i % 2 === 0));
     const minY = Math.min(...points.filter((_, i) => i % 2 === 1));
     const maxX = Math.max(...points.filter((_, i) => i % 2 === 0));
     const maxY = Math.max(...points.filter((_, i) => i % 2 === 1));
-
+    
     const padding = 40;
     const width = maxX - minX + padding * 2;
     const height = maxY - minY + padding * 2;
-
+    
     return `${minX - padding} ${minY - padding} ${width} ${height}`;
 });
 </script>
@@ -343,20 +310,14 @@ const viewBox = computed(() => {
 
             <div class="info">
                 <p>Изгибов: {{ bendCount }}/2</p>
-                <p v-if="isLocked" class="warning">
-                    Достигнут лимит изгибов (2)
-                </p>
+                <p v-if="isLocked" class="warning">Достигнут лимит изгибов (2)</p>
             </div>
 
             <div class="button-group">
                 <button @click="addBend" :disabled="bendCount >= 2 || isLocked">
                     Добавить изгиб
                 </button>
-                <button
-                    @click="undo"
-                    :disabled="currentHistoryIndex <= 0"
-                    class="undo-btn"
-                >
+                <button @click="undo" :disabled="currentHistoryIndex <= 0" class="undo-btn">
                     ↩ Отменить
                 </button>
             </div>

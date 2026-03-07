@@ -1,3 +1,6 @@
+/**
+ * Кривая
+ */
 import type { BoundingBox, Point } from '../base';
 import { BaseShape } from '../base';
 import { shapeRegistry } from '../registry';
@@ -23,92 +26,198 @@ export class CurveShape extends BaseShape {
         params: CurveParams
     ) {
         super(id, position);
-        
-        this.localPoints = params.points.map(p => ({ ...p }));
-        
-        this.stroke = params.stroke || '#000000';
-        this.strokeOpacity = params.strokeOpacity || 1;
-        this.strokeWidth = params.strokeWidth || 2;
-    }
 
-    getGlobalPoints(): Point[] {
-        return this.localPoints.map(p => ({
-            x: this.position.x + p.x * this.scaleX,
-            y: this.position.y + p.y * this.scaleY
-        }));
-    }
+        this.localStartX = startX - position.x;
+        this.localStartY = startY - position.y;
+        this.localEndX = endX - position.x;
+        this.localEndY = endY - position.y;
+        this.localCp1X = cp1X - position.x;
+        this.localCp1Y = cp1Y - position.y;
+        this.localCp2X = cp2X - position.x;
+        this.localCp2Y = cp2Y - position.y;
 
-    setGlobalPoints(points: Point[]) {
-        if (points.length === 0) return;
-        
-        const sumX = points.reduce((acc, p) => acc + p.x, 0);
-        const sumY = points.reduce((acc, p) => acc + p.y, 0);
-        const centerX = sumX / points.length;
-        const centerY = sumY / points.length;
-        
-        this.position.x = centerX;
-        this.position.y = centerY;
-        
-        this.localPoints = points.map(p => ({
-            x: p.x - centerX,
-            y: p.y - centerY
-        }));
-    }
+        this.stroke = stroke;
+        this.strokeWidth = strokeWidth;
 
-    addPoint(index: number, globalPoint: Point) {
-        const localPoint = {
-            x: globalPoint.x - this.position.x,
-            y: globalPoint.y - this.position.y
-        };
-        this.localPoints.splice(index, 0, localPoint);
-    }
-
-    removePoint(index: number) {
-        if (this.localPoints.length > 2) {
-            this.localPoints.splice(index, 1);
-        }
+        this.updateBendCount();
     }
 
     setSize(width: number, height: number): void {
-        const minX = Math.min(...this.localPoints.map(p => p.x));
-        const minY = Math.min(...this.localPoints.map(p => p.y));
-        const maxX = Math.max(...this.localPoints.map(p => p.x));
-        const maxY = Math.max(...this.localPoints.map(p => p.y));
-        
-        const currentWidth = maxX - minX;
-        const currentHeight = maxY - minY;
-        
-        if (currentWidth === 0 || currentHeight === 0) return;
-        
-        const centerX = (minX + maxX) / 2;
-        const centerY = (minY + maxY) / 2;
-        
-        const scaleX = width / currentWidth;
-        const scaleY = height / currentHeight;
-        
-        this.localPoints = this.localPoints.map(p => ({
-            x: centerX + (p.x - centerX) * scaleX,
-            y: centerY + (p.y - centerY) * scaleY
-        }));
+        const centerX = (this.localStartX + this.localEndX) / 2;
+        const centerY = (this.localStartY + this.localEndY) / 2;
+
+        const currentWidth = Math.abs(this.localEndX - this.localStartX);
+        const currentHeight = Math.abs(this.localEndY - this.localStartY);
+
+        const scaleX = width / (currentWidth || 1);
+        const scaleY = height / (currentHeight || 1);
+
+        this.localStartX = centerX + (this.localStartX - centerX) * scaleX;
+        this.localStartY = centerY + (this.localStartY - centerY) * scaleY;
+        this.localEndX = centerX + (this.localEndX - centerX) * scaleX;
+        this.localEndY = centerY + (this.localEndY - centerY) * scaleY;
+        this.localCp1X = centerX + (this.localCp1X - centerX) * scaleX;
+        this.localCp1Y = centerY + (this.localCp1Y - centerY) * scaleY;
+        this.localCp2X = centerX + (this.localCp2X - centerX) * scaleX;
+        this.localCp2Y = centerY + (this.localCp2Y - centerY) * scaleY;
+    }
+
+    private updateBendCount() {
+        const dx = this.endX - this.startX;
+        const dy = this.endY - this.startY;
+
+        const straightC1X = this.startX + dx / 3;
+        const straightC1Y = this.startY + dy / 3;
+        const dist1 = Math.sqrt(
+            Math.pow(this.cp1X - straightC1X, 2) +
+                Math.pow(this.cp1Y - straightC1Y, 2)
+        );
+
+        const straightC2X = this.startX + (2 * dx) / 3;
+        const straightC2Y = this.startY + (2 * dy) / 3;
+        const dist2 = Math.sqrt(
+            Math.pow(this.cp2X - straightC2X, 2) +
+                Math.pow(this.cp2Y - straightC2Y, 2)
+        );
+
+        this.bendCount = (dist1 > 5 ? 1 : 0) + (dist2 > 5 ? 1 : 0);
+    }
+
+    get startX(): number {
+        return this.position.x + this.localStartX * this.scaleX;
+    }
+    get startY(): number {
+        return this.position.y + this.localStartY * this.scaleY;
+    }
+
+    get endX(): number {
+        return this.position.x + this.localEndX * this.scaleX;
+    }
+    get endY(): number {
+        return this.position.y + this.localEndY * this.scaleY;
+    }
+
+    get cp1X(): number {
+        return this.position.x + this.localCp1X * this.scaleX;
+    }
+    get cp1Y(): number {
+        return this.position.y + this.localCp1Y * this.scaleY;
+    }
+
+    get cp2X(): number {
+        return this.position.x + this.localCp2X * this.scaleX;
+    }
+    get cp2Y(): number {
+        return this.position.y + this.localCp2Y * this.scaleY;
+    }
+
+    set startX(value: number) {
+        this.localStartX = (value - this.position.x) / this.scaleX;
+        this.updateBendCount();
+    }
+    set startY(value: number) {
+        this.localStartY = (value - this.position.y) / this.scaleY;
+        this.updateBendCount();
+    }
+
+    set endX(value: number) {
+        this.localEndX = (value - this.position.x) / this.scaleX;
+        this.updateBendCount();
+    }
+    set endY(value: number) {
+        this.localEndY = (value - this.position.y) / this.scaleY;
+        this.updateBendCount();
+    }
+
+    set cp1X(value: number) {
+        this.localCp1X = (value - this.position.x) / this.scaleX;
+        this.updateBendCount();
+    }
+    set cp1Y(value: number) {
+        this.localCp1Y = (value - this.position.y) / this.scaleY;
+        this.updateBendCount();
+    }
+
+    set cp2X(value: number) {
+        this.localCp2X = (value - this.position.x) / this.scaleX;
+        this.updateBendCount();
+    }
+    set cp2Y(value: number) {
+        this.localCp2Y = (value - this.position.y) / this.scaleY;
+        this.updateBendCount();
+    }
+
+    private cubicBezier(
+        p0: number,
+        p1: number,
+        p2: number,
+        p3: number,
+        t: number
+    ): number {
+        const mt = 1 - t;
+        return (
+            mt * mt * mt * p0 +
+            3 * mt * mt * t * p1 +
+            3 * mt * t * t * p2 +
+            t * t * t * p3
+        );
+    }
+
+    hitTest(globalPoint: Point): boolean {
+        const localPoint = this.toVLocalPoint(globalPoint);
+        const padding = this.strokeWidth / 2 + 3;
+
+        const start = {
+            x: this.localStartX * this.scaleX,
+            y: this.localStartY * this.scaleY,
+        };
+        const end = {
+            x: this.localEndX * this.scaleX,
+            y: this.localEndY * this.scaleY,
+        };
+        const cp1 = {
+            x: this.localCp1X * this.scaleX,
+            y: this.localCp1Y * this.scaleY,
+        };
+        const cp2 = {
+            x: this.localCp2X * this.scaleX,
+            y: this.localCp2Y * this.scaleY,
+        };
+
+        const steps = 50;
+        let minDistance = Infinity;
+
+        for (let i = 0; i <= steps; i++) {
+            const t = i / steps;
+            const x = this.cubicBezier(start.x, cp1.x, cp2.x, end.x, t);
+            const y = this.cubicBezier(start.y, cp1.y, cp2.y, end.y, t);
+
+            const dx = localPoint.x - x;
+            const dy = localPoint.y - y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            minDistance = Math.min(minDistance, distance);
+
+            if (minDistance <= padding) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     getLocalBox(): BoundingBox {
-        if (this.localPoints.length === 0) {
-            return { minX: -50, minY: -50, maxX: 50, maxY: 50 };
-        }
+        const points = [
+            { x: this.localStartX, y: this.localStartY },
+            { x: this.localCp1X, y: this.localCp1Y },
+            { x: this.localCp2X, y: this.localCp2Y },
+            { x: this.localEndX, y: this.localEndY },
+        ];
 
-        const splinePoints = this.getSplinePoints();
-        
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        
-        for (const p of this.localPoints) {
-            minX = Math.min(minX, p.x);
-            minY = Math.min(minY, p.y);
-            maxX = Math.max(maxX, p.x);
-            maxY = Math.max(maxY, p.y);
-        }
-        
-        for (const p of splinePoints) {
+        let minX = Infinity,
+            minY = Infinity,
+            maxX = -Infinity,
+            maxY = -Infinity;
+        for (const p of points) {
             minX = Math.min(minX, p.x);
             minY = Math.min(minY, p.y);
             maxX = Math.max(maxX, p.x);
@@ -211,7 +320,7 @@ export class CurveShape extends BaseShape {
 
     render(ctx: CanvasRenderingContext2D): void {
         ctx.save();
-        
+
         const m = this.getVMatrix();
         ctx.transform(m.a, m.b, m.c, m.d, m.e, m.f);
         
@@ -219,21 +328,23 @@ export class CurveShape extends BaseShape {
         const sy = Math.sign(this.scaleY);
         ctx.scale(sx, sy);
 
-        const splinePoints = this.getSplinePoints();
-        
-        if (splinePoints.length > 1) {
-            ctx.beginPath();
-            ctx.moveTo(splinePoints[0].x, splinePoints[0].y);
-            
-            for (let i = 1; i < splinePoints.length; i++) {
-                ctx.lineTo(splinePoints[i].x, splinePoints[i].y);
-            }
-            
-            ctx.strokeStyle = this.stroke;
-            ctx.lineWidth = this.strokeWidth;
-            ctx.globalAlpha = this.strokeOpacity;
-            ctx.stroke();
-        }
+        const alpha = ctx.globalAlpha;
+
+        ctx.beginPath();
+        ctx.moveTo(this.localStartX, this.localStartY);
+        ctx.bezierCurveTo(
+            this.localCp1X,
+            this.localCp1Y,
+            this.localCp2X,
+            this.localCp2Y,
+            this.localEndX,
+            this.localEndY
+        );
+
+        ctx.strokeStyle = this.stroke;
+        ctx.lineWidth = this.strokeWidth;
+        ctx.globalAlpha = this.strokeOpacity;
+        ctx.stroke();
 
         ctx.restore();
     }
@@ -246,26 +357,20 @@ export class CurveShape extends BaseShape {
 
 export class CurveShapeWrapper extends CurveShape {
     constructor(id: string, position: Point) {
-        // Точки в глобальных координатах
-        const globalPoints = [
-            { x: position.x, y: position.y },
-            { x: position.x + 50, y: position.y },
-            { x: position.x + 100, y: position.y }
-        ];
-        
-        // Вычисляем центр масс
-        const sumX = globalPoints.reduce((acc, p) => acc + p.x, 0);
-        const sumY = globalPoints.reduce((acc, p) => acc + p.y, 0);
-        const centerX = sumX / globalPoints.length;
-        const centerY = sumY / globalPoints.length;
-        
-        // Создаем локальные точки относительно центра
-        const localPoints = globalPoints.map(p => ({
-            x: p.x - centerX,
-            y: p.y - centerY
-        }));
-        
-        super(id, { x: centerX, y: centerY }, { points: localPoints });
+        super(
+            id,
+            position,
+            position.x,
+            position.y,
+            position.x + 100,
+            position.y,
+            position.x + 33,
+            position.y,
+            position.x + 66,
+            position.y,
+            '#000000',
+            2
+        );
     }
 }
 

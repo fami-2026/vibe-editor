@@ -38,59 +38,30 @@ const updateCanvasSize = () => {
 };
 
 const drawTemporaryPoints = () => {
-    if (!canvasRef.value) return;
+    if (!canvasRef.value || !curveDrawing.value) return;
+
     const ctx = canvasRef.value.getContext('2d');
     if (!ctx) return;
-    
-    if (curveDrawing.value) {
-        const points = curveDrawing.value.points;
-        points.forEach((point, index) => {
-            ctx.beginPath();
-            ctx.arc(point.x, point.y, 6, 0, 2 * Math.PI);
-            ctx.fillStyle = index === 0 ? '#4CAF50' : '#F44336';
-            ctx.fill();
-            ctx.strokeStyle = 'white';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-        });
-        if (points.length === 1) {
-            ctx.font = '14px Arial';
-            ctx.fillStyle = '#666';
-            ctx.fillText('Кликните для конечной точки', 20, 30);
-        }
-    }
-    
-    if (isEditingMode.value && editingCurve.value) {
-        const points = editingCurve.value.getGlobalPoints();
-        
+
+    const points = curveDrawing.value.points;
+
+    points.forEach((point, index) => {
         ctx.beginPath();
-        const splinePoints = getSplinePoints(points);
-        ctx.moveTo(splinePoints[0].x, splinePoints[0].y);
-        for (let i = 1; i < splinePoints.length; i++) {
-            ctx.lineTo(splinePoints[i].x, splinePoints[i].y);
+        ctx.arc(point.x, point.y, 6, 0, 2 * Math.PI);
+
+        if (index === 0) {
+            ctx.fillStyle = '#4CAF50';
+        } else {
+            ctx.fillStyle = '#F44336';
         }
-        ctx.strokeStyle = '#2196f3';
-        ctx.lineWidth = 4;
+
+        ctx.fill();
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
         ctx.stroke();
-        
-        points.forEach((point, index) => {
-            ctx.beginPath();
-            ctx.arc(point.x, point.y, 8, 0, 2 * Math.PI);
-            ctx.fillStyle = (index === 0 || index === points.length - 1) ? '#4CAF50' : '#FF9800';
-            ctx.fill();
-            ctx.strokeStyle = 'white';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            
-            if (isDragging.value && draggedPointIndex.value === index) {
-                ctx.beginPath();
-                ctx.arc(point.x, point.y, 12, 0, 2 * Math.PI);
-                ctx.strokeStyle = '#f44336';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-            }
-        });
-        
+    });
+
+    if (points.length === 1) {
         ctx.font = '14px Arial';
         ctx.fillStyle = '#666';
         ctx.fillText('Режим редактирования: перетаскивайте точки, Enter для выхода', 20, 30);
@@ -388,10 +359,21 @@ onMounted(() => {
 onUnmounted(() => {
     resizeObserver?.disconnect();
     detachListeners?.();
-    isEditInteraction.value = false;
+
+    if (canvasRef.value) {
+        canvasRef.value.removeEventListener('click', handleCanvasClick);
+        canvasRef.value.removeEventListener(
+            'dblclick',
+            handleCanvasDoubleClick
+        );
+    }
 });
 
-watch([shapes, selectedId, curveDrawing, isEditingMode], () => requestAnimationFrame(customDraw), { deep: true });
+watch(
+    [shapes, selectedId, curveDrawing],
+    () => requestAnimationFrame(customDraw),
+    { deep: true }
+);
 </script>
 
 <template>

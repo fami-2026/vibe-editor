@@ -15,6 +15,7 @@ import {
     ArrowUp,
     Pentagon,
     Spline,
+    Spline,
 } from 'lucide-vue-next';
 import { useToolsStore, type ToolType } from '@/stores/tools';
 import { useCanvasStore } from '@/stores/canvas';
@@ -30,7 +31,7 @@ type ToolId =
     | 'star'
     | 'hexagon'
     | 'arrow'
-    | 'curve'
+    | 'curve'    
     | 'eraser'
     | 'text';
 
@@ -51,6 +52,7 @@ const tools: Tool[] = [
     { id: 'star', title: 'Звезда', icon: Star },
     { id: 'hexagon', title: 'Шестиугольник', icon: Hexagon },
     { id: 'arrow', title: 'Стрелка', icon: ArrowUp },
+    { id: 'curve', title: 'Кривая', icon: Spline },
     { id: 'curve', title: 'Кривая', icon: Spline },
     { id: 'eraser', title: 'Ластик', icon: Eraser },
     { id: 'text', title: 'Текст', icon: Type },
@@ -132,7 +134,7 @@ const activeId = computed<ToolId>(() => {
     if (active === 'star') return 'star';
     if (active === 'hexagon') return 'hexagon';
     if (active === 'arrow') return 'arrow';
-    if (active === 'curve') return 'curve';
+    if (active === 'curve') return 'curve'; 
     if (active === 'eraser') return 'eraser';
     return 'cursor';
 });

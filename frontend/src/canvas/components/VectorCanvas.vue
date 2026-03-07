@@ -472,7 +472,6 @@ watch(
     () => requestAnimationFrame(customDraw),
     { deep: true }
 );
->>>>>>> a454dd7 (ops/bot: #25: format and lint)
 </script>
 
 <template>

@@ -1,5 +1,5 @@
 /**
- * Кривая 
+ * Кривая
  */
 import type { BoundingBox, Point } from '../base';
 import { BaseShape } from '../base';
@@ -41,7 +41,7 @@ export class CurveShape extends BaseShape {
         strokeWidth: number = 2
     ) {
         super(id, position);
-        
+
         this.localStartX = startX - position.x;
         this.localStartY = startY - position.y;
         this.localEndX = endX - position.x;
@@ -50,23 +50,23 @@ export class CurveShape extends BaseShape {
         this.localCp1Y = cp1Y - position.y;
         this.localCp2X = cp2X - position.x;
         this.localCp2Y = cp2Y - position.y;
-        
+
         this.stroke = stroke;
         this.strokeWidth = strokeWidth;
-        
+
         this.updateBendCount();
     }
 
     setSize(width: number, height: number): void {
         const centerX = (this.localStartX + this.localEndX) / 2;
         const centerY = (this.localStartY + this.localEndY) / 2;
-        
+
         const currentWidth = Math.abs(this.localEndX - this.localStartX);
         const currentHeight = Math.abs(this.localEndY - this.localStartY);
-        
+
         const scaleX = width / (currentWidth || 1);
         const scaleY = height / (currentHeight || 1);
-        
+
         this.localStartX = centerX + (this.localStartX - centerX) * scaleX;
         this.localStartY = centerY + (this.localStartY - centerY) * scaleY;
         this.localEndX = centerX + (this.localEndX - centerX) * scaleX;
@@ -80,21 +80,21 @@ export class CurveShape extends BaseShape {
     private updateBendCount() {
         const dx = this.endX - this.startX;
         const dy = this.endY - this.startY;
-        
+
         const straightC1X = this.startX + dx / 3;
         const straightC1Y = this.startY + dy / 3;
         const dist1 = Math.sqrt(
-            Math.pow(this.cp1X - straightC1X, 2) + 
-            Math.pow(this.cp1Y - straightC1Y, 2)
+            Math.pow(this.cp1X - straightC1X, 2) +
+                Math.pow(this.cp1Y - straightC1Y, 2)
         );
-        
-        const straightC2X = this.startX + 2 * dx / 3;
-        const straightC2Y = this.startY + 2 * dy / 3;
+
+        const straightC2X = this.startX + (2 * dx) / 3;
+        const straightC2Y = this.startY + (2 * dy) / 3;
         const dist2 = Math.sqrt(
-            Math.pow(this.cp2X - straightC2X, 2) + 
-            Math.pow(this.cp2Y - straightC2Y, 2)
+            Math.pow(this.cp2X - straightC2X, 2) +
+                Math.pow(this.cp2Y - straightC2Y, 2)
         );
-        
+
         this.bendCount = (dist1 > 5 ? 1 : 0) + (dist2 > 5 ? 1 : 0);
     }
 
@@ -162,19 +162,42 @@ export class CurveShape extends BaseShape {
         this.updateBendCount();
     }
 
-    private cubicBezier(p0: number, p1: number, p2: number, p3: number, t: number): number {
+    private cubicBezier(
+        p0: number,
+        p1: number,
+        p2: number,
+        p3: number,
+        t: number
+    ): number {
         const mt = 1 - t;
-        return mt * mt * mt * p0 + 3 * mt * mt * t * p1 + 3 * mt * t * t * p2 + t * t * t * p3;
+        return (
+            mt * mt * mt * p0 +
+            3 * mt * mt * t * p1 +
+            3 * mt * t * t * p2 +
+            t * t * t * p3
+        );
     }
 
     hitTest(globalPoint: Point): boolean {
         const localPoint = this.toVLocalPoint(globalPoint);
         const padding = this.strokeWidth / 2 + 3;
-        
-        const start = { x: this.localStartX * this.scaleX, y: this.localStartY * this.scaleY };
-        const end = { x: this.localEndX * this.scaleX, y: this.localEndY * this.scaleY };
-        const cp1 = { x: this.localCp1X * this.scaleX, y: this.localCp1Y * this.scaleY };
-        const cp2 = { x: this.localCp2X * this.scaleX, y: this.localCp2Y * this.scaleY };
+
+        const start = {
+            x: this.localStartX * this.scaleX,
+            y: this.localStartY * this.scaleY,
+        };
+        const end = {
+            x: this.localEndX * this.scaleX,
+            y: this.localEndY * this.scaleY,
+        };
+        const cp1 = {
+            x: this.localCp1X * this.scaleX,
+            y: this.localCp1Y * this.scaleY,
+        };
+        const cp2 = {
+            x: this.localCp2X * this.scaleX,
+            y: this.localCp2Y * this.scaleY,
+        };
 
         const steps = 50;
         let minDistance = Infinity;
@@ -183,12 +206,12 @@ export class CurveShape extends BaseShape {
             const t = i / steps;
             const x = this.cubicBezier(start.x, cp1.x, cp2.x, end.x, t);
             const y = this.cubicBezier(start.y, cp1.y, cp2.y, end.y, t);
-            
+
             const dx = localPoint.x - x;
             const dy = localPoint.y - y;
             const distance = Math.sqrt(dx * dx + dy * dy);
             minDistance = Math.min(minDistance, distance);
-            
+
             if (minDistance <= padding) {
                 return true;
             }
@@ -202,10 +225,13 @@ export class CurveShape extends BaseShape {
             { x: this.localStartX, y: this.localStartY },
             { x: this.localCp1X, y: this.localCp1Y },
             { x: this.localCp2X, y: this.localCp2Y },
-            { x: this.localEndX, y: this.localEndY }
+            { x: this.localEndX, y: this.localEndY },
         ];
 
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        let minX = Infinity,
+            minY = Infinity,
+            maxX = -Infinity,
+            maxY = -Infinity;
         for (const p of points) {
             minX = Math.min(minX, p.x);
             minY = Math.min(minY, p.y);
@@ -235,7 +261,7 @@ export class CurveShape extends BaseShape {
 
     render(ctx: CanvasRenderingContext2D): void {
         ctx.save();
-        
+
         const m = this.getVMatrix();
         ctx.transform(m.a, m.b, m.c, m.d, m.e, m.f);
         ctx.scale(Math.sign(this.scaleX), Math.sign(this.scaleY));
@@ -245,9 +271,12 @@ export class CurveShape extends BaseShape {
         ctx.beginPath();
         ctx.moveTo(this.localStartX, this.localStartY);
         ctx.bezierCurveTo(
-            this.localCp1X, this.localCp1Y,
-            this.localCp2X, this.localCp2Y,
-            this.localEndX, this.localEndY
+            this.localCp1X,
+            this.localCp1Y,
+            this.localCp2X,
+            this.localCp2Y,
+            this.localEndX,
+            this.localEndY
         );
 
         ctx.strokeStyle = this.stroke;
@@ -271,10 +300,14 @@ export class CurveShapeWrapper extends CurveShape {
         super(
             id,
             position,
-            position.x, position.y,           
-            position.x + 100, position.y,     
-            position.x + 33, position.y,       
-            position.x + 66, position.y,       
+            position.x,
+            position.y,
+            position.x + 100,
+            position.y,
+            position.x + 33,
+            position.y,
+            position.x + 66,
+            position.y,
             '#000000',
             2
         );

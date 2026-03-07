@@ -242,7 +242,7 @@ export const useCanvasStore = defineStore('canvas', () => {
 
     function startCurveDrawing() {
         curveDrawing.value = {
-            points: []
+            points: [],
         };
     }
 
@@ -250,9 +250,9 @@ export const useCanvasStore = defineStore('canvas', () => {
         if (!curveDrawing.value) {
             return;
         }
-        
+
         curveDrawing.value.points.push({ x, y });
-        
+
         if (curveDrawing.value.points.length === 2) {
             createStraightCurve();
         }
@@ -264,23 +264,20 @@ export const useCanvasStore = defineStore('canvas', () => {
             const points = curveDrawing.value.points;
             const start = points[0];
             const end = points[1];
-            
+
             if (start && end) {
-                const curve = new CurveShapeWrapper(
-                    generateId(),
-                    start
-                );
-                
+                const curve = new CurveShapeWrapper(generateId(), start);
+
                 curve.endX = end.x;
                 curve.endY = end.y;
-                
+
                 const dx = end.x - start.x;
                 const dy = end.y - start.y;
                 curve.cp1X = start.x + dx / 3;
                 curve.cp1Y = start.y + dy / 3;
-                curve.cp2X = start.x + 2 * dx / 3;
-                curve.cp2Y = start.y + 2 * dy / 3;
-                
+                curve.cp2X = start.x + (2 * dx) / 3;
+                curve.cp2Y = start.y + (2 * dy) / 3;
+
                 shapes.value.push(curve);
                 curveDrawing.value = null;
             }
@@ -289,11 +286,11 @@ export const useCanvasStore = defineStore('canvas', () => {
 
     function updateCurve(updatedCurve: EditableCurve) {
         if (!updatedCurve.id) return;
-        
-        const index = shapes.value.findIndex(s => s.id === updatedCurve.id);
+
+        const index = shapes.value.findIndex((s) => s.id === updatedCurve.id);
         if (index !== -1) {
             const shape = shapes.value[index] as unknown as CurveShapeWrapper;
-            
+
             shape.startX = updatedCurve.startX;
             shape.startY = updatedCurve.startY;
             shape.endX = updatedCurve.endX;
@@ -303,7 +300,7 @@ export const useCanvasStore = defineStore('canvas', () => {
             shape.cp2X = updatedCurve.cp2X;
             shape.cp2Y = updatedCurve.cp2Y;
             shape.bendCount = updatedCurve.bendCount;
-            
+
             shapes.value = [...shapes.value];
         }
     }
@@ -328,9 +325,9 @@ export const useCanvasStore = defineStore('canvas', () => {
             originalEndX: shape.endX,
             originalEndY: shape.endY,
             offsetX: 0,
-            offsetY: 0
+            offsetY: 0,
         };
-        
+
         tempCurve.value = editableCurve;
         showCurveDialog.value = true;
     }
@@ -344,16 +341,16 @@ export const useCanvasStore = defineStore('canvas', () => {
     function confirmCurve() {
         if (tempCurve.value) {
             const c = tempCurve.value;
-            const curve = new CurveShapeWrapper(
-                generateId(),
-                { x: c.originalStartX!, y: c.originalStartY! }
-            );
-            
+            const curve = new CurveShapeWrapper(generateId(), {
+                x: c.originalStartX!,
+                y: c.originalStartY!,
+            });
+
             curve.cp1X = c.cp1X;
             curve.cp1Y = c.cp1Y;
             curve.cp2X = c.cp2X;
             curve.cp2Y = c.cp2Y;
-            
+
             shapes.value.push(curve);
             tempCurve.value = null;
         }

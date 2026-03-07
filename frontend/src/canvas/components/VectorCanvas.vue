@@ -5,6 +5,8 @@ import { useCanvasStore } from '@/stores/canvas';
 import { useCanvasRender } from '@/canvas/composables/useCanvasRender';
 import { useInteractions } from '@/canvas/composables/useInteractions';
 import CurveEditDialog from '@/gui/components/CurveEditDialog.vue';
+import type { EditableCurve } from '@/stores/canvas';
+import type { CurveShapeWrapper } from '@/canvas/types/curve/curve';
 
 const containerRef = ref<HTMLDivElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -57,18 +59,12 @@ const drawTemporaryPoints = () => {
         ctx.strokeStyle = 'white';
         ctx.lineWidth = 2;
         ctx.stroke();
-        
-        ctx.font = '12px Arial';
-        ctx.fillStyle = '#333';
-        ctx.fillText(
-            point.x + 10,
-            point.y - 10
-        );
     });
     
     if (points.length === 1) {
         ctx.font = '14px Arial';
         ctx.fillStyle = '#666';
+        ctx.fillText('Кликните для конечной точки', 20, 30);
     }
 };
 
@@ -101,13 +97,13 @@ const handleCanvasDoubleClick = (e: MouseEvent) => {
     for (const shape of canvasStore.shapes) {
         if (shape.type === 'curve' && shape.hitTest({ x, y })) {
             console.log('🔍 Double clicked on curve:', shape);
-            canvasStore.editCurve(shape);
+            canvasStore.editCurve(shape as CurveShapeWrapper);
             break;
         }
     }
 };
 
-const handleCurveUpdate = (updatedCurve: any) => {
+const handleCurveUpdate = (updatedCurve: EditableCurve) => {
     canvasStore.tempCurve = updatedCurve;
 };
 

@@ -11,7 +11,6 @@ import type { Point } from '@/canvas/types';
 import CurveEditDialog from '@/gui/components/CurveEditDialog.vue';
 import type { EditableCurve } from '@/stores/canvas';
 import type { CurveShapeWrapper } from '@/canvas/types/curve/curve';
->>>>>>> 20f7f18 (пофиксил)
 
 const containerRef = ref<HTMLDivElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -115,19 +114,13 @@ const drawTemporaryPoints = () => {
         ctx.strokeStyle = 'white';
         ctx.lineWidth = 2;
         ctx.stroke();
-        
-        ctx.font = '12px Arial';
-        ctx.fillStyle = '#333';
-        ctx.fillText(
-            point.x + 10,
-            point.y - 10
-        );
     });
 
     if (points.length === 1) {
 >>>>>>> a454dd7 (ops/bot: #25: format and lint)
         ctx.font = '14px Arial';
         ctx.fillStyle = '#666';
+        ctx.fillText('Кликните для конечной точки', 20, 30);
     }
 };
 
@@ -163,7 +156,6 @@ const handleCanvasDoubleClick = (e: MouseEvent) => {
 =======
             console.log('🔍 Double clicked on curve:', shape);
             canvasStore.editCurve(shape as CurveShapeWrapper);
->>>>>>> 20f7f18 (пофиксил)
             break;
         }
     }

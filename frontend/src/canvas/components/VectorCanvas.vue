@@ -4,8 +4,14 @@ import { storeToRefs } from 'pinia';
 import { useCanvasStore } from '@/stores/canvas';
 import { useCanvasRender } from '@/canvas/composables/useCanvasRender';
 import { useInteractions } from '@/canvas/composables/useInteractions';
+<<<<<<< HEAD
 import type { CurveShapeWrapper } from '@/canvas/types/curve/curve';
 import type { Point } from '@/canvas/types';
+=======
+import CurveEditDialog from '@/gui/components/CurveEditDialog.vue';
+import type { EditableCurve } from '@/stores/canvas';
+import type { CurveShapeWrapper } from '@/canvas/types/curve/curve';
+>>>>>>> 20f7f18 (пофиксил)
 
 const containerRef = ref<HTMLDivElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -115,7 +121,11 @@ const drawTemporaryPoints = () => {
 >>>>>>> a454dd7 (ops/bot: #25: format and lint)
         ctx.font = '14px Arial';
         ctx.fillStyle = '#666';
+<<<<<<< HEAD
         ctx.fillText('Режим редактирования: перетаскивайте точки, Enter для выхода', 20, 30);
+=======
+        ctx.fillText('Кликните для конечной точки', 20, 30);
+>>>>>>> 20f7f18 (пофиксил)
     }
 };
 
@@ -204,13 +214,19 @@ const handleCanvasDoubleClick = (e: MouseEvent) => {
 
     for (const shape of canvasStore.shapes) {
         if (shape.type === 'curve' && shape.hitTest({ x, y })) {
+<<<<<<< HEAD
             canvasStore.editCurve(shape as CurveShapeWrapper);
             e.stopPropagation();
+=======
+            console.log('🔍 Double clicked on curve:', shape);
+            canvasStore.editCurve(shape as CurveShapeWrapper);
+>>>>>>> 20f7f18 (пофиксил)
             break;
         }
     }
 };
 
+<<<<<<< HEAD
 const handleCanvasMouseDown = (e: MouseEvent) => {
     if (!canvasRef.value || !isEditingMode.value || !editingCurve.value) return;
     
@@ -228,6 +244,10 @@ const handleCanvasMouseDown = (e: MouseEvent) => {
         isDragging.value = true;
         initialPoints.value = editingCurve.value.getGlobalPoints().map(p => ({ ...p }));
     }
+=======
+const handleCurveUpdate = (updatedCurve: EditableCurve) => {
+    canvasStore.tempCurve = updatedCurve;
+>>>>>>> 20f7f18 (пофиксил)
 };
 
 const handleCanvasMouseMove = (e: MouseEvent) => {

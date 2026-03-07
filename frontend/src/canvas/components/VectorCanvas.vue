@@ -62,7 +62,6 @@ const drawTemporaryPoints = () => {
         ctx.font = '12px Arial';
         ctx.fillStyle = '#333';
         ctx.fillText(
-            index === 0 ? 'Старт' : 'Конец',
             point.x + 10,
             point.y - 10
         );
@@ -71,7 +70,6 @@ const drawTemporaryPoints = () => {
     if (points.length === 1) {
         ctx.font = '14px Arial';
         ctx.fillStyle = '#666';
-        ctx.fillText('Кликните для установки конца линии', points[0].x + 20, points[0].y - 20);
     }
 };
 

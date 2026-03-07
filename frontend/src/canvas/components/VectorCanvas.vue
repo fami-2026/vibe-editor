@@ -115,83 +115,26 @@ const drawTemporaryPoints = () => {
         ctx.strokeStyle = 'white';
         ctx.lineWidth = 2;
         ctx.stroke();
+        
+        ctx.font = '12px Arial';
+        ctx.fillStyle = '#333';
+        ctx.fillText(
+            point.x + 10,
+            point.y - 10
+        );
     });
 
     if (points.length === 1) {
 >>>>>>> a454dd7 (ops/bot: #25: format and lint)
         ctx.font = '14px Arial';
         ctx.fillStyle = '#666';
-<<<<<<< HEAD
-        ctx.fillText('Режим редактирования: перетаскивайте точки, Enter для выхода', 20, 30);
-=======
-        ctx.fillText('Кликните для конечной точки', 20, 30);
->>>>>>> 20f7f18 (пофиксил)
     }
 };
 
-function getSplinePoints(points: { x: number; y: number }[]): { x: number; y: number }[] {
-    if (points.length < 2) return points;
-    const result: { x: number; y: number }[] = [];
-    
-    for (let i = 0; i < points.length - 1; i++) {
-        const p0 = i > 0 ? points[i - 1] : points[i];
-        const p1 = points[i];
-        const p2 = points[i + 1];
-        const p3 = i < points.length - 2 ? points[i + 2] : points[i + 1];
-        
-        for (let s = 0; s <= 20; s++) {
-            const t = s / 20;
-            const x = 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t * t + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t * t * t);
-            const y = 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t * t + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t * t * t);
-            result.push({ x, y });
-        }
-    }
-    return result;
-}
-
-function findClosestPointIndex(x: number, y: number): number {
-    if (!editingCurve.value) return -1;
-    const points = editingCurve.value.getGlobalPoints();
-    const threshold = 15;
-    let minDist = Infinity;
-    let closestIndex = -1;
-    
-    points.forEach((point, index) => {
-        const dist = Math.hypot(point.x - x, point.y - y);
-        if (dist < minDist && dist < threshold) {
-            minDist = dist;
-            closestIndex = index;
-        }
-    });
-    return closestIndex;
-}
-
-function getPointOnCurveAtSegment(points: Point[], segmentIndex: number, t: number): Point {
-    const i = segmentIndex;
-    const p0 = i > 0 ? points[i - 1] : points[i];
-    const p1 = points[i];
-    const p2 = points[i + 1];
-    const p3 = i < points.length - 2 ? points[i + 2] : points[i + 1];
-    
-    const t2 = t * t;
-    const t3 = t2 * t;
-    
-    const x = 0.5 * (
-        (2 * p1.x) +
-        (-p0.x + p2.x) * t +
-        (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
-        (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3
-    );
-    
-    const y = 0.5 * (
-        (2 * p1.y) +
-        (-p0.y + p2.y) * t +
-        (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
-        (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3
-    );
-    
-    return { x, y };
-}
+const customDraw = () => {
+    draw();
+    drawTemporaryPoints();
+};
 
 const handleCanvasClick = (e: MouseEvent) => {
     if (!canvasRef.value) return;

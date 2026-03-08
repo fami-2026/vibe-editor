@@ -241,24 +241,32 @@
                         <span class="thumb" aria-hidden="true">
                             {{ shapeThumb(shape.type) }}
                         </span>
-                        
+
                         <!-- Режим редактирования -->
                         <input
                             v-if="editingLayerId === shape.id"
-                            :ref="(el) => setInputRef(el as HTMLInputElement | null, shape.id)"
+                            :ref="
+                                (el) =>
+                                    setInputRef(
+                                        el as HTMLInputElement | null,
+                                        shape.id
+                                    )
+                            "
                             class="layerNameInput"
                             type="text"
-                            :value="(shape as any).name || shapeLabel(shape.type)"
+                            :value="
+                                (shape as any).name || shapeLabel(shape.type)
+                            "
                             @click.stop
                             @dblclick.stop
                             @blur="onLayerNameBlur(shape.id, $event)"
                             @keyup.enter="onLayerNameEnter(shape.id, $event)"
                             @keyup.escape="cancelEditing"
                         />
-                        
+
                         <!-- Обычный режим -->
-                        <span 
-                            v-else 
+                        <span
+                            v-else
                             class="layerName"
                             @dblclick.stop="startEditing(shape.id)"
                         >
@@ -272,7 +280,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, nextTick, watch } from 'vue'; 
+import { computed, ref, nextTick, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useCanvasStore } from '@/stores/canvas';
 import type { Shape } from '@/canvas/types';
@@ -292,17 +300,20 @@ const setInputRef = (el: HTMLInputElement | null, shapeId: string) => {
 };
 
 // Отслеживаем новые фигуры
-watch(() => shapes.value.length, (newLength, oldLength) => {
-    if (newLength > oldLength) {
-        // Появилась новая фигура
-        const newShape = shapes.value[shapes.value.length - 1];
-        if (newShape) {
-            setTimeout(() => {
-                startEditing(newShape.id);
-            }, 100);
+watch(
+    () => shapes.value.length,
+    (newLength, oldLength) => {
+        if (newLength > oldLength) {
+            // Появилась новая фигура
+            const newShape = shapes.value[shapes.value.length - 1];
+            if (newShape) {
+                setTimeout(() => {
+                    startEditing(newShape.id);
+                }, 100);
+            }
         }
     }
-});
+);
 
 function getShapeNumberProp(key: string, fallback: number | '') {
     if (!selectedShape.value) return fallback;
@@ -442,7 +453,7 @@ function onLayerDrop(targetIndex: number, event: DragEvent) {
 // ============ МЕТОДЫ РЕДАКТИРОВАНИЯ (ТОЛЬКО ЗДЕСЬ, ОДИН РАЗ) ============
 function startEditing(shapeId: string) {
     editingLayerId.value = shapeId;
-    
+
     nextTick(() => {
         const input = inputRefs.value[shapeId];
         if (input) {
@@ -471,14 +482,14 @@ function saveLayerName(shapeId: string, newName: string) {
         cancelEditing();
         return;
     }
-    
-    const shape = shapes.value.find(s => s.id === shapeId);
+
+    const shape = shapes.value.find((s) => s.id === shapeId);
     if (shape) {
         canvasStore.updateShape(shapeId, {
-            name: newName.trim()
+            name: newName.trim(),
         } as Partial<Shape>);
     }
-    
+
     cancelEditing();
 }
 </script>

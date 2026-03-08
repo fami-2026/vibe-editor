@@ -245,10 +245,10 @@
                         <!-- Режим редактирования -->
                         <input
                             v-if="editingLayerId === shape.id"
-                            ref="editInputRefs"
+                            :ref="(el) => setInputRef(el as HTMLInputElement | null, shape.id)"
                             class="layerNameInput"
                             type="text"
-                            :value="shape.name || shapeLabel(shape.type)"
+                            :value="(shape as any).name || shapeLabel(shape.type)"
                             @click.stop
                             @dblclick.stop
                             @blur="onLayerNameBlur(shape.id, $event)"
@@ -262,7 +262,7 @@
                             class="layerName"
                             @dblclick.stop="startEditing(shape.id)"
                         >
-                            {{ shape.name || shapeLabel(shape.type) }}
+                            {{ (shape as any).name || shapeLabel(shape.type) }}
                         </span>
                     </div>
                 </li>
@@ -272,7 +272,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, nextTick } from 'vue';  // nextTick уже должен быть
+import { computed, ref, nextTick, watch } from 'vue'; 
 import { storeToRefs } from 'pinia';
 import { useCanvasStore } from '@/stores/canvas';
 import type { Shape } from '@/canvas/types';
@@ -282,7 +282,25 @@ const { selectedShape, shapes } = storeToRefs(canvasStore);
 
 // Состояние редактирования слоя
 const editingLayerId = ref<string | null>(null);
-const editInputRefs = ref<HTMLInputElement[]>([]);
+const inputRefs = ref<Record<string, HTMLInputElement>>({});
+
+// Метод для установки ref
+const setInputRef = (el: HTMLInputElement | null, shapeId: string) => {
+    if (el) {
+        inputRefs.value[shapeId] = el;
+    }
+};
+
+// Отслеживаем новые фигуры
+watch(() => shapes.value.length, (newLength, oldLength) => {
+    if (newLength > oldLength) {
+        // Появилась новая фигура
+        const newShape = shapes.value[shapes.value.length - 1];
+        setTimeout(() => {
+            startEditing(newShape.id);
+        }, 100);
+    }
+});
 
 function getShapeNumberProp(key: string, fallback: number | '') {
     if (!selectedShape.value) return fallback;
@@ -301,17 +319,11 @@ function getShapeStringProp(key: string, fallback: string) {
 }
 
 const shapeWidth = computed(() => getShapeNumberProp('width', ''));
-
 const shapeHeight = computed(() => getShapeNumberProp('height', ''));
-
 const fillColor = computed(() => getShapeStringProp('fill', '#000000'));
-
 const strokeColor = computed(() => getShapeStringProp('stroke', '#000000'));
-
 const fillOpacity = computed(() => getShapeNumberProp('fillOpacity', 1));
-
 const strokeOpacity = computed(() => getShapeNumberProp('strokeOpacity', 1));
-
 const strokeWidth = computed(() => getShapeNumberProp('strokeWidth', ''));
 
 // список слоёв — снизу вверх по очередности в массиве shapes
@@ -423,58 +435,14 @@ function onLayerDrop(targetIndex: number, event: DragEvent) {
     draggedLayerIndex.value = null;
     if (from === to) return;
     canvasStore.moveShape(from, to);
-
-    // Методы для редактирования имени слоя
-    function startEditing(shapeId: string) {
-        editingLayerId.value = shapeId;
-        
-        // Фокус на инпуте после рендера
-        nextTick(() => {
-            const input = editInputRefs.value[0];
-            if (input) {
-                input.focus();
-                input.select();
-            }
-        });
-    }
-
-    function cancelEditing() {
-        editingLayerId.value = null;
-    }
-
-    function onLayerNameBlur(shapeId: string, event: Event) {
-        const target = event.target as HTMLInputElement;
-        saveLayerName(shapeId, target.value);
-    }
-
-    function onLayerNameEnter(shapeId: string, event: Event) {
-        const target = event.target as HTMLInputElement;
-        saveLayerName(shapeId, target.value);
-    }
-
-    function saveLayerName(shapeId: string, newName: string) {
-        if (!newName.trim()) {
-            cancelEditing();
-            return;
-        }
-        
-        const shape = shapes.value.find(s => s.id === shapeId);
-        if (shape) {
-            canvasStore.updateShape(shapeId, {
-                name: newName.trim()
-            } as Partial<Shape>);
-        }
-        
-        cancelEditing();
-    }
 }
 
-// Методы для редактирования имени слоя (добавьте это перед последней }
+// ============ МЕТОДЫ РЕДАКТИРОВАНИЯ (ТОЛЬКО ЗДЕСЬ, ОДИН РАЗ) ============
 function startEditing(shapeId: string) {
     editingLayerId.value = shapeId;
     
     nextTick(() => {
-        const input = editInputRefs.value[0];
+        const input = inputRefs.value[shapeId];
         if (input) {
             input.focus();
             input.select();
@@ -504,7 +472,6 @@ function saveLayerName(shapeId: string, newName: string) {
     
     const shape = shapes.value.find(s => s.id === shapeId);
     if (shape) {
-        // Используем 'as any' чтобы обойти проверку типов временно
         canvasStore.updateShape(shapeId, {
             name: newName.trim()
         } as any);

@@ -30,7 +30,7 @@ export class LineShape extends BaseShape {
         stroke: string = '#2c3e50',
         strokeWidth: number = 2
     ) {
-        super(id, position);
+        super(id, position);;
         this.localEndPoint = {
             x: endPoint.x - position.x,
             y: endPoint.y - position.y,

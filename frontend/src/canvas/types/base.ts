@@ -24,8 +24,10 @@ export abstract class BaseShape {
     constructor(
         public id: string,
         public position: Point,
-        public name?: string  // имя слоя
+        
     ) {}
+
+    public name?: string  // имя слоя
 
     get x(): number {
         return this.position.x;

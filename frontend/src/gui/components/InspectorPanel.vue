@@ -233,19 +233,38 @@
                     @dragover.prevent
                     @drop="onLayerDrop(index, $event)"
                 >
-                    <button
+                    <div
                         class="layerItem"
-                        type="button"
                         :class="{ isActive: shape.id === selectedShape?.id }"
                         @click="onSelectLayer(shape.id)"
                     >
                         <span class="thumb" aria-hidden="true">
                             {{ shapeThumb(shape.type) }}
                         </span>
-                        <span class="layerName">
-                            {{ shapeLabel(shape.type) }}
+                        
+                        <!-- Режим редактирования -->
+                        <input
+                            v-if="editingLayerId === shape.id"
+                            ref="editInputRefs"
+                            class="layerNameInput"
+                            type="text"
+                            :value="shape.name || shapeLabel(shape.type)"
+                            @click.stop
+                            @dblclick.stop
+                            @blur="onLayerNameBlur(shape.id, $event)"
+                            @keyup.enter="onLayerNameEnter(shape.id, $event)"
+                            @keyup.escape="cancelEditing"
+                        />
+                        
+                        <!-- Обычный режим -->
+                        <span 
+                            v-else 
+                            class="layerName"
+                            @dblclick.stop="startEditing(shape.id)"
+                        >
+                            {{ shape.name || shapeLabel(shape.type) }}
                         </span>
-                    </button>
+                    </div>
                 </li>
             </ul>
         </section>
@@ -253,13 +272,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, nextTick } from 'vue';  // nextTick уже должен быть
 import { storeToRefs } from 'pinia';
 import { useCanvasStore } from '@/stores/canvas';
 import type { Shape } from '@/canvas/types';
 
 const canvasStore = useCanvasStore();
 const { selectedShape, shapes } = storeToRefs(canvasStore);
+
+// Состояние редактирования слоя
+const editingLayerId = ref<string | null>(null);
+const editInputRefs = ref<HTMLInputElement[]>([]);
 
 function getShapeNumberProp(key: string, fallback: number | '') {
     if (!selectedShape.value) return fallback;
@@ -400,6 +423,94 @@ function onLayerDrop(targetIndex: number, event: DragEvent) {
     draggedLayerIndex.value = null;
     if (from === to) return;
     canvasStore.moveShape(from, to);
+
+    // Методы для редактирования имени слоя
+    function startEditing(shapeId: string) {
+        editingLayerId.value = shapeId;
+        
+        // Фокус на инпуте после рендера
+        nextTick(() => {
+            const input = editInputRefs.value[0];
+            if (input) {
+                input.focus();
+                input.select();
+            }
+        });
+    }
+
+    function cancelEditing() {
+        editingLayerId.value = null;
+    }
+
+    function onLayerNameBlur(shapeId: string, event: Event) {
+        const target = event.target as HTMLInputElement;
+        saveLayerName(shapeId, target.value);
+    }
+
+    function onLayerNameEnter(shapeId: string, event: Event) {
+        const target = event.target as HTMLInputElement;
+        saveLayerName(shapeId, target.value);
+    }
+
+    function saveLayerName(shapeId: string, newName: string) {
+        if (!newName.trim()) {
+            cancelEditing();
+            return;
+        }
+        
+        const shape = shapes.value.find(s => s.id === shapeId);
+        if (shape) {
+            canvasStore.updateShape(shapeId, {
+                name: newName.trim()
+            } as Partial<Shape>);
+        }
+        
+        cancelEditing();
+    }
+}
+
+// Методы для редактирования имени слоя (добавьте это перед последней }
+function startEditing(shapeId: string) {
+    editingLayerId.value = shapeId;
+    
+    nextTick(() => {
+        const input = editInputRefs.value[0];
+        if (input) {
+            input.focus();
+            input.select();
+        }
+    });
+}
+
+function cancelEditing() {
+    editingLayerId.value = null;
+}
+
+function onLayerNameBlur(shapeId: string, event: Event) {
+    const target = event.target as HTMLInputElement;
+    saveLayerName(shapeId, target.value);
+}
+
+function onLayerNameEnter(shapeId: string, event: Event) {
+    const target = event.target as HTMLInputElement;
+    saveLayerName(shapeId, target.value);
+}
+
+function saveLayerName(shapeId: string, newName: string) {
+    if (!newName.trim()) {
+        cancelEditing();
+        return;
+    }
+    
+    const shape = shapes.value.find(s => s.id === shapeId);
+    if (shape) {
+        // Используем 'as any' чтобы обойти проверку типов временно
+        canvasStore.updateShape(shapeId, {
+            name: newName.trim()
+        } as any);
+    }
+    
+    cancelEditing();
 }
 </script>
 
@@ -626,5 +737,25 @@ function onLayerDrop(targetIndex: number, event: DragEvent) {
     opacity: 0.5;
     cursor: not-allowed;
     background: #f9fafb;
+}
+
+/* Стили для инпута редактирования имени */
+.layerNameInput {
+    font-size: 12px;
+    font-weight: 500;
+    color: #111827;
+    background: #ffffff;
+    border: 1px solid #2563eb;
+    border-radius: 4px;
+    padding: 2px 4px;
+    margin: -2px 0;
+    width: 100%;
+    outline: none;
+    font-family: inherit;
+}
+
+.layerNameInput:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
 </style>

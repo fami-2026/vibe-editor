@@ -178,13 +178,13 @@ export const useCanvasStore = defineStore('canvas', () => {
                 1,
                 2
             );
-            (shape as any).name = defaultName; 
+            (shape as Shape).name = defaultName; 
             shapes.value.push(shape);
             return shape;
         }
 
         shape = shapeRegistry.create(type, generateId(), pos);
-        (shape as any).name = defaultName; 
+        (shape as Shape).name = defaultName; 
         shapes.value.push(shape);
         return shape;
     }

@@ -476,7 +476,7 @@ function saveLayerName(shapeId: string, newName: string) {
     if (shape) {
         canvasStore.updateShape(shapeId, {
             name: newName.trim()
-        } as any);
+        } as Partial<Shape>);
     }
     
     cancelEditing();

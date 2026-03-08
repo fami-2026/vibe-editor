@@ -296,9 +296,11 @@ watch(() => shapes.value.length, (newLength, oldLength) => {
     if (newLength > oldLength) {
         // Появилась новая фигура
         const newShape = shapes.value[shapes.value.length - 1];
-        setTimeout(() => {
-            startEditing(newShape.id);
-        }, 100);
+        if (newShape) {
+            setTimeout(() => {
+                startEditing(newShape.id);
+            }, 100);
+        }
     }
 });
 

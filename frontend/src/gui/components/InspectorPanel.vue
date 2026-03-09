@@ -497,7 +497,7 @@ function moveLayerDown() {
 }
 // ============ МЕТОДЫ РЕДАКТИРОВАНИЯ (ТОЛЬКО ЗДЕСЬ, ОДИН РАЗ) ============
 function startEditing(shapeId: string) {
-console.log("DOUBLE CLICK WORKS", shapeId);
+    console.log('DOUBLE CLICK WORKS', shapeId);
     editingLayerId.value = shapeId;
 
     nextTick(() => {
@@ -538,7 +538,6 @@ function saveLayerName(shapeId: string, newName: string) {
 
     cancelEditing();
 }
-
 </script>
 
 <style scoped>

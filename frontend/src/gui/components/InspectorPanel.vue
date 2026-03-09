@@ -255,19 +255,46 @@
                     @dragover.prevent
                     @drop="onLayerDrop(index, $event)"
                 >
-                    <button
+                    <div
                         class="layerItem"
-                        type="button"
                         :class="{ isActive: shape.id === selectedShape?.id }"
                         @click="onSelectLayer(shape.id)"
                     >
                         <span class="thumb" aria-hidden="true">
                             {{ shapeThumb(shape.type) }}
                         </span>
-                        <span class="layerName">
-                            {{ shapeLabel(shape.type) }}
+
+                        <!-- Режим редактирования -->
+                        <input
+                            v-if="editingLayerId === shape.id"
+                            :ref="
+                                (el) =>
+                                    setInputRef(
+                                        el as HTMLInputElement | null,
+                                        shape.id
+                                    )
+                            "
+                            class="layerNameInput"
+                            type="text"
+                            :value="
+                                (shape as any).name || shapeLabel(shape.type)
+                            "
+                            @click.stop
+                            @dblclick.stop
+                            @blur="onLayerNameBlur(shape.id, $event)"
+                            @keyup.enter="onLayerNameEnter(shape.id, $event)"
+                            @keyup.escape="cancelEditing"
+                        />
+
+                        <!-- Обычный режим -->
+                        <span
+                            v-else
+                            class="layerName"
+                            @dblclick.stop="startEditing(shape.id)"
+                        >
+                            {{ (shape as any).name || shapeLabel(shape.type) }}
                         </span>
-                    </button>
+                    </div>
                 </li>
             </ul>
         </section>
@@ -275,13 +302,40 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, nextTick, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useCanvasStore } from '@/stores/canvas';
 import type { Shape } from '@/canvas/types';
 
 const canvasStore = useCanvasStore();
 const { selectedShape, shapes } = storeToRefs(canvasStore);
+
+// Состояние редактирования слоя
+const editingLayerId = ref<string | null>(null);
+const inputRefs = ref<Record<string, HTMLInputElement>>({});
+
+// Метод для установки ref
+const setInputRef = (el: HTMLInputElement | null, shapeId: string) => {
+    if (el) {
+        inputRefs.value[shapeId] = el;
+    }
+};
+
+// Отслеживаем новые фигуры
+watch(
+    () => shapes.value.length,
+    (newLength, oldLength) => {
+        if (newLength > oldLength) {
+            // Появилась новая фигура
+            const newShape = shapes.value[shapes.value.length - 1];
+            if (newShape) {
+                setTimeout(() => {
+                    startEditing(newShape.id);
+                }, 100);
+            }
+        }
+    }
+);
 
 function getShapeNumberProp(key: string, fallback: number | '') {
     if (!selectedShape.value) return fallback;
@@ -300,17 +354,11 @@ function getShapeStringProp(key: string, fallback: string) {
 }
 
 const shapeWidth = computed(() => getShapeNumberProp('width', ''));
-
 const shapeHeight = computed(() => getShapeNumberProp('height', ''));
-
 const fillColor = computed(() => getShapeStringProp('fill', '#000000'));
-
 const strokeColor = computed(() => getShapeStringProp('stroke', '#000000'));
-
 const fillOpacity = computed(() => getShapeNumberProp('fillOpacity', 1));
-
 const strokeOpacity = computed(() => getShapeNumberProp('strokeOpacity', 1));
-
 const strokeWidth = computed(() => getShapeNumberProp('strokeWidth', ''));
 
 // список слоёв — снизу вверх по очередности в массиве shapes
@@ -446,6 +494,48 @@ function moveLayerUp() {
 function moveLayerDown() {
     if (!canMoveDown.value) return;
     canvasStore.moveShape(selectedIndex.value, selectedIndex.value + 1);
+
+// ============ МЕТОДЫ РЕДАКТИРОВАНИЯ (ТОЛЬКО ЗДЕСЬ, ОДИН РАЗ) ============
+function startEditing(shapeId: string) {
+    editingLayerId.value = shapeId;
+
+    nextTick(() => {
+        const input = inputRefs.value[shapeId];
+        if (input) {
+            input.focus();
+            input.select();
+        }
+    });
+}
+
+function cancelEditing() {
+    editingLayerId.value = null;
+}
+
+function onLayerNameBlur(shapeId: string, event: Event) {
+    const target = event.target as HTMLInputElement;
+    saveLayerName(shapeId, target.value);
+}
+
+function onLayerNameEnter(shapeId: string, event: Event) {
+    const target = event.target as HTMLInputElement;
+    saveLayerName(shapeId, target.value);
+}
+
+function saveLayerName(shapeId: string, newName: string) {
+    if (!newName.trim()) {
+        cancelEditing();
+        return;
+    }
+
+    const shape = shapes.value.find((s) => s.id === shapeId);
+    if (shape) {
+        canvasStore.updateShape(shapeId, {
+            name: newName.trim(),
+        } as Partial<Shape>);
+    }
+
+    cancelEditing();
 }
 </script>
 
@@ -704,5 +794,23 @@ function moveLayerDown() {
 .layerItem.isActive {
     background: rgba(37, 99, 235, 0.12);
     border-color: rgba(37, 99, 235, 0.3);
+/* Стили для инпута редактирования имени */
+.layerNameInput {
+    font-size: 12px;
+    font-weight: 500;
+    color: #111827;
+    background: #ffffff;
+    border: 1px solid #2563eb;
+    border-radius: 4px;
+    padding: 2px 4px;
+    margin: -2px 0;
+    width: 100%;
+    outline: none;
+    font-family: inherit;
+}
+
+.layerNameInput:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
 </style>

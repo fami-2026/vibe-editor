@@ -425,7 +425,7 @@ function onLayerDrop(targetIndex: number, event: DragEvent) {
 }
 const selectedIndex = computed(() => {
     if (!selectedShape.value) return -1;
-    return shapes.value.findIndex(s => s.id === selectedShape.value?.id);
+    return shapes.value.findIndex((s) => s.id === selectedShape.value?.id);
 });
 
 const canMoveUp = computed(() => {

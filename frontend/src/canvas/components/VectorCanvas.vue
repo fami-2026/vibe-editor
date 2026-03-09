@@ -38,7 +38,8 @@ const updateCanvasSize = () => {
 };
 
 const drawTemporaryPoints = () => {
-    if (!canvasRef.value) return;
+    if (!canvasRef.value || !curveDrawing.value) return;
+    
     const ctx = canvasRef.value.getContext('2d');
     if (!ctx) return;
     

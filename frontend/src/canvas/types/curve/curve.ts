@@ -1,3 +1,6 @@
+/**
+ * Кривая
+ */
 import type { BoundingBox, Point } from '../base';
 import { BaseShape } from '../base';
 import { shapeRegistry } from '../registry';
@@ -211,7 +214,7 @@ export class CurveShape extends BaseShape {
 
     render(ctx: CanvasRenderingContext2D): void {
         ctx.save();
-        
+
         const m = this.getVMatrix();
         ctx.transform(m.a, m.b, m.c, m.d, m.e, m.f);
         

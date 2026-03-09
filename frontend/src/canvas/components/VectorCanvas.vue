@@ -5,12 +5,16 @@ import { useCanvasStore } from '@/stores/canvas';
 import { useCanvasRender } from '@/canvas/composables/useCanvasRender';
 import { useInteractions } from '@/canvas/composables/useInteractions';
 <<<<<<< HEAD
+<<<<<<< HEAD
 import type { CurveShapeWrapper } from '@/canvas/types/curve/curve';
 import type { Point } from '@/canvas/types';
 =======
 import CurveEditDialog from '@/gui/components/CurveEditDialog.vue';
 import type { EditableCurve } from '@/stores/canvas';
+=======
+>>>>>>> ddd8286 (правка)
 import type { CurveShapeWrapper } from '@/canvas/types/curve/curve';
+import type { Point } from '@/canvas/types';
 
 const containerRef = ref<HTMLDivElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -44,6 +48,9 @@ const updateCanvasSize = () => {
 
 const drawTemporaryPoints = () => {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> ddd8286 (правка)
     if (!canvasRef.value) return;
     const ctx = canvasRef.value.getContext('2d');
     if (!ctx) return;
@@ -59,6 +66,7 @@ const drawTemporaryPoints = () => {
             ctx.lineWidth = 2;
             ctx.stroke();
         });
+<<<<<<< HEAD
     }
     
     if (isEditingMode.value && editingCurve.value) {
@@ -118,16 +126,150 @@ const drawTemporaryPoints = () => {
 
     if (points.length === 1) {
 >>>>>>> a454dd7 (ops/bot: #25: format and lint)
+=======
+        if (points.length === 1) {
+            ctx.font = '14px Arial';
+            ctx.fillStyle = '#666';
+            ctx.fillText('Кликните для конечной точки', 20, 30);
+        }
+    }
+    
+    if (isEditingMode.value && editingCurve.value) {
+        const points = editingCurve.value.getGlobalPoints();
+        
+        ctx.beginPath();
+        const splinePoints = getSplinePoints(points);
+        ctx.moveTo(splinePoints[0].x, splinePoints[0].y);
+        for (let i = 1; i < splinePoints.length; i++) {
+            ctx.lineTo(splinePoints[i].x, splinePoints[i].y);
+        }
+        ctx.strokeStyle = '#2196f3';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+        
+        points.forEach((point, index) => {
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 8, 0, 2 * Math.PI);
+            ctx.fillStyle = (index === 0 || index === points.length - 1) ? '#4CAF50' : '#FF9800';
+            ctx.fill();
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            if (isDragging.value && draggedPointIndex.value === index) {
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 12, 0, 2 * Math.PI);
+                ctx.strokeStyle = '#f44336';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        });
+        
+>>>>>>> ddd8286 (правка)
         ctx.font = '14px Arial';
         ctx.fillStyle = '#666';
-        ctx.fillText('Кликните для конечной точки', 20, 30);
+        ctx.fillText('Режим редактирования: перетаскивайте точки, Enter для выхода', 20, 30);
     }
 };
 
-const customDraw = () => {
-    draw();
-    drawTemporaryPoints();
-};
+function getSplinePoints(points: { x: number; y: number }[]): { x: number; y: number }[] {
+    if (points.length < 2) return points;
+    const result: { x: number; y: number }[] = [];
+    
+    for (let i = 0; i < points.length - 1; i++) {
+        const p0 = i > 0 ? points[i - 1] : points[i];
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        const p3 = i < points.length - 2 ? points[i + 2] : points[i + 1];
+        
+        for (let s = 0; s <= 20; s++) {
+            const t = s / 20;
+            const x = 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t * t + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t * t * t);
+            const y = 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t * t + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t * t * t);
+            result.push({ x, y });
+        }
+    }
+    return result;
+}
+
+function findClosestPointIndex(x: number, y: number): number {
+    if (!editingCurve.value) return -1;
+    const points = editingCurve.value.getGlobalPoints();
+    const threshold = 15;
+    let minDist = Infinity;
+    let closestIndex = -1;
+    
+    points.forEach((point, index) => {
+        const dist = Math.hypot(point.x - x, point.y - y);
+        if (dist < minDist && dist < threshold) {
+            minDist = dist;
+            closestIndex = index;
+        }
+    });
+    return closestIndex;
+}
+
+function getPointOnCurve(points: Point[], t: number, segment: number): Point {
+    const i = segment;
+    const p0 = i > 0 ? points[i - 1] : points[i];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = i < points.length - 2 ? points[i + 2] : points[i + 1];
+    
+    const t2 = t * t;
+    const t3 = t2 * t;
+    
+    const x = 0.5 * (
+        (2 * p1.x) +
+        (-p0.x + p2.x) * t +
+        (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
+        (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3
+    );
+    
+    const y = 0.5 * (
+        (2 * p1.y) +
+        (-p0.y + p2.y) * t +
+        (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
+        (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3
+    );
+    
+    return { x, y };
+}
+
+function splitSegment(index: number): number {
+    if (!editingCurve.value) return index;
+    
+    const points = editingCurve.value.getGlobalPoints();
+    
+    if (index > 0 && index < points.length - 1) {
+        const prevPoint = points[index - 1];
+        const currentPoint = points[index];
+        const nextPoint = points[index + 1];
+        
+        // Точки ровно посередине отрезков
+        const point1 = {
+            x: (prevPoint.x + currentPoint.x) / 2,
+            y: (prevPoint.y + currentPoint.y) / 2
+        };
+        
+        const point2 = {
+            x: (currentPoint.x + nextPoint.x) / 2,
+            y: (currentPoint.y + nextPoint.y) / 2
+        };
+        
+        const newPoints = [
+            ...points.slice(0, index),
+            point1,
+            currentPoint,
+            point2,
+            ...points.slice(index + 1)
+        ];
+        
+        editingCurve.value.setGlobalPoints(newPoints);
+        return index + 1;
+    }
+    return index;
+}
 
 const handleCanvasClick = (e: MouseEvent) => {
     if (!canvasRef.value) return;
@@ -151,16 +293,21 @@ const handleCanvasDoubleClick = (e: MouseEvent) => {
     for (const shape of canvasStore.shapes) {
         if (shape.type === 'curve' && shape.hitTest({ x, y })) {
 <<<<<<< HEAD
+<<<<<<< HEAD
             canvasStore.editCurve(shape as CurveShapeWrapper);
             e.stopPropagation();
 =======
             console.log('🔍 Double clicked on curve:', shape);
+=======
+>>>>>>> ddd8286 (правка)
             canvasStore.editCurve(shape as CurveShapeWrapper);
+            e.stopPropagation();
             break;
         }
     }
 };
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 const handleCanvasMouseDown = (e: MouseEvent) => {
     if (!canvasRef.value || !isEditingMode.value || !editingCurve.value) return;
@@ -184,6 +331,8 @@ const handleCurveUpdate = (updatedCurve: EditableCurve) => {
     canvasStore.tempCurve = updatedCurve;
 >>>>>>> 20f7f18 (пофиксил)
 };
+=======
+>>>>>>> ddd8286 (правка)
 const handleCanvasMouseDown = (e: MouseEvent) => {
     if (!canvasRef.value || !isEditingMode.value || !editingCurve.value) return;
     
@@ -229,6 +378,7 @@ const handleCanvasMouseMove = (e: MouseEvent) => {
     customDraw();
 };
 
+<<<<<<< HEAD
 const handleCanvasMouseMove = (e: MouseEvent) => {
     if (!isDragging.value || draggedPointIndex.value === null || !editingCurve.value || !lastMousePos.value) return;
     
@@ -255,6 +405,8 @@ const handleCanvasMouseMove = (e: MouseEvent) => {
     customDraw();
 };
 
+=======
+>>>>>>> ddd8286 (правка)
 const handleCanvasMouseUp = (e: MouseEvent) => {
     if (isDragging.value && editingCurve.value && draggedPointIndex.value !== null) {
         e.preventDefault();
@@ -268,6 +420,7 @@ const handleCanvasMouseUp = (e: MouseEvent) => {
         if (initialPoint && currentPoint) {
             const moved = Math.hypot(currentPoint.x - initialPoint.x, currentPoint.y - initialPoint.y) > 1;
             if (moved && draggedIndex > 0 && draggedIndex < points.length - 1) {
+<<<<<<< HEAD
                 const point1 = getPointOnCurveAtSegment(points, draggedIndex - 1, 0.5);
                 const point2 = getPointOnCurveAtSegment(points, draggedIndex, 0.5);
                 
@@ -281,6 +434,9 @@ const handleCanvasMouseUp = (e: MouseEvent) => {
                 
                 editingCurve.value.setGlobalPoints(newPoints);
                 draggedPointIndex.value = draggedIndex + 1;
+=======
+                draggedPointIndex.value = splitSegment(draggedIndex);
+>>>>>>> ddd8286 (правка)
             }
         }
         canvasStore.pushHistoryForCurve();
@@ -387,6 +543,7 @@ onUnmounted(() => {
     resizeObserver?.disconnect();
     detachListeners?.();
 <<<<<<< HEAD
+<<<<<<< HEAD
     isEditInteraction.value = false;
 });
 
@@ -407,11 +564,18 @@ watch(
     () => requestAnimationFrame(customDraw),
     { deep: true }
 );
+=======
+    isEditInteraction.value = false;
+});
+
+watch([shapes, selectedId, curveDrawing, isEditingMode], () => requestAnimationFrame(customDraw), { deep: true });
+>>>>>>> ddd8286 (правка)
 </script>
 
 <template>
     <div ref="containerRef" class="canvas-wrapper">
         <canvas ref="canvasRef" class="main-canvas"></canvas>
+<<<<<<< HEAD
         
         <!-- Подсказки поверх канваса -->
         <div class="hints">
@@ -425,6 +589,8 @@ watch(
                 <p>✏️ Режим редактирования: перетаскивайте точки, Enter для выхода</p>
             </div>
         </div>
+=======
+>>>>>>> ddd8286 (правка)
     </div>
 </template>
 

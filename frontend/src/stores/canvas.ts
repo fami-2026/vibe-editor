@@ -147,8 +147,36 @@ export const useCanvasStore = defineStore('canvas', () => {
     ) {
         pushHistory();
 
+        // Генерация уникального имени
+        const existingShapesOfType = shapes.value.filter(
+            (s) => s.type === type
+        );
+        const typeName =
+            type === 'rect'
+                ? 'Прямоугольник'
+                : type === 'circle'
+                  ? 'Круг'
+                  : type === 'line'
+                    ? 'Линия'
+                    : type === 'polygon'
+                      ? 'Многоугольник'
+                      : type === 'star'
+                        ? 'Звезда'
+                        : type === 'triangle'
+                          ? 'Треугольник'
+                          : type === 'arrow'
+                            ? 'Стрелка'
+                            : type === 'hexagon'
+                              ? 'Шестиугольник'
+                              : type;
+
+        const number = existingShapesOfType.length + 1;
+        const defaultName = `${typeName} ${number}`;
+
+        let shape: Shape;
+
         if (type === 'polygon' && params?.sides) {
-            const shape = new PolygonShape(
+            shape = new PolygonShape(
                 generateId(),
                 pos,
                 params.sides,
@@ -161,11 +189,13 @@ export const useCanvasStore = defineStore('canvas', () => {
                 1,
                 2
             );
+            (shape as Shape).name = defaultName;
             shapes.value.push(shape);
             return shape;
         }
 
-        const shape = shapeRegistry.create(type, generateId(), pos);
+        shape = shapeRegistry.create(type, generateId(), pos);
+        (shape as Shape).name = defaultName;
         shapes.value.push(shape);
         return shape;
     }

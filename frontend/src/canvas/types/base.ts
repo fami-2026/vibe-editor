@@ -26,6 +26,8 @@ export abstract class BaseShape {
         public position: Point
     ) {}
 
+    public name?: string; // имя слоя
+
     get x(): number {
         return this.position.x;
     }

@@ -494,9 +494,10 @@ function moveLayerUp() {
 function moveLayerDown() {
     if (!canMoveDown.value) return;
     canvasStore.moveShape(selectedIndex.value, selectedIndex.value + 1);
-
+}
 // ============ МЕТОДЫ РЕДАКТИРОВАНИЯ (ТОЛЬКО ЗДЕСЬ, ОДИН РАЗ) ============
 function startEditing(shapeId: string) {
+console.log("DOUBLE CLICK WORKS", shapeId);
     editingLayerId.value = shapeId;
 
     nextTick(() => {
@@ -537,6 +538,7 @@ function saveLayerName(shapeId: string, newName: string) {
 
     cancelEditing();
 }
+
 </script>
 
 <style scoped>
@@ -794,6 +796,8 @@ function saveLayerName(shapeId: string, newName: string) {
 .layerItem.isActive {
     background: rgba(37, 99, 235, 0.12);
     border-color: rgba(37, 99, 235, 0.3);
+}
+
 /* Стили для инпута редактирования имени */
 .layerNameInput {
     font-size: 12px;

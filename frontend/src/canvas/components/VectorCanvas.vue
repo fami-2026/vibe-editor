@@ -249,6 +249,50 @@ const handleCurveUpdate = (updatedCurve: EditableCurve) => {
     canvasStore.tempCurve = updatedCurve;
 >>>>>>> 20f7f18 (пофиксил)
 };
+const handleCanvasMouseDown = (e: MouseEvent) => {
+    if (!canvasRef.value || !isEditingMode.value || !editingCurve.value) return;
+    
+    const rect = canvasRef.value.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const pointIndex = findClosestPointIndex(x, y);
+    if (pointIndex !== -1) {
+        e.preventDefault();
+        e.stopPropagation();
+        isEditInteraction.value = true;
+        draggedPointIndex.value = pointIndex;
+        lastMousePos.value = { x, y };
+        isDragging.value = true;
+        initialPoints.value = editingCurve.value.getGlobalPoints().map(p => ({ ...p }));
+    }
+};
+
+const handleCanvasMouseMove = (e: MouseEvent) => {
+    if (!isDragging.value || draggedPointIndex.value === null || !editingCurve.value || !lastMousePos.value) return;
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const rect = canvasRef.value!.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const deltaX = x - lastMousePos.value.x;
+    const deltaY = y - lastMousePos.value.y;
+    const pointIndex = draggedPointIndex.value;
+    
+    if (pointIndex >= 0 && pointIndex < initialPoints.value.length) {
+        const newPoints = initialPoints.value.map((p, idx) => {
+            if (idx === pointIndex) {
+                return { x: p.x + deltaX, y: p.y + deltaY };
+            }
+            return { ...p };
+        });
+        editingCurve.value.setGlobalPoints(newPoints);
+    }
+    customDraw();
+};
 
 const handleCanvasMouseMove = (e: MouseEvent) => {
     if (!isDragging.value || draggedPointIndex.value === null || !editingCurve.value || !lastMousePos.value) return;

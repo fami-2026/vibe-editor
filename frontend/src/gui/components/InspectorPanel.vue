@@ -222,7 +222,29 @@
 
         <!-- Слои -->
         <section class="group">
-            <h3 class="groupTitle">Слои</h3>
+            <div class="layersHeader">
+                <h3 class="groupTitle">Слои</h3>
+                <div class="layerControls">
+                    <button
+                        class="iconBtnSmall"
+                        @click="moveLayerUp"
+                        :disabled="!selectedShape || !canMoveUp"
+                        :title="'Переместить вверх'"
+                        aria-label="Переместить слой вверх"
+                    >
+                        <span aria-hidden="true">↑</span>
+                    </button>
+                    <button
+                        class="iconBtnSmall"
+                        @click="moveLayerDown"
+                        :disabled="!selectedShape || !canMoveDown"
+                        :title="'Переместить вниз'"
+                        aria-label="Переместить слой вниз"
+                    >
+                        <span aria-hidden="true">↓</span>
+                    </button>
+                </div>
+            </div>
 
             <ul class="layersList" role="listbox" aria-label="Layers">
                 <li
@@ -400,6 +422,30 @@ function onLayerDrop(targetIndex: number, event: DragEvent) {
     draggedLayerIndex.value = null;
     if (from === to) return;
     canvasStore.moveShape(from, to);
+}
+const selectedIndex = computed(() => {
+    if (!selectedShape.value) return -1;
+    return shapes.value.findIndex(s => s.id === selectedShape.value?.id);
+});
+
+const canMoveUp = computed(() => {
+    if (!selectedShape.value) return false;
+    return selectedIndex.value > 0;
+});
+
+const canMoveDown = computed(() => {
+    if (!selectedShape.value) return false;
+    return selectedIndex.value < shapes.value.length - 1;
+});
+
+function moveLayerUp() {
+    if (!canMoveUp.value) return;
+    canvasStore.moveShape(selectedIndex.value, selectedIndex.value - 1);
+}
+
+function moveLayerDown() {
+    if (!canMoveDown.value) return;
+    canvasStore.moveShape(selectedIndex.value, selectedIndex.value + 1);
 }
 </script>
 
@@ -626,5 +672,37 @@ function onLayerDrop(targetIndex: number, event: DragEvent) {
     opacity: 0.5;
     cursor: not-allowed;
     background: #f9fafb;
+}
+
+.layersHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding-right: 4px;
+}
+
+.layerControls {
+    display: flex;
+    gap: 4px;
+}
+
+.layerItem:hover {
+    background: #f3f4f6;
+}
+
+.layerItem:focus {
+    outline: none;
+}
+
+.layerItem:focus-visible {
+    outline: 2px solid rgba(37, 99, 235, 0.55);
+    outline-offset: 2px;
+    border-radius: 10px;
+}
+
+.layerItem.isActive {
+    background: rgba(37, 99, 235, 0.12);
+    border-color: rgba(37, 99, 235, 0.3);
 }
 </style>

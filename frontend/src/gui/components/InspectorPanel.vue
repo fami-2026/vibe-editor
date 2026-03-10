@@ -136,7 +136,9 @@
                         <button
                             class="smallToggleBtn"
                             type="button"
-                            :class="{ isActive: isNoColorActive('fillOpacity') }"
+                            :class="{
+                                isActive: isNoColorActive('fillOpacity'),
+                            }"
                             :disabled="!selectedShape"
                             @click="setNoColor('fillOpacity')"
                         >
@@ -185,7 +187,9 @@
                         <button
                             class="smallToggleBtn"
                             type="button"
-                            :class="{ isActive: isNoColorActive('strokeOpacity') }"
+                            :class="{
+                                isActive: isNoColorActive('strokeOpacity'),
+                            }"
                             :disabled="!selectedShape"
                             @click="setNoColor('strokeOpacity')"
                         >

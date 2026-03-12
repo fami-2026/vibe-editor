@@ -177,6 +177,9 @@ export const useCanvasStore = defineStore('canvas', () => {
                 'transparent', 1, '#000000', 1, 2
             );
             (shape as Shape).name = defaultName;
+                generateId(), pos, params.sides, 100, 100, 0,
+                'transparent', 1, '#000000', 1, 2
+            );
             shapes.value.push(shape);
             return shape;
         }

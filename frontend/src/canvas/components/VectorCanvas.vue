@@ -147,18 +147,40 @@ function getSplinePoints(points: Point[]): Point[] {
 
         for (let s = 0; s <= 20; s++) {
             const t = s / 20;
-            const x = 0.5 * (
-                (2 * (p1?.x || 0)) + 
-                (-(p0?.x || 0) + (p2?.x || 0)) * t + 
-                (2 * (p0?.x || 0) - 5 * (p1?.x || 0) + 4 * (p2?.x || 0) - (p3?.x || 0)) * t * t + 
-                (-(p0?.x || 0) + 3 * (p1?.x || 0) - 3 * (p2?.x || 0) + (p3?.x || 0)) * t * t * t
-            );
-            const y = 0.5 * (
-                (2 * (p1?.y || 0)) + 
-                (-(p0?.y || 0) + (p2?.y || 0)) * t + 
-                (2 * (p0?.y || 0) - 5 * (p1?.y || 0) + 4 * (p2?.y || 0) - (p3?.y || 0)) * t * t + 
-                (-(p0?.y || 0) + 3 * (p1?.y || 0) - 3 * (p2?.y || 0) + (p3?.y || 0)) * t * t * t
-            );
+            const x =
+                0.5 *
+                (2 * (p1?.x || 0) +
+                    (-(p0?.x || 0) + (p2?.x || 0)) * t +
+                    (2 * (p0?.x || 0) -
+                        5 * (p1?.x || 0) +
+                        4 * (p2?.x || 0) -
+                        (p3?.x || 0)) *
+                        t *
+                        t +
+                    (-(p0?.x || 0) +
+                        3 * (p1?.x || 0) -
+                        3 * (p2?.x || 0) +
+                        (p3?.x || 0)) *
+                        t *
+                        t *
+                        t);
+            const y =
+                0.5 *
+                (2 * (p1?.y || 0) +
+                    (-(p0?.y || 0) + (p2?.y || 0)) * t +
+                    (2 * (p0?.y || 0) -
+                        5 * (p1?.y || 0) +
+                        4 * (p2?.y || 0) -
+                        (p3?.y || 0)) *
+                        t *
+                        t +
+                    (-(p0?.y || 0) +
+                        3 * (p1?.y || 0) -
+                        3 * (p2?.y || 0) +
+                        (p3?.y || 0)) *
+                        t *
+                        t *
+                        t);
             result.push({ x, y });
         }
     }
@@ -167,7 +189,9 @@ function getSplinePoints(points: Point[]): Point[] {
 
 function findClosestPointIndex(x: number, y: number): number {
     if (!editingCurve.value) return -1;
-    const points = editingCurve.value.getGlobalPoints().filter(p => p !== undefined && p !== null);
+    const points = editingCurve.value
+        .getGlobalPoints()
+        .filter((p) => p !== undefined && p !== null);
     const threshold = 15;
     let minDist = Infinity;
     let closestIndex = -1;
@@ -183,44 +207,69 @@ function findClosestPointIndex(x: number, y: number): number {
     return closestIndex;
 }
 
-function catmullRomPoint(p0: Point, p1: Point, p2: Point, p3: Point, t: number): Point {
+function catmullRomPoint(
+    p0: Point,
+    p1: Point,
+    p2: Point,
+    p3: Point,
+    t: number
+): Point {
     const t2 = t * t;
     const t3 = t2 * t;
-    
-    const x = 0.5 * (
-        (2 * (p1?.x || 0)) +
-        (-(p0?.x || 0) + (p2?.x || 0)) * t +
-        (2 * (p0?.x || 0) - 5 * (p1?.x || 0) + 4 * (p2?.x || 0) - (p3?.x || 0)) * t2 +
-        (-(p0?.x || 0) + 3 * (p1?.x || 0) - 3 * (p2?.x || 0) + (p3?.x || 0)) * t3
-    );
-    
-    const y = 0.5 * (
-        (2 * (p1?.y || 0)) +
-        (-(p0?.y || 0) + (p2?.y || 0)) * t +
-        (2 * (p0?.y || 0) - 5 * (p1?.y || 0) + 4 * (p2?.y || 0) - (p3?.y || 0)) * t2 +
-        (-(p0?.y || 0) + 3 * (p1?.y || 0) - 3 * (p2?.y || 0) + (p3?.y || 0)) * t3
-    );
-    
+
+    const x =
+        0.5 *
+        (2 * (p1?.x || 0) +
+            (-(p0?.x || 0) + (p2?.x || 0)) * t +
+            (2 * (p0?.x || 0) -
+                5 * (p1?.x || 0) +
+                4 * (p2?.x || 0) -
+                (p3?.x || 0)) *
+                t2 +
+            (-(p0?.x || 0) +
+                3 * (p1?.x || 0) -
+                3 * (p2?.x || 0) +
+                (p3?.x || 0)) *
+                t3);
+
+    const y =
+        0.5 *
+        (2 * (p1?.y || 0) +
+            (-(p0?.y || 0) + (p2?.y || 0)) * t +
+            (2 * (p0?.y || 0) -
+                5 * (p1?.y || 0) +
+                4 * (p2?.y || 0) -
+                (p3?.y || 0)) *
+                t2 +
+            (-(p0?.y || 0) +
+                3 * (p1?.y || 0) -
+                3 * (p2?.y || 0) +
+                (p3?.y || 0)) *
+                t3);
+
     return { x, y };
 }
 
 function splitSegment(index: number): number {
     if (!editingCurve.value) return index;
-    
-    const points = editingCurve.value.getGlobalPoints().filter((p): p is Point => p !== undefined && p !== null);
-    
+
+    const points = editingCurve.value
+        .getGlobalPoints()
+        .filter((p): p is Point => p !== undefined && p !== null);
+
     if (index > 0 && index < points.length - 1) {
         // Убеждаемся, что все нужные точки существуют
         const pPrev = points[index - 1];
         const pCurr = points[index];
         const pNext = points[index + 1];
-        const pNextNext = index + 2 < points.length ? points[index + 2] : points[index + 1];
-        
+        const pNextNext =
+            index + 2 < points.length ? points[index + 2] : points[index + 1];
+
         if (!pPrev || !pCurr || !pNext || !pNextNext) return index;
-        
+
         const point1 = catmullRomPoint(pPrev, pPrev, pCurr, pNext, 0.5);
         const point2 = catmullRomPoint(pPrev, pCurr, pNext, pNextNext, 0.5);
-        
+
         const newPoints = [
             ...points.slice(0, index),
             point1,
@@ -278,8 +327,10 @@ const handleCanvasMouseDown = (e: MouseEvent) => {
         draggedPointIndex.value = pointIndex;
         lastMousePos.value = { x, y };
         isDragging.value = true;
-        const globalPoints = editingCurve.value.getGlobalPoints().filter(p => p !== undefined && p !== null);
-        initialPoints.value = globalPoints.map(p => ({ ...p }));
+        const globalPoints = editingCurve.value
+            .getGlobalPoints()
+            .filter((p) => p !== undefined && p !== null);
+        initialPoints.value = globalPoints.map((p) => ({ ...p }));
     }
 };
 
@@ -324,8 +375,10 @@ const handleCanvasMouseUp = (e: MouseEvent) => {
     ) {
         e.preventDefault();
         e.stopPropagation();
-        
-        const points = editingCurve.value.getGlobalPoints().filter(p => p !== undefined && p !== null);
+
+        const points = editingCurve.value
+            .getGlobalPoints()
+            .filter((p) => p !== undefined && p !== null);
         const draggedIndex = draggedPointIndex.value;
         const initialPoint = initialPoints.value[draggedIndex];
         const currentPoint = points[draggedIndex];

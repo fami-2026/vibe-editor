@@ -23,9 +23,12 @@ abstract class BaseCurveShape extends BaseShape {
     abstract render(ctx: CanvasRenderingContext2D): void;
     abstract move(delta: Point): void;
     abstract setSize(width: number, height: number): void;
+<<<<<<< HEAD
     getPointsCount(): number {
         return 0;
     }
+=======
+>>>>>>> 9bc4801 (все вроде работает)
 }
 
 export class CurveShape extends BaseCurveShape {
@@ -158,6 +161,7 @@ export class CurveShape extends BaseCurveShape {
         this._height = Math.max(...ys) - Math.min(...ys);
     }
 
+<<<<<<< HEAD
 private getCurvePoints(): Point[] {
     if (this.anchorPoints.length < 2) return [];
     
@@ -165,6 +169,53 @@ private getCurvePoints(): Point[] {
     const steps = 30;
     
     for (let i = 0; i < this.anchorPoints.length - 1; i++) {
+=======
+    private getCurvePoints(): Point[] {
+        if (this.anchorPoints.length < 2) return [];
+        
+        const result: Point[] = [];
+        const steps = 30;
+        
+        for (let i = 0; i < this.anchorPoints.length - 1; i++) {
+            const p0 = i > 0 ? this.anchorPoints[i - 1] : this.anchorPoints[i];
+            const p1 = this.anchorPoints[i];
+            const p2 = this.anchorPoints[i + 1];
+            const p3 = i < this.anchorPoints.length - 2 ? this.anchorPoints[i + 2] : this.anchorPoints[i + 1];
+            
+            for (let s = 0; s <= steps; s++) {
+                const t = s / steps;
+                
+                const x = 0.5 * (
+                    (2 * p1.x) + 
+                    (-p0.x + p2.x) * t + 
+                    (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t * t + 
+                    (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t * t * t
+                );
+                
+                const y = 0.5 * (
+                    (2 * p1.y) + 
+                    (-p0.y + p2.y) * t + 
+                    (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t * t + 
+                    (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t * t * t
+                );
+                
+                if (s > 0 || i === 0) {
+                    result.push({ x, y });
+                }
+            }
+        }
+        
+        return result;
+    }
+
+    getPointOnCurveAtSegment(segmentIndex: number, t: number): Point {
+        if (segmentIndex < 0 || segmentIndex >= this.anchorPoints.length - 1) {
+            return { x: 0, y: 0 };
+        }
+        
+        const i = segmentIndex;
+        const p0 = i > 0 ? this.anchorPoints[i - 1] : this.anchorPoints[i];
+>>>>>>> 9bc4801 (все вроде работает)
         const p1 = this.anchorPoints[i];
         const p2 = this.anchorPoints[i + 1];
         
@@ -271,6 +322,10 @@ getPointsCount(): number {
         if (this.anchorPoints.length > 2) {
             this.anchorPoints.splice(index, 1);
             
+<<<<<<< HEAD
+=======
+            // Обновляем размеры
+>>>>>>> 9bc4801 (все вроде работает)
             const xs = this.anchorPoints.map(p => p.x);
             const ys = this.anchorPoints.map(p => p.y);
             this._width = Math.max(...xs) - Math.min(...xs);

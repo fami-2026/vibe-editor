@@ -28,6 +28,7 @@
             </div>
 
             <!-- Размер: 2 поля (для всех фигур, кроме line) -->
+            <!-- Размер: 2 поля (для всех фигур, кроме line) -->
             <div v-if="selectedShape?.type !== 'line'" class="fieldBlock">
                 <div class="fieldBlock">
                     <div class="fieldLabel">Размер</div>
@@ -443,8 +444,8 @@ const shapeHeight = computed(() => {
 
 const curvePointsCount = computed(() => {
     if (!selectedShape.value || selectedShape.value.type !== 'curve') return 0;
-    const shape = selectedShape.value as CurveShape;
-    return shape.getPointsCount?.() || 0;
+    const shape = selectedShape.value as any;
+    return shape.anchorPoints?.length || 0;
 });
 
 const fillColor = computed(() => getShapeStringProp('fill', '#000000'));
@@ -534,6 +535,17 @@ function onOpacityChange(key: OpacityFieldKey, event: Event) {
     } as Partial<Shape>);
 }
 
+function shapeThumb(type: string) {
+    if (type === 'rect') return '▭';
+    if (type === 'circle') return '◯';
+    if (type === 'line') return '/';
+    if (type === 'triangle') return '△';
+    if (type === 'polygon') return '⬔';
+    if (type === 'star') return '☆';
+    if (type === 'hexagon') return '⬡';
+    if (type === 'arrow') return '→';
+    if (type === 'curve') return '〰️';
+    return '?';
 // ============ МИНИАТЮРЫ СЛОЁВ (SVG) ============
 
 function thumbFill(shape: Shape): string {

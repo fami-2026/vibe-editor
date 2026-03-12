@@ -173,6 +173,7 @@ export class CurveShape extends BaseCurveShape {
         const steps = 30;
 
         for (let i = 0; i < this.anchorPoints.length - 1; i++) {
+            const p0 = this.anchorPoints[Math.max(0, i - 1)] || this.anchorPoints[i];
             const p1 = this.anchorPoints[i];
             const p2 = this.anchorPoints[i + 1];
 

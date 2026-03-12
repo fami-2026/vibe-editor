@@ -30,7 +30,7 @@ type ToolId =
     | 'star'
     | 'hexagon'
     | 'arrow'
-    | 'curve'      // Добавляем новый тип
+    | 'curve' // Добавляем новый тип
     | 'eraser'
     | 'text';
 

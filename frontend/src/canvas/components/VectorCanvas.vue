@@ -38,33 +38,53 @@ const updateCanvasSize = () => {
 };
 
 const drawTemporaryPoints = () => {
-    if (!canvasRef.value || !curveDrawing.value) return;
-
+    if (!canvasRef.value) return;
     const ctx = canvasRef.value.getContext('2d');
     if (!ctx) return;
-
-    const points = curveDrawing.value.points;
-
-    points.forEach((point, index) => {
+    
+    if (curveDrawing.value) {
+        const points = curveDrawing.value.points;
+        points.forEach((point, index) => {
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 6, 0, 2 * Math.PI);
+            ctx.fillStyle = index === 0 ? '#4CAF50' : '#F44336';
+            ctx.fill();
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        });
+    }
+    
+    if (isEditingMode.value && editingCurve.value) {
+        const points = editingCurve.value.getGlobalPoints();
+        
         ctx.beginPath();
-        ctx.arc(point.x, point.y, 6, 0, 2 * Math.PI);
-
-        if (index === 0) {
-            ctx.fillStyle = '#4CAF50';
-        } else {
-            ctx.fillStyle = '#F44336';
+        const splinePoints = getSplinePoints(points);
+        ctx.moveTo(splinePoints[0].x, splinePoints[0].y);
+        for (let i = 1; i < splinePoints.length; i++) {
+            ctx.lineTo(splinePoints[i].x, splinePoints[i].y);
         }
-
-        ctx.fill();
-        ctx.strokeStyle = 'white';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#2196f3';
+        ctx.lineWidth = 4;
         ctx.stroke();
-    });
-
-    if (points.length === 1) {
-        ctx.font = '14px Arial';
-        ctx.fillStyle = '#666';
-        ctx.fillText('Режим редактирования: перетаскивайте точки, Enter для выхода', 20, 30);
+        
+        points.forEach((point, index) => {
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 8, 0, 2 * Math.PI);
+            ctx.fillStyle = (index === 0 || index === points.length - 1) ? '#4CAF50' : '#FF9800';
+            ctx.fill();
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            if (isDragging.value && draggedPointIndex.value === index) {
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 12, 0, 2 * Math.PI);
+                ctx.strokeStyle = '#f44336';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        });
     }
 };
 
@@ -105,8 +125,8 @@ function findClosestPointIndex(x: number, y: number): number {
     return closestIndex;
 }
 
-function getPointOnCurve(points: Point[], t: number, segment: number): Point {
-    const i = segment;
+function getPointOnCurveAtSegment(points: Point[], segmentIndex: number, t: number): Point {
+    const i = segmentIndex;
     const p0 = i > 0 ? points[i - 1] : points[i];
     const p1 = points[i];
     const p2 = points[i + 1];
@@ -130,41 +150,6 @@ function getPointOnCurve(points: Point[], t: number, segment: number): Point {
     );
     
     return { x, y };
-}
-
-function splitSegment(index: number): number {
-    if (!editingCurve.value) return index;
-    
-    const points = editingCurve.value.getGlobalPoints();
-    
-    if (index > 0 && index < points.length - 1) {
-        const prevPoint = points[index - 1];
-        const currentPoint = points[index];
-        const nextPoint = points[index + 1];
-        
-        // Точки ровно посередине отрезков
-        const point1 = {
-            x: (prevPoint.x + currentPoint.x) / 2,
-            y: (prevPoint.y + currentPoint.y) / 2
-        };
-        
-        const point2 = {
-            x: (currentPoint.x + nextPoint.x) / 2,
-            y: (currentPoint.y + nextPoint.y) / 2
-        };
-        
-        const newPoints = [
-            ...points.slice(0, index),
-            point1,
-            currentPoint,
-            point2,
-            ...points.slice(index + 1)
-        ];
-        
-        editingCurve.value.setGlobalPoints(newPoints);
-        return index + 1;
-    }
-    return index;
 }
 
 const handleCanvasClick = (e: MouseEvent) => {
@@ -253,7 +238,19 @@ const handleCanvasMouseUp = (e: MouseEvent) => {
         if (initialPoint && currentPoint) {
             const moved = Math.hypot(currentPoint.x - initialPoint.x, currentPoint.y - initialPoint.y) > 1;
             if (moved && draggedIndex > 0 && draggedIndex < points.length - 1) {
-                draggedPointIndex.value = splitSegment(draggedIndex);
+                const point1 = getPointOnCurveAtSegment(points, draggedIndex - 1, 0.5);
+                const point2 = getPointOnCurveAtSegment(points, draggedIndex, 0.5);
+                
+                const newPoints = [
+                    ...points.slice(0, draggedIndex),
+                    point1,
+                    points[draggedIndex],
+                    point2,
+                    ...points.slice(draggedIndex + 1)
+                ];
+                
+                editingCurve.value.setGlobalPoints(newPoints);
+                draggedPointIndex.value = draggedIndex + 1;
             }
         }
         canvasStore.pushHistoryForCurve();
@@ -379,6 +376,19 @@ watch(
 <template>
     <div ref="containerRef" class="canvas-wrapper">
         <canvas ref="canvasRef" class="main-canvas"></canvas>
+        
+        <!-- Подсказки поверх канваса -->
+        <div class="hints">
+            <div v-if="curveDrawing" class="hint">
+                <p v-if="curveDrawing.points.length === 1">
+                    👆 Кликните для конечной точки
+                </p>
+            </div>
+            
+            <div v-if="isEditingMode" class="hint editing-hint">
+                <p>✏️ Режим редактирования: перетаскивайте точки, Enter для выхода</p>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -397,10 +407,6 @@ watch(
     height: 100%;
     cursor: default;
 }
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 446843b (н)
 .hints {
     position: absolute;
     top: 20px;
@@ -430,10 +436,4 @@ watch(
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
 }
-<<<<<<< HEAD
-</style>
-=======
-</style>
->>>>>>> a454dd7 (ops/bot: #25: format and lint)
-=======
 </style>

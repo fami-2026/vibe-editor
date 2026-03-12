@@ -15,6 +15,7 @@ import {
     ArrowUp,
     Pentagon,
     Spline, // Импортируем иконку для кривой
+    Spline, // Импортируем иконку для кривой
 } from 'lucide-vue-next';
 import { useToolsStore, type ToolType } from '@/stores/tools';
 import { useCanvasStore } from '@/stores/canvas';
@@ -30,7 +31,7 @@ type ToolId =
     | 'star'
     | 'hexagon'
     | 'arrow'
-    | 'curve' // Добавляем новый тип
+    | 'curve'      // Добавляем новый тип
     | 'eraser'
     | 'text';
 
@@ -105,6 +106,10 @@ function handleClick(tool: Tool) {
             toolsStore.setActiveTool('curve');
             canvasStore.startCurveDrawing(); // Запускаем режим рисования кривой
             break;
+        case 'curve':
+            toolsStore.setActiveTool('curve');
+            canvasStore.startCurveDrawing(); // Запускаем режим рисования кривой
+            break;
         case 'eraser':
             toolsStore.setActiveTool('eraser');
             break;
@@ -134,6 +139,7 @@ const activeId = computed<ToolId>(() => {
     if (active === 'star') return 'star';
     if (active === 'hexagon') return 'hexagon';
     if (active === 'arrow') return 'arrow';
+    if (active === 'curve') return 'curve'; // Добавляем обработку для кривой
     if (active === 'curve') return 'curve'; // Добавляем обработку для кривой
     if (active === 'eraser') return 'eraser';
     return 'cursor';

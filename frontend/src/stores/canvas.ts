@@ -1,9 +1,11 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { Shape, Point } from '@/canvas/types';
+import type { Shape, Point } from '@/canvas/types';
 import { shapeRegistry } from '@/canvas/types';
 import { generateId } from '@/canvas/utils/math';
 import { PolygonShape } from '@/canvas/types/polygon/polygon';
+import { CurveShapeWrapper } from '@/canvas/types/curve/curve';
 import { CurveShapeWrapper } from '@/canvas/types/curve/curve';
 
 interface ShapeParams extends Record<string, unknown> {
@@ -20,7 +22,7 @@ interface ShapeParams extends Record<string, unknown> {
 }
 
 interface CurveDrawingState {
-    points: Point[]; // Точки [start, end]
+    points: Point[];  // Точки [start, end]
 }
 
 export interface EditableCurve {
@@ -50,6 +52,11 @@ type SceneSnapshot = {
 export const useCanvasStore = defineStore('canvas', () => {
     const shapes = ref<Shape[]>([]);
     const selectedId = ref<string | null>(null);
+
+    // Новые состояния для кривой
+    const curveDrawing = ref<CurveDrawingState | null>(null);
+    const editingCurve = ref<CurveShapeWrapper | null>(null);
+    const isEditingMode = ref(false);
 
     // Новые состояния для кривой
     const curveDrawing = ref<CurveDrawingState | null>(null);
@@ -273,33 +280,30 @@ export const useCanvasStore = defineStore('canvas', () => {
     }
 
     function createStraightCurve() {
-        if (!curveDrawing.value || curveDrawing.value.points.length !== 2)
-            return;
-
+        if (!curveDrawing.value || curveDrawing.value.points.length !== 2) return;
+        
         const points = curveDrawing.value.points;
         const start = points[0];
         const end = points[1];
-
+        
         if (start && end) {
             // Создаем кривую с тремя точками (начало, середина, конец)
             const midPoint = {
                 x: (start.x + end.x) / 2,
-                y: (start.y + end.y) / 2,
+                y: (start.y + end.y) / 2
             };
-
+            
             // Используем CurveShapeWrapper для создания
             const curve = new CurveShapeWrapper(generateId(), start);
-
+            
             // Устанавливаем точки
             const globalPoints = [start, midPoint, end];
             curve.setGlobalPoints(globalPoints);
-
+            
             // Добавляем имя
-            const existingCurves = shapes.value.filter(
-                (s) => s.type === 'curve'
-            );
+            const existingCurves = shapes.value.filter(s => s.type === 'curve');
             (curve as Shape).name = `Кривая ${existingCurves.length + 1}`;
-
+            
             shapes.value.push(curve);
             curveDrawing.value = null;
         }
@@ -342,6 +346,17 @@ export const useCanvasStore = defineStore('canvas', () => {
         canRedo,
         startInteraction,
         endInteraction,
+        // Новые экспорты для кривой
+        curveDrawing,
+        editingCurve,
+        isEditingMode,
+        startCurveDrawing,
+        handleCanvasClick,
+        createStraightCurve,
+        editCurve,
+        exitEditMode,
+        pushHistoryForCurve,
+        cancelCurveDrawing,
         // Новые экспорты для кривой
         curveDrawing,
         editingCurve,

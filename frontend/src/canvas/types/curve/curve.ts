@@ -162,10 +162,12 @@ export class CurveShape extends BaseCurveShape {
         const steps = 30;
         
         for (let i = 0; i < this.anchorPoints.length - 1; i++) {
-            const p0 = i > 0 ? this.anchorPoints[i - 1] : this.anchorPoints[i];
+            const p0 = this.anchorPoints[Math.max(0, i - 1)] || this.anchorPoints[i];
             const p1 = this.anchorPoints[i];
             const p2 = this.anchorPoints[i + 1];
-            const p3 = i < this.anchorPoints.length - 2 ? this.anchorPoints[i + 2] : this.anchorPoints[i + 1];
+            const p3 = this.anchorPoints[Math.min(this.anchorPoints.length - 1, i + 2)] || this.anchorPoints[i + 1];
+            
+            if (!p1 || !p2) continue;
             
             for (let s = 0; s <= steps; s++) {
                 const t = s / steps;
@@ -173,15 +175,15 @@ export class CurveShape extends BaseCurveShape {
                 const x = 0.5 * (
                     (2 * p1.x) + 
                     (-p0.x + p2.x) * t + 
-                    (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t * t + 
-                    (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t * t * t
+                    (2 * p0.x - 5 * p1.x + 4 * p2.x - (p3?.x || p2.x)) * t * t + 
+                    (-p0.x + 3 * p1.x - 3 * p2.x + (p3?.x || p2.x)) * t * t * t
                 );
                 
                 const y = 0.5 * (
                     (2 * p1.y) + 
                     (-p0.y + p2.y) * t + 
-                    (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t * t + 
-                    (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t * t * t
+                    (2 * p0.y - 5 * p1.y + 4 * p2.y - (p3?.y || p2.y)) * t * t + 
+                    (-p0.y + 3 * p1.y - 3 * p2.y + (p3?.y || p2.y)) * t * t * t
                 );
                 
                 if (s > 0 || i === 0) {
@@ -204,21 +206,23 @@ export class CurveShape extends BaseCurveShape {
         const p2 = this.anchorPoints[i + 1];
         const p3 = i < this.anchorPoints.length - 2 ? this.anchorPoints[i + 2] : this.anchorPoints[i + 1];
         
+        if (!p1 || !p2) return { x: 0, y: 0 };
+        
         const t2 = t * t;
         const t3 = t2 * t;
         
         const x = 0.5 * (
             (2 * p1.x) +
             (-p0.x + p2.x) * t +
-            (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
-            (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3
+            (2 * p0.x - 5 * p1.x + 4 * p2.x - (p3?.x || p2.x)) * t2 +
+            (-p0.x + 3 * p1.x - 3 * p2.x + (p3?.x || p2.x)) * t3
         );
         
         const y = 0.5 * (
             (2 * p1.y) +
             (-p0.y + p2.y) * t +
-            (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
-            (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3
+            (2 * p0.y - 5 * p1.y + 4 * p2.y - (p3?.y || p2.y)) * t2 +
+            (-p0.y + 3 * p1.y - 3 * p2.y + (p3?.y || p2.y)) * t3
         );
         
         return this.toGlobalPoint({ x, y });
@@ -248,7 +252,6 @@ export class CurveShape extends BaseCurveShape {
         if (this.anchorPoints.length > 2) {
             this.anchorPoints.splice(index, 1);
             
-            // Обновляем размеры
             const xs = this.anchorPoints.map(p => p.x);
             const ys = this.anchorPoints.map(p => p.y);
             this._width = Math.max(...xs) - Math.min(...xs);
@@ -269,10 +272,12 @@ export class CurveShape extends BaseCurveShape {
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         
         for (const p of this.anchorPoints) {
-            minX = Math.min(minX, p.x);
-            minY = Math.min(minY, p.y);
-            maxX = Math.max(maxX, p.x);
-            maxY = Math.max(maxY, p.y);
+            if (p) {
+                minX = Math.min(minX, p.x);
+                minY = Math.min(minY, p.y);
+                maxX = Math.max(maxX, p.x);
+                maxY = Math.max(maxY, p.y);
+            }
         }
 
         return { minX, minY, maxX, maxY };
@@ -315,6 +320,8 @@ export class CurveShape extends BaseCurveShape {
             const p1 = curvePoints[i];
             const p2 = curvePoints[i + 1];
             
+            if (!p1 || !p2) continue;
+            
             const dist = this.distanceToSegment(localPoint, p1, p2);
             if (dist <= padding) return true;
         }
@@ -323,6 +330,8 @@ export class CurveShape extends BaseCurveShape {
     }
 
     private distanceToSegment(p: Point, a: Point, b: Point): number {
+        if (!a || !b) return Infinity;
+        
         const ab = { x: b.x - a.x, y: b.y - a.y };
         const ap = { x: p.x - a.x, y: p.y - a.y };
         
@@ -347,10 +356,18 @@ export class CurveShape extends BaseCurveShape {
         
         if (curvePoints.length > 1) {
             ctx.beginPath();
-            ctx.moveTo(curvePoints[0].x, curvePoints[0].y);
+            const firstPoint = curvePoints[0];
+            if (!firstPoint) {
+                ctx.restore();
+                return;
+            }
+            ctx.moveTo(firstPoint.x, firstPoint.y);
             
             for (let i = 1; i < curvePoints.length; i++) {
-                ctx.lineTo(curvePoints[i].x, curvePoints[i].y);
+                const point = curvePoints[i];
+                if (point) {
+                    ctx.lineTo(point.x, point.y);
+                }
             }
             
             ctx.strokeStyle = this.stroke;

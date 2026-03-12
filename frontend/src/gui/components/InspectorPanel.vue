@@ -55,33 +55,10 @@
             </div>
         </section>
 
-        <!-- Масштаб -->
+        <!-- Отражение -->
         <div class="fieldBlock">
-            <div class="fieldLabel">Масштаб</div>
-            <div class="grid2">
-                <input
-                    class="fieldInput"
-                    type="number"
-                    aria-label="Scale"
-                    :value="selectedShape?.scaleX ?? ''"
-                    :disabled="!selectedShape"
-                    min="-10"
-                    max="10"
-                    @input="onNumberChange('scaleX', $event)"
-                />
-                <input
-                    class="fieldInput"
-                    type="number"
-                    aria-label="Height"
-                    :value="selectedShape?.scaleY ?? ''"
-                    :disabled="!selectedShape"
-                    min="-10"
-                    max="10"
-                    @input="onNumberChange('scaleY', $event)"
-                />
-            </div>
             <div class="fieldLabel">Отражение</div>
-            <div class="grid2" style="margin-top: 4px">
+            <div class="grid2 ">
                 <button
                     class="iconBtnSmall"
                     :disabled="!selectedShape"

@@ -177,10 +177,12 @@ private getCurvePoints(): Point[] {
         const steps = 30;
         
         for (let i = 0; i < this.anchorPoints.length - 1; i++) {
-            const p0 = i > 0 ? this.anchorPoints[i - 1] : this.anchorPoints[i];
+            const p0 = this.anchorPoints[Math.max(0, i - 1)] || this.anchorPoints[i];
             const p1 = this.anchorPoints[i];
             const p2 = this.anchorPoints[i + 1];
-            const p3 = i < this.anchorPoints.length - 2 ? this.anchorPoints[i + 2] : this.anchorPoints[i + 1];
+            const p3 = this.anchorPoints[Math.min(this.anchorPoints.length - 1, i + 2)] || this.anchorPoints[i + 1];
+            
+            if (!p1 || !p2) continue;
             
             for (let s = 0; s <= steps; s++) {
                 const t = s / steps;
@@ -188,15 +190,15 @@ private getCurvePoints(): Point[] {
                 const x = 0.5 * (
                     (2 * p1.x) + 
                     (-p0.x + p2.x) * t + 
-                    (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t * t + 
-                    (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t * t * t
+                    (2 * p0.x - 5 * p1.x + 4 * p2.x - (p3?.x || p2.x)) * t * t + 
+                    (-p0.x + 3 * p1.x - 3 * p2.x + (p3?.x || p2.x)) * t * t * t
                 );
                 
                 const y = 0.5 * (
                     (2 * p1.y) + 
                     (-p0.y + p2.y) * t + 
-                    (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t * t + 
-                    (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t * t * t
+                    (2 * p0.y - 5 * p1.y + 4 * p2.y - (p3?.y || p2.y)) * t * t + 
+                    (-p0.y + 3 * p1.y - 3 * p2.y + (p3?.y || p2.y)) * t * t * t
                 );
                 
                 if (s > 0 || i === 0) {
@@ -219,6 +221,7 @@ private getCurvePoints(): Point[] {
         const p1 = this.anchorPoints[i];
         const p2 = this.anchorPoints[i + 1];
         
+<<<<<<< HEAD
         if (!p1 || !p2) continue;
         
         // Безопасное получение p0 и p3 с явной проверкой
@@ -229,6 +232,26 @@ private getCurvePoints(): Point[] {
         const p3: Point = i < this.anchorPoints.length - 2 && this.anchorPoints[i + 2]
             ? this.anchorPoints[i + 2]!
             : p2;
+=======
+        if (!p1 || !p2) return { x: 0, y: 0 };
+        
+        const t2 = t * t;
+        const t3 = t2 * t;
+        
+        const x = 0.5 * (
+            (2 * p1.x) +
+            (-p0.x + p2.x) * t +
+            (2 * p0.x - 5 * p1.x + 4 * p2.x - (p3?.x || p2.x)) * t2 +
+            (-p0.x + 3 * p1.x - 3 * p2.x + (p3?.x || p2.x)) * t3
+        );
+        
+        const y = 0.5 * (
+            (2 * p1.y) +
+            (-p0.y + p2.y) * t +
+            (2 * p0.y - 5 * p1.y + 4 * p2.y - (p3?.y || p2.y)) * t2 +
+            (-p0.y + 3 * p1.y - 3 * p2.y + (p3?.y || p2.y)) * t3
+        );
+>>>>>>> 67e8942 (1)
         
         for (let s = 0; s <= steps; s++) {
             const t = s / steps;
@@ -323,9 +346,12 @@ getPointsCount(): number {
             this.anchorPoints.splice(index, 1);
             
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
             // Обновляем размеры
 >>>>>>> 9bc4801 (все вроде работает)
+=======
+>>>>>>> 67e8942 (1)
             const xs = this.anchorPoints.map(p => p.x);
             const ys = this.anchorPoints.map(p => p.y);
             this._width = Math.max(...xs) - Math.min(...xs);

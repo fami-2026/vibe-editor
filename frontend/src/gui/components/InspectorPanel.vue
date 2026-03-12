@@ -413,7 +413,7 @@ import { computed, ref, nextTick, onMounted, onUnmounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useCanvasStore } from '@/stores/canvas';
 import type { Shape } from '@/canvas/types';
-
+import type { CurveShape } from '@/canvas/types/curve/curve';
 const canvasStore = useCanvasStore();
 const { selectedShape, shapes } = storeToRefs(canvasStore);
 
@@ -482,8 +482,8 @@ const shapeHeight = computed(() => {
 
 const curvePointsCount = computed(() => {
     if (!selectedShape.value || selectedShape.value.type !== 'curve') return 0;
-    const shape = selectedShape.value as any;
-    return shape.anchorPoints?.length || 0;
+    const shape = selectedShape.value as CurveShape;
+    return shape.getPointsCount?.() || 0;
 });
 
 const fillColor = computed(() => getShapeStringProp('fill', '#000000'));

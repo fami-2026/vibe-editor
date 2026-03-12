@@ -4,7 +4,6 @@ import { storeToRefs } from 'pinia';
 import { useCanvasStore } from '@/stores/canvas';
 import { useCanvasRender } from '@/canvas/composables/useCanvasRender';
 import { useInteractions } from '@/canvas/composables/useInteractions';
-// Дополнительные импорты для кривой
 import type { CurveShapeWrapper } from '@/canvas/types/curve/curve';
 import type { Point } from '@/canvas/types';
 
@@ -21,7 +20,6 @@ const { attachListeners } = useInteractions(canvasRef, shapes, zoom);
 let resizeObserver: ResizeObserver | null = null;
 let detachListeners: (() => void) | undefined;
 
-// Состояние для редактирования кривой
 const draggedPointIndex = ref<number | null>(null);
 const isDragging = ref(false);
 const lastMousePos = ref<{ x: number; y: number } | null>(null);
@@ -30,13 +28,8 @@ const isEditInteraction = ref(false);
 
 const updateCanvasSize = () => {
     if (!containerRef.value || !canvasRef.value) return;
-
     const { clientWidth, clientHeight } = containerRef.value;
-
-    if (
-        canvasRef.value.width !== clientWidth ||
-        canvasRef.value.height !== clientHeight
-    ) {
+    if (canvasRef.value.width !== clientWidth || canvasRef.value.height !== clientHeight) {
         canvasRef.value.width = clientWidth;
         canvasRef.value.height = clientHeight;
         draw();
@@ -44,7 +37,6 @@ const updateCanvasSize = () => {
     }
 };
 
-// Рисование временных точек и режимов
 const drawTemporaryPoints = () => {
     if (!canvasRef.value) return;
     const ctx = canvasRef.value.getContext('2d');
@@ -52,10 +44,10 @@ const drawTemporaryPoints = () => {
     
     ctx.save();
     
-    // Рисуем точки для режима рисования кривой
     if (curveDrawing.value) {
         const points = curveDrawing.value.points;
         points.forEach((point, index) => {
+            if (!point) return;
             ctx.beginPath();
             ctx.arc(point.x, point.y, 6, 0, 2 * Math.PI);
             ctx.fillStyle = index === 0 ? '#4CAF50' : '#F44336';
@@ -66,25 +58,31 @@ const drawTemporaryPoints = () => {
         });
     }
     
-    // Рисуем опорные точки для редактируемой кривой
     if (isEditingMode.value && editingCurve.value) {
-        const points = editingCurve.value.getGlobalPoints();
+        const points = editingCurve.value.getGlobalPoints().filter(p => p !== undefined && p !== null);
         
-        // Рисуем кривую
-        ctx.beginPath();
-        const curvePoints = getCurvePoints(points);
-        if (curvePoints.length > 1) {
-            ctx.moveTo(curvePoints[0].x, curvePoints[0].y);
-            for (let i = 1; i < curvePoints.length; i++) {
-                ctx.lineTo(curvePoints[i].x, curvePoints[i].y);
+        if (points.length > 0) {
+            const splinePoints = getSplinePoints(points);
+            if (splinePoints.length > 1) {
+                ctx.beginPath();
+                const firstPoint = splinePoints[0];
+                if (firstPoint) {
+                    ctx.moveTo(firstPoint.x, firstPoint.y);
+                    for (let i = 1; i < splinePoints.length; i++) {
+                        const point = splinePoints[i];
+                        if (point) {
+                            ctx.lineTo(point.x, point.y);
+                        }
+                    }
+                    ctx.strokeStyle = '#2196f3';
+                    ctx.lineWidth = 4;
+                    ctx.stroke();
+                }
             }
-            ctx.strokeStyle = '#2196f3';
-            ctx.lineWidth = 4;
-            ctx.stroke();
         }
         
-        // Рисуем опорные точки
         points.forEach((point, index) => {
+            if (!point) return;
             ctx.beginPath();
             ctx.arc(point.x, point.y, 8, 0, 2 * Math.PI);
             ctx.fillStyle = (index === 0 || index === points.length - 1) ? '#4CAF50' : '#FF9800';
@@ -103,7 +101,6 @@ const drawTemporaryPoints = () => {
         });
     }
     
-    // Текст режима вверху
     ctx.font = 'bold 16px Arial';
     ctx.fillStyle = '#333';
     ctx.textAlign = 'center';
@@ -121,8 +118,7 @@ const drawTemporaryPoints = () => {
     ctx.restore();
 };
 
-// Получить точки кривой для отрисовки
-function getCurvePoints(points: Point[]): Point[] {
+function getSplinePoints(points: Point[]): Point[] {
     if (points.length < 2) return points;
     const result: Point[] = [];
     
@@ -132,25 +128,37 @@ function getCurvePoints(points: Point[]): Point[] {
         const p2 = points[i + 1];
         const p3 = i < points.length - 2 ? points[i + 2] : points[i + 1];
         
+        if (!p1 || !p2) continue;
+        
         for (let s = 0; s <= 20; s++) {
             const t = s / 20;
-            const x = 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t * t + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t * t * t);
-            const y = 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t * t + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t * t * t);
+            const x = 0.5 * (
+                (2 * (p1?.x || 0)) + 
+                (-(p0?.x || 0) + (p2?.x || 0)) * t + 
+                (2 * (p0?.x || 0) - 5 * (p1?.x || 0) + 4 * (p2?.x || 0) - (p3?.x || 0)) * t * t + 
+                (-(p0?.x || 0) + 3 * (p1?.x || 0) - 3 * (p2?.x || 0) + (p3?.x || 0)) * t * t * t
+            );
+            const y = 0.5 * (
+                (2 * (p1?.y || 0)) + 
+                (-(p0?.y || 0) + (p2?.y || 0)) * t + 
+                (2 * (p0?.y || 0) - 5 * (p1?.y || 0) + 4 * (p2?.y || 0) - (p3?.y || 0)) * t * t + 
+                (-(p0?.y || 0) + 3 * (p1?.y || 0) - 3 * (p2?.y || 0) + (p3?.y || 0)) * t * t * t
+            );
             result.push({ x, y });
         }
     }
     return result;
 }
 
-// Поиск ближайшей точки
 function findClosestPointIndex(x: number, y: number): number {
     if (!editingCurve.value) return -1;
-    const points = editingCurve.value.getGlobalPoints();
+    const points = editingCurve.value.getGlobalPoints().filter(p => p !== undefined && p !== null);
     const threshold = 15;
     let minDist = Infinity;
     let closestIndex = -1;
     
     points.forEach((point, index) => {
+        if (!point) return;
         const dist = Math.hypot(point.x - x, point.y - y);
         if (dist < minDist && dist < threshold) {
             minDist = dist;
@@ -160,48 +168,48 @@ function findClosestPointIndex(x: number, y: number): number {
     return closestIndex;
 }
 
-// Получить точку на кривой в сегменте
-function getPointOnCurveAtSegment(points: Point[], segmentIndex: number, t: number): Point {
-    const i = segmentIndex;
-    const p0 = i > 0 ? points[i - 1] : points[i];
-    const p1 = points[i];
-    const p2 = points[i + 1];
-    const p3 = i < points.length - 2 ? points[i + 2] : points[i + 1];
-    
+function catmullRomPoint(p0: Point, p1: Point, p2: Point, p3: Point, t: number): Point {
     const t2 = t * t;
     const t3 = t2 * t;
     
     const x = 0.5 * (
-        (2 * p1.x) +
-        (-p0.x + p2.x) * t +
-        (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
-        (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3
+        (2 * (p1?.x || 0)) +
+        (-(p0?.x || 0) + (p2?.x || 0)) * t +
+        (2 * (p0?.x || 0) - 5 * (p1?.x || 0) + 4 * (p2?.x || 0) - (p3?.x || 0)) * t2 +
+        (-(p0?.x || 0) + 3 * (p1?.x || 0) - 3 * (p2?.x || 0) + (p3?.x || 0)) * t3
     );
     
     const y = 0.5 * (
-        (2 * p1.y) +
-        (-p0.y + p2.y) * t +
-        (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
-        (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3
+        (2 * (p1?.y || 0)) +
+        (-(p0?.y || 0) + (p2?.y || 0)) * t +
+        (2 * (p0?.y || 0) - 5 * (p1?.y || 0) + 4 * (p2?.y || 0) - (p3?.y || 0)) * t2 +
+        (-(p0?.y || 0) + 3 * (p1?.y || 0) - 3 * (p2?.y || 0) + (p3?.y || 0)) * t3
     );
     
     return { x, y };
 }
 
-// Разделить сегмент
 function splitSegment(index: number): number {
     if (!editingCurve.value) return index;
     
-    const points = editingCurve.value.getGlobalPoints();
+    const points = editingCurve.value.getGlobalPoints().filter((p): p is Point => p !== undefined && p !== null);
     
     if (index > 0 && index < points.length - 1) {
-        const point1 = getPointOnCurveAtSegment(points, index - 1, 0.5);
-        const point2 = getPointOnCurveAtSegment(points, index, 0.5);
+        // Убеждаемся, что все нужные точки существуют
+        const pPrev = points[index - 1];
+        const pCurr = points[index];
+        const pNext = points[index + 1];
+        const pNextNext = index + 2 < points.length ? points[index + 2] : points[index + 1];
+        
+        if (!pPrev || !pCurr || !pNext || !pNextNext) return index;
+        
+        const point1 = catmullRomPoint(pPrev, pPrev, pCurr, pNext, 0.5);
+        const point2 = catmullRomPoint(pPrev, pCurr, pNext, pNextNext, 0.5);
         
         const newPoints = [
             ...points.slice(0, index),
             point1,
-            points[index],
+            pCurr,
             point2,
             ...points.slice(index + 1)
         ];
@@ -212,7 +220,6 @@ function splitSegment(index: number): number {
     return index;
 }
 
-// Обработчики событий для кривой
 const handleCanvasClick = (e: MouseEvent) => {
     if (!canvasRef.value) return;
     const rect = canvasRef.value.getBoundingClientRect();
@@ -233,7 +240,7 @@ const handleCanvasDoubleClick = (e: MouseEvent) => {
     const y = e.clientY - rect.top;
 
     for (const shape of canvasStore.shapes) {
-        if (shape.type === 'curve' && shape.hitTest({ x, y })) {
+        if (shape?.type === 'curve' && shape.hitTest({ x, y })) {
             canvasStore.editCurve(shape as CurveShapeWrapper);
             e.stopPropagation();
             break;
@@ -256,7 +263,8 @@ const handleCanvasMouseDown = (e: MouseEvent) => {
         draggedPointIndex.value = pointIndex;
         lastMousePos.value = { x, y };
         isDragging.value = true;
-        initialPoints.value = editingCurve.value.getGlobalPoints().map(p => ({ ...p }));
+        const globalPoints = editingCurve.value.getGlobalPoints().filter(p => p !== undefined && p !== null);
+        initialPoints.value = globalPoints.map(p => ({ ...p }));
     }
 };
 
@@ -276,6 +284,7 @@ const handleCanvasMouseMove = (e: MouseEvent) => {
     
     if (pointIndex >= 0 && pointIndex < initialPoints.value.length) {
         const newPoints = initialPoints.value.map((p, idx) => {
+            if (!p) return { x: 0, y: 0 };
             if (idx === pointIndex) {
                 return { x: p.x + deltaX, y: p.y + deltaY };
             }
@@ -291,7 +300,7 @@ const handleCanvasMouseUp = (e: MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
         
-        const points = editingCurve.value.getGlobalPoints();
+        const points = editingCurve.value.getGlobalPoints().filter(p => p !== undefined && p !== null);
         const draggedIndex = draggedPointIndex.value;
         const initialPoint = initialPoints.value[draggedIndex];
         const currentPoint = points[draggedIndex];
@@ -399,7 +408,6 @@ onMounted(() => {
         resizeObserver = new ResizeObserver(updateCanvasSize);
         resizeObserver.observe(containerRef.value);
     }
-
     detachListeners = customAttachListeners();
 });
 
@@ -429,7 +437,6 @@ watch([shapes, selectedId, curveDrawing, isEditingMode, zoom], () => requestAnim
     position: relative;
     display: block;
 }
-
 .main-canvas {
     display: block;
     width: 100%;

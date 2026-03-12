@@ -27,7 +27,7 @@
                 </div>
             </div>
 
-            <!-- Размер: 2 поля -->
+            <!-- Размер: 2 поля (для всех фигур, кроме line) -->
             <div v-if="selectedShape?.type !== 'line'" class="fieldBlock">
                 <div class="fieldBlock">
                     <div class="fieldLabel">Размер</div>
@@ -62,21 +62,23 @@
                 <input
                     class="fieldInput"
                     type="number"
-                    aria-label="Scale"
+                    aria-label="Scale X"
                     :value="selectedShape?.scaleX ?? ''"
                     :disabled="!selectedShape"
                     min="-10"
                     max="10"
+                    step="0.1"
                     @input="onNumberChange('scaleX', $event)"
                 />
                 <input
                     class="fieldInput"
                     type="number"
-                    aria-label="Height"
+                    aria-label="Scale Y"
                     :value="selectedShape?.scaleY ?? ''"
                     :disabled="!selectedShape"
                     min="-10"
                     max="10"
+                    step="0.1"
                     @input="onNumberChange('scaleY', $event)"
                 />
             </div>
@@ -101,7 +103,7 @@
             </div>
         </div>
 
-        <!-- Поворот -->
+        <!-- Поворот (для всех фигур, кроме line) -->
         <div v-if="selectedShape?.type !== 'line'" class="fieldBlock">
             <div class="fieldBlock">
                 <div class="fieldLabel">Поворот</div>
@@ -114,6 +116,7 @@
                         :disabled="!selectedShape"
                         min="0"
                         max="360"
+                        step="1"
                         @input="onNumberChange('rotation', $event)"
                     />
                     <div class="spacer" aria-hidden="true" />
@@ -123,8 +126,8 @@
 
         <div class="divider" />
 
-        <!-- Фигура -->
-        <section class="group">
+        <!-- Фигура (только для фигур с заливкой) -->
+        <section v-if="hasFill" class="group">
             <h3 class="groupTitle">Фигура</h3>
 
             <div class="grid2Blocks">
@@ -161,9 +164,27 @@
             </div>
         </section>
 
+        <!-- Специальные свойства для кривой -->
+        <section v-if="selectedShape?.type === 'curve'" class="group">
+            <h3 class="groupTitle">Кривая</h3>
+            <div class="fieldBlock">
+                <div class="fieldLabel">Количество точек</div>
+                <div class="grid2">
+                    <input
+                        class="fieldInput"
+                        type="number"
+                        :value="curvePointsCount"
+                        disabled
+                        readonly
+                    />
+                    <div class="spacer" aria-hidden="true" />
+                </div>
+            </div>
+        </section>
+
         <div class="divider" />
 
-        <!-- Обводка -->
+        <!-- Обводка (для всех фигур) -->
         <section class="group">
             <h3 class="groupTitle">Обводка</h3>
 
@@ -310,23 +331,19 @@ import type { Shape } from '@/canvas/types';
 const canvasStore = useCanvasStore();
 const { selectedShape, shapes } = storeToRefs(canvasStore);
 
-// Состояние редактирования слоя
 const editingLayerId = ref<string | null>(null);
 const inputRefs = ref<Record<string, HTMLInputElement>>({});
 
-// Метод для установки ref
 const setInputRef = (el: HTMLInputElement | null, shapeId: string) => {
     if (el) {
         inputRefs.value[shapeId] = el;
     }
 };
 
-// Отслеживаем новые фигуры
 watch(
     () => shapes.value.length,
     (newLength, oldLength) => {
         if (newLength > oldLength) {
-            // Появилась новая фигура
             const newShape = shapes.value[shapes.value.length - 1];
             if (newShape) {
                 setTimeout(() => {
@@ -353,15 +370,42 @@ function getShapeStringProp(key: string, fallback: string) {
     return typeof value === 'string' ? value : fallback;
 }
 
-const shapeWidth = computed(() => getShapeNumberProp('width', ''));
-const shapeHeight = computed(() => getShapeNumberProp('height', ''));
+const hasFill = computed(() => {
+    if (!selectedShape.value) return false;
+    const type = selectedShape.value.type;
+    return ['rect', 'circle', 'triangle', 'polygon', 'star', 'hexagon', 'arrow'].includes(type);
+});
+
+const shapeWidth = computed(() => {
+    if (!selectedShape.value) return '';
+    const type = selectedShape.value.type;
+    if (type === 'curve') {
+        return getShapeNumberProp('width', '');
+    }
+    return getShapeNumberProp('width', '');
+});
+
+const shapeHeight = computed(() => {
+    if (!selectedShape.value) return '';
+    const type = selectedShape.value.type;
+    if (type === 'curve') {
+        return getShapeNumberProp('height', '');
+    }
+    return getShapeNumberProp('height', '');
+});
+
+const curvePointsCount = computed(() => {
+    if (!selectedShape.value || selectedShape.value.type !== 'curve') return 0;
+    const shape = selectedShape.value as any;
+    return shape.anchorPoints?.length || 0;
+});
+
 const fillColor = computed(() => getShapeStringProp('fill', '#000000'));
 const strokeColor = computed(() => getShapeStringProp('stroke', '#000000'));
 const fillOpacity = computed(() => getShapeNumberProp('fillOpacity', 1));
 const strokeOpacity = computed(() => getShapeNumberProp('strokeOpacity', 1));
 const strokeWidth = computed(() => getShapeNumberProp('strokeWidth', ''));
 
-// список слоёв — снизу вверх по очередности в массиве shapes
 const layers = computed(() => shapes.value);
 
 const draggedLayerIndex = ref<number | null>(null);
@@ -392,6 +436,14 @@ function onFlip(key: 'scaleX' | 'scaleY') {
 
     const currentScale = Number((selectedShape.value as Partial<Shape>)[key]);
     const currentRotation = selectedShape.value.rotation;
+
+    if (selectedShape.value.type === 'curve') {
+        canvasStore.updateShape(selectedShape.value.id, {
+            [key]: currentScale * -1,
+            rotation: currentRotation, 
+        });
+        return;
+    }
 
     const newRotation =
         key === 'scaleX'
@@ -434,6 +486,12 @@ function shapeThumb(type: string) {
     if (type === 'rect') return '▭';
     if (type === 'circle') return '◯';
     if (type === 'line') return '/';
+    if (type === 'triangle') return '△';
+    if (type === 'polygon') return '⬔';
+    if (type === 'star') return '☆';
+    if (type === 'hexagon') return '⬡';
+    if (type === 'arrow') return '→';
+    if (type === 'curve') return '〰️';
     return '?';
 }
 
@@ -441,6 +499,12 @@ function shapeLabel(type: string) {
     if (type === 'rect') return 'Прямоугольник';
     if (type === 'circle') return 'Круг';
     if (type === 'line') return 'Линия';
+    if (type === 'triangle') return 'Треугольник';
+    if (type === 'polygon') return 'Многоугольник';
+    if (type === 'star') return 'Звезда';
+    if (type === 'hexagon') return 'Шестиугольник';
+    if (type === 'arrow') return 'Стрелка';
+    if (type === 'curve') return 'Кривая';
     return type;
 }
 
@@ -471,6 +535,7 @@ function onLayerDrop(targetIndex: number, event: DragEvent) {
     if (from === to) return;
     canvasStore.moveShape(from, to);
 }
+
 const selectedIndex = computed(() => {
     if (!selectedShape.value) return -1;
     return shapes.value.findIndex((s) => s.id === selectedShape.value?.id);
@@ -495,7 +560,7 @@ function moveLayerDown() {
     if (!canMoveDown.value) return;
     canvasStore.moveShape(selectedIndex.value, selectedIndex.value + 1);
 }
-// ============ МЕТОДЫ РЕДАКТИРОВАНИЯ (ТОЛЬКО ЗДЕСЬ, ОДИН РАЗ) ============
+
 function startEditing(shapeId: string) {
     console.log('DOUBLE CLICK WORKS', shapeId);
     editingLayerId.value = shapeId;

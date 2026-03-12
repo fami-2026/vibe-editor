@@ -410,7 +410,6 @@ function getShapeStringProp(key: string, fallback: string) {
     return typeof value === 'string' ? value : fallback;
 }
 
-
 const shapeWidth = computed(() => getShapeNumberProp('width', ''));
 const shapeHeight = computed(() => getShapeNumberProp('height', ''));
 const fillColor = computed(() => getShapeStringProp('fill', '#000000'));
@@ -734,7 +733,7 @@ function deleteLayer(id: string) {
 }
 
 function handleKeyDown(event: KeyboardEvent) {
-     if (editingLayerId.value) return;
+    if (editingLayerId.value) return;
 
     if (event.key === 'Delete') {
         if (!selectedShape.value) return;
@@ -750,7 +749,6 @@ onMounted(() => {
 onUnmounted(() => {
     window.removeEventListener('keydown', handleKeyDown);
 });
-
 </script>
 
 <style scoped>
@@ -1115,6 +1113,4 @@ onUnmounted(() => {
     background: #fee2e2;
     color: #dc2626;
 }
-
-
 </style>

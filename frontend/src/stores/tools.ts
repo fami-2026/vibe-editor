@@ -11,6 +11,7 @@ export type ToolType =
     | 'star'
     | 'hexagon'
     | 'arrow'
+    | 'curve'
     | 'eraser';
 
 /**

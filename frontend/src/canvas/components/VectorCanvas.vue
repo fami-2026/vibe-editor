@@ -4,7 +4,8 @@ import { storeToRefs } from 'pinia';
 import { useCanvasStore } from '@/stores/canvas';
 import { useCanvasRender } from '@/canvas/composables/useCanvasRender';
 import { useInteractions } from '@/canvas/composables/useInteractions';
-<<<<<<< HEAD
+import type { CurveShapeWrapper } from '@/canvas/types/curve/curve';
+import type { Point } from '@/canvas/types';
 import type { CurveShapeWrapper } from '@/canvas/types/curve/curve';
 import type { Point } from '@/canvas/types';
 =======
@@ -16,6 +17,9 @@ import type { CurveShapeWrapper } from '@/canvas/types/curve/curve';
 const containerRef = ref<HTMLDivElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 
+const canvasStore = useCanvasStore();
+const { shapes, selectedId, curveDrawing, editingCurve, isEditingMode } =
+    storeToRefs(canvasStore);
 const canvasStore = useCanvasStore();
 const { shapes, selectedId, curveDrawing, editingCurve, isEditingMode } =
     storeToRefs(canvasStore);
@@ -32,13 +36,21 @@ const lastMousePos = ref<{ x: number; y: number } | null>(null);
 const initialPoints = ref<{ x: number; y: number }[]>([]);
 const isEditInteraction = ref(false);
 
+const draggedPointIndex = ref<number | null>(null);
+const isDragging = ref(false);
+const lastMousePos = ref<{ x: number; y: number } | null>(null);
+const initialPoints = ref<{ x: number; y: number }[]>([]);
+const isEditInteraction = ref(false);
+
 const updateCanvasSize = () => {
     if (!containerRef.value || !canvasRef.value) return;
     const { clientWidth, clientHeight } = containerRef.value;
     if (canvasRef.value.width !== clientWidth || canvasRef.value.height !== clientHeight) {
+    if (canvasRef.value.width !== clientWidth || canvasRef.value.height !== clientHeight) {
         canvasRef.value.width = clientWidth;
         canvasRef.value.height = clientHeight;
         draw();
+        drawTemporaryPoints();
         drawTemporaryPoints();
     }
 };

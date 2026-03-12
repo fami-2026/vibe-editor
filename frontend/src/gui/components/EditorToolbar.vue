@@ -74,6 +74,15 @@ const tools: ToolConfig[] = [
         title: 'Стрелка',
         action: () => toolsStore.setActiveTool('arrow'),
     },
+    {
+    id: 'curve',
+    icon: '〰️',
+    title: 'Кривая',
+    action: () => {
+        toolsStore.setActiveTool('curve');
+        canvasStore.startCurveDrawing();
+    },
+}
 ];
 
 function handleToolClick(tool: ToolConfig) {

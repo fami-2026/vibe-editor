@@ -14,6 +14,7 @@ import {
     Hexagon,
     ArrowUp,
     Pentagon,
+    Spline, // Импортируем иконку для кривой
 } from 'lucide-vue-next';
 import { useToolsStore, type ToolType } from '@/stores/tools';
 
@@ -28,6 +29,7 @@ type ToolId =
     | 'star'
     | 'hexagon'
     | 'arrow'
+    | 'curve'      // Добавляем новый тип
     | 'eraser'
     | 'text';
 
@@ -48,6 +50,7 @@ const tools: Tool[] = [
     { id: 'star', title: 'Звезда', icon: Star },
     { id: 'hexagon', title: 'Шестиугольник', icon: Hexagon },
     { id: 'arrow', title: 'Стрелка', icon: ArrowUp },
+    { id: 'curve', title: 'Кривая', icon: Spline }, // Добавляем кнопку кривой
     { id: 'eraser', title: 'Ластик', icon: Eraser },
     { id: 'text', title: 'Текст', icon: Type },
 ];
@@ -114,7 +117,12 @@ function handleClick(tool: Tool) {
             toolsStore.setActiveTool('hexagon');
             break;
         case 'arrow':
-            toolsStore.setActiveTool('arrow');
+            canvasStore.addShape('arrow', { x: 400, y: 300 });
+            toolsStore.setActiveTool('select');
+            break;
+        case 'curve':
+            toolsStore.setActiveTool('curve');
+            canvasStore.startCurveDrawing(); // Запускаем режим рисования кривой
             break;
         case 'eraser':
             toolsStore.setActiveTool('eraser');
@@ -152,6 +160,7 @@ const activeId = computed<ToolId>(() => {
     if (active === 'star') return 'star';
     if (active === 'hexagon') return 'hexagon';
     if (active === 'arrow') return 'arrow';
+    if (active === 'curve') return 'curve'; // Добавляем обработку для кривой
     if (active === 'eraser') return 'eraser';
     return 'cursor';
 });

@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia';
 import { ref, computed, watch } from 'vue';
-import type { Shape } from '@/canvas/types';
+import type { Shape, Point } from '@/canvas/types';
 import { shapeRegistry } from '@/canvas/types';
 import { generateId } from '@/canvas/utils/math';
 import { PolygonShape } from '@/canvas/types/polygon/polygon';
+import { CurveShapeWrapper } from '@/canvas/types/curve/curve';
 
 interface ShapeParams extends Record<string, unknown> {
     sides?: number;
@@ -16,6 +17,18 @@ interface ShapeParams extends Record<string, unknown> {
     strokeOpacity?: number;
     strokeWidth?: number;
     rotation?: number;
+}
+
+interface CurveDrawingState {
+    points: Point[];  // Точки [start, end]
+}
+
+export interface EditableCurve {
+    id?: string;
+    points: Point[];
+    stroke: string;
+    strokeOpacity: number;
+    strokeWidth: number;
 }
 
 type SerializedShapeBase = {
@@ -37,6 +50,11 @@ type SceneSnapshot = {
 export const useCanvasStore = defineStore('canvas', () => {
     const shapes = ref<Shape[]>([]);
     const selectedId = ref<string | null>(null);
+
+    // Новые состояния для кривой
+    const curveDrawing = ref<CurveDrawingState | null>(null);
+    const editingCurve = ref<CurveShapeWrapper | null>(null);
+    const isEditingMode = ref(false);
 
     const undoStack = ref<SceneSnapshot[]>([]);
     const redoStack = ref<SceneSnapshot[]>([]);
@@ -171,7 +189,9 @@ export const useCanvasStore = defineStore('canvas', () => {
                             ? 'Стрелка'
                             : type === 'hexagon'
                               ? 'Шестиугольник'
-                              : type;
+                              : type === 'curve'
+                                ? 'Кривая'
+                                : type;
 
         const number = existingShapesOfType.length + 1;
         const defaultName = `${typeName} ${number}`;
@@ -304,6 +324,71 @@ export const useCanvasStore = defineStore('canvas', () => {
         { deep: true }
     );
 
+    // ===== НОВЫЕ МЕТОДЫ ДЛЯ КРИВОЙ =====
+    function startCurveDrawing() {
+        curveDrawing.value = { points: [] };
+    }
+
+    function handleCanvasClick(x: number, y: number) {
+        if (!curveDrawing.value) return;
+        curveDrawing.value.points.push({ x, y });
+        if (curveDrawing.value.points.length === 2) {
+            createStraightCurve();
+        }
+    }
+
+    function createStraightCurve() {
+        if (!curveDrawing.value || curveDrawing.value.points.length !== 2) return;
+        
+        const points = curveDrawing.value.points;
+        const start = points[0];
+        const end = points[1];
+        
+        if (start && end) {
+            // Создаем кривую с тремя точками (начало, середина, конец)
+            const midPoint = {
+                x: (start.x + end.x) / 2,
+                y: (start.y + end.y) / 2
+            };
+            
+            // Используем CurveShapeWrapper для создания
+            const curve = new CurveShapeWrapper(generateId(), start);
+            
+            // Устанавливаем точки
+            const globalPoints = [start, midPoint, end];
+            curve.setGlobalPoints(globalPoints);
+            
+            // Добавляем имя
+            const existingCurves = shapes.value.filter(s => s.type === 'curve');
+            (curve as Shape).name = `Кривая ${existingCurves.length + 1}`;
+            
+            shapes.value.push(curve);
+            curveDrawing.value = null;
+        }
+    }
+
+    function editCurve(shape: CurveShapeWrapper) {
+        editingCurve.value = shape;
+        isEditingMode.value = true;
+        selectedId.value = shape.id;
+    }
+
+    function exitEditMode() {
+        editingCurve.value = null;
+        isEditingMode.value = false;
+        selectedId.value = null;
+    }
+
+    function pushHistoryForCurve() {
+        if (editingCurve.value) {
+            pushHistory();
+        }
+    }
+
+    function cancelCurveDrawing() {
+        curveDrawing.value = null;
+    }
+
     return {
         shapes,
         selectedId,
@@ -323,5 +408,16 @@ export const useCanvasStore = defineStore('canvas', () => {
         zoomOut,
         startInteraction,
         endInteraction,
+        // Новые экспорты для кривой
+        curveDrawing,
+        editingCurve,
+        isEditingMode,
+        startCurveDrawing,
+        handleCanvasClick,
+        createStraightCurve,
+        editCurve,
+        exitEditMode,
+        pushHistoryForCurve,
+        cancelCurveDrawing,
     };
 });

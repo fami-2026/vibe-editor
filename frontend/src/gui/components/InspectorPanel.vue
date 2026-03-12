@@ -459,7 +459,15 @@ function getShapeStringProp(key: string, fallback: string) {
 const hasFill = computed(() => {
     if (!selectedShape.value) return false;
     const type = selectedShape.value.type;
-    return ['rect', 'circle', 'triangle', 'polygon', 'star', 'hexagon', 'arrow'].includes(type);
+    return [
+        'rect',
+        'circle',
+        'triangle',
+        'polygon',
+        'star',
+        'hexagon',
+        'arrow',
+    ].includes(type);
 });
 
 const shapeWidth = computed(() => {
@@ -569,7 +577,7 @@ function onFlip(key: 'scaleX' | 'scaleY') {
     if (selectedShape.value.type === 'curve') {
         canvasStore.updateShape(selectedShape.value.id, {
             [key]: currentScale * -1,
-            rotation: currentRotation, 
+            rotation: currentRotation,
         });
         return;
     }

@@ -58,7 +58,7 @@
         <!-- Отражение -->
         <div class="fieldBlock">
             <div class="fieldLabel">Отражение</div>
-            <div class="grid2 ">
+            <div class="grid2">
                 <button
                     class="iconBtnSmall"
                     :disabled="!selectedShape"

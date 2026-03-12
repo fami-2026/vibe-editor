@@ -50,8 +50,11 @@ const drawTemporaryPoints = () => {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> ddd8286 (правка)
+=======
+>>>>>>> 446843b (н)
     if (!canvasRef.value) return;
     const ctx = canvasRef.value.getContext('2d');
     if (!ctx) return;
@@ -67,6 +70,7 @@ const drawTemporaryPoints = () => {
             ctx.lineWidth = 2;
             ctx.stroke();
         });
+<<<<<<< HEAD
 <<<<<<< HEAD
     }
     
@@ -139,6 +143,8 @@ const drawTemporaryPoints = () => {
             ctx.fillStyle = '#666';
             ctx.fillText('Кликните для конечной точки', 20, 30);
         }
+=======
+>>>>>>> 446843b (н)
     }
     
     if (isEditingMode.value && editingCurve.value) {
@@ -171,11 +177,14 @@ const drawTemporaryPoints = () => {
                 ctx.stroke();
             }
         });
+<<<<<<< HEAD
         
 >>>>>>> ddd8286 (правка)
         ctx.font = '14px Arial';
         ctx.fillStyle = '#666';
         ctx.fillText('Режим редактирования: перетаскивайте точки, Enter для выхода', 20, 30);
+=======
+>>>>>>> 446843b (н)
     }
 };
 
@@ -216,8 +225,8 @@ function findClosestPointIndex(x: number, y: number): number {
     return closestIndex;
 }
 
-function getPointOnCurve(points: Point[], t: number, segment: number): Point {
-    const i = segment;
+function getPointOnCurveAtSegment(points: Point[], segmentIndex: number, t: number): Point {
+    const i = segmentIndex;
     const p0 = i > 0 ? points[i - 1] : points[i];
     const p1 = points[i];
     const p2 = points[i + 1];
@@ -241,41 +250,6 @@ function getPointOnCurve(points: Point[], t: number, segment: number): Point {
     );
     
     return { x, y };
-}
-
-function splitSegment(index: number): number {
-    if (!editingCurve.value) return index;
-    
-    const points = editingCurve.value.getGlobalPoints();
-    
-    if (index > 0 && index < points.length - 1) {
-        const prevPoint = points[index - 1];
-        const currentPoint = points[index];
-        const nextPoint = points[index + 1];
-        
-        // Точки ровно посередине отрезков
-        const point1 = {
-            x: (prevPoint.x + currentPoint.x) / 2,
-            y: (prevPoint.y + currentPoint.y) / 2
-        };
-        
-        const point2 = {
-            x: (currentPoint.x + nextPoint.x) / 2,
-            y: (currentPoint.y + nextPoint.y) / 2
-        };
-        
-        const newPoints = [
-            ...points.slice(0, index),
-            point1,
-            currentPoint,
-            point2,
-            ...points.slice(index + 1)
-        ];
-        
-        editingCurve.value.setGlobalPoints(newPoints);
-        return index + 1;
-    }
-    return index;
 }
 
 const handleCanvasClick = (e: MouseEvent) => {
@@ -428,6 +402,9 @@ const handleCanvasMouseUp = (e: MouseEvent) => {
             const moved = Math.hypot(currentPoint.x - initialPoint.x, currentPoint.y - initialPoint.y) > 1;
             if (moved && draggedIndex > 0 && draggedIndex < points.length - 1) {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 446843b (н)
                 const point1 = getPointOnCurveAtSegment(points, draggedIndex - 1, 0.5);
                 const point2 = getPointOnCurveAtSegment(points, draggedIndex, 0.5);
                 
@@ -441,9 +418,12 @@ const handleCanvasMouseUp = (e: MouseEvent) => {
                 
                 editingCurve.value.setGlobalPoints(newPoints);
                 draggedPointIndex.value = draggedIndex + 1;
+<<<<<<< HEAD
 =======
                 draggedPointIndex.value = splitSegment(draggedIndex);
 >>>>>>> ddd8286 (правка)
+=======
+>>>>>>> 446843b (н)
             }
         }
         canvasStore.pushHistoryForCurve();
@@ -586,6 +566,9 @@ watch([shapes, selectedId, curveDrawing, isEditingMode], () => requestAnimationF
     <div ref="containerRef" class="canvas-wrapper">
         <canvas ref="canvasRef" class="main-canvas"></canvas>
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 446843b (н)
         
         <!-- Подсказки поверх канваса -->
         <div class="hints">
@@ -599,8 +582,11 @@ watch([shapes, selectedId, curveDrawing, isEditingMode], () => requestAnimationF
                 <p>✏️ Режим редактирования: перетаскивайте точки, Enter для выхода</p>
             </div>
         </div>
+<<<<<<< HEAD
 =======
 >>>>>>> ddd8286 (правка)
+=======
+>>>>>>> 446843b (н)
     </div>
 </template>
 
@@ -620,6 +606,9 @@ watch([shapes, selectedId, curveDrawing, isEditingMode], () => requestAnimationF
     cursor: default;
 }
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 446843b (н)
 .hints {
     position: absolute;
     top: 20px;
@@ -649,7 +638,11 @@ watch([shapes, selectedId, curveDrawing, isEditingMode], () => requestAnimationF
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+<<<<<<< HEAD
 </style>
 =======
 </style>
 >>>>>>> a454dd7 (ops/bot: #25: format and lint)
+=======
+</style>
+>>>>>>> 446843b (н)

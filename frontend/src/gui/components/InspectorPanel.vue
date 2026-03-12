@@ -340,6 +340,17 @@
                         >
                             {{ (shape as any).name || shapeLabel(shape.type) }}
                         </span>
+
+                        <!--Кнопка удаления-->
+                        <button
+                            class="deleteLayerBtn"
+                            type="button"
+                            title="Удалить слой"
+                            aria-label="Удалить слой"
+                            @click.stop="deleteLayer(shape.id)"
+                        >
+                            ×
+                        </button>
                     </div>
                 </li>
             </ul>
@@ -348,7 +359,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, nextTick, watch } from 'vue';
+import { computed, ref, nextTick, watch, onMounted, onUnmounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useCanvasStore } from '@/stores/canvas';
 import type { Shape } from '@/canvas/types';
@@ -398,6 +409,7 @@ function getShapeStringProp(key: string, fallback: string) {
     ];
     return typeof value === 'string' ? value : fallback;
 }
+
 
 const shapeWidth = computed(() => getShapeNumberProp('width', ''));
 const shapeHeight = computed(() => getShapeNumberProp('height', ''));
@@ -711,6 +723,34 @@ function saveLayerName(shapeId: string, newName: string) {
 
     cancelEditing();
 }
+
+//Функции для удаления слоя
+function deleteLayer(id: string) {
+    if (editingLayerId.value === id) {
+        cancelEditing();
+    }
+
+    canvasStore.deleteShape(id);
+}
+
+function handleKeyDown(event: KeyboardEvent) {
+     if (editingLayerId.value) return;
+
+    if (event.key === 'Delete') {
+        if (!selectedShape.value) return;
+
+        canvasStore.deleteShape(selectedShape.value.id);
+    }
+}
+
+onMounted(() => {
+    window.addEventListener('keydown', handleKeyDown);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('keydown', handleKeyDown);
+});
+
 </script>
 
 <style scoped>
@@ -863,7 +903,7 @@ function saveLayerName(shapeId: string, newName: string) {
 .layerItem {
     width: 100%;
     display: grid;
-    grid-template-columns: 24px 1fr;
+    grid-template-columns: 20px 1fr 20px;
     align-items: center;
     gap: 8px;
 
@@ -1039,4 +1079,42 @@ function saveLayerName(shapeId: string, newName: string) {
     border-color: #2563eb;
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
+
+/*Стиль для крестика для удаления слоев */
+.deleteLayerBtn {
+    width: 20px;
+    height: 20px;
+    border: 0;
+    background: transparent;
+    color: #9ca3af;
+    border-radius: 6px;
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 14px;
+    line-height: 1;
+
+    opacity: 0;
+    pointer-events: none;
+    transition:
+        opacity 0.15s ease,
+        background 0.15s ease,
+        color 0.15s ease;
+}
+
+.layerItem:hover .deleteLayerBtn,
+.layerItem:focus-within .deleteLayerBtn {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.deleteLayerBtn:hover {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+
 </style>

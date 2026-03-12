@@ -29,7 +29,7 @@
                 </div>
             </div>
 
-            <!-- Размер: 2 поля -->
+            <!-- Размер: 2 поля (для всех фигур, кроме line) -->
             <div v-if="selectedShape?.type !== 'line'" class="fieldBlock">
                 <div class="fieldBlock">
                     <div class="fieldLabel">Размер</div>
@@ -61,6 +61,31 @@
 
         <!-- Отражение -->
         <div class="fieldBlock">
+            <div class="fieldLabel">Масштаб</div>
+            <div class="grid2">
+                <input
+                    class="fieldInput"
+                    type="number"
+                    aria-label="Scale X"
+                    :value="selectedShape?.scaleX ?? ''"
+                    :disabled="!selectedShape"
+                    min="-10"
+                    max="10"
+                    step="0.1"
+                    @input="onNumberChange('scaleX', $event)"
+                />
+                <input
+                    class="fieldInput"
+                    type="number"
+                    aria-label="Scale Y"
+                    :value="selectedShape?.scaleY ?? ''"
+                    :disabled="!selectedShape"
+                    min="-10"
+                    max="10"
+                    step="0.1"
+                    @input="onNumberChange('scaleY', $event)"
+                />
+            </div>
             <div class="fieldLabel">Отражение</div>
             <div class="grid2">
                 <button
@@ -82,7 +107,7 @@
             </div>
         </div>
 
-        <!-- Поворот -->
+        <!-- Поворот (для всех фигур, кроме line) -->
         <div v-if="selectedShape?.type !== 'line'" class="fieldBlock">
             <div class="fieldBlock">
                 <div class="fieldLabel">Поворот</div>
@@ -95,6 +120,7 @@
                         :disabled="!selectedShape"
                         min="0"
                         max="360"
+                        step="1"
                         @input="onNumberChange('rotation', $event)"
                         @wheel.prevent="onWheelChange('rotation', $event)"
                     />
@@ -105,8 +131,8 @@
 
         <div class="divider" />
 
-        <!-- Фигура -->
-        <section class="group">
+        <!-- Фигура (только для фигур с заливкой) -->
+        <section v-if="hasFill" class="group">
             <h3 class="groupTitle">Фигура</h3>
 
             <div class="grid2Blocks">
@@ -154,9 +180,27 @@
             </div>
         </section>
 
+        <!-- Специальные свойства для кривой -->
+        <section v-if="selectedShape?.type === 'curve'" class="group">
+            <h3 class="groupTitle">Кривая</h3>
+            <div class="fieldBlock">
+                <div class="fieldLabel">Количество точек</div>
+                <div class="grid2">
+                    <input
+                        class="fieldInput"
+                        type="number"
+                        :value="curvePointsCount"
+                        disabled
+                        readonly
+                    />
+                    <div class="spacer" aria-hidden="true" />
+                </div>
+            </div>
+        </section>
+
         <div class="divider" />
 
-        <!-- Обводка -->
+        <!-- Обводка (для всех фигур) -->
         <section class="group">
             <h3 class="groupTitle">Обводка</h3>
 
@@ -373,16 +417,28 @@ import type { Shape } from '@/canvas/types';
 const canvasStore = useCanvasStore();
 const { selectedShape, shapes } = storeToRefs(canvasStore);
 
-// Состояние редактирования слоя
 const editingLayerId = ref<string | null>(null);
 const inputRefs = ref<Record<string, HTMLInputElement>>({});
 
-// Метод для установки ref
 const setInputRef = (el: HTMLInputElement | null, shapeId: string) => {
     if (el) {
         inputRefs.value[shapeId] = el;
     }
 };
+
+watch(
+    () => shapes.value.length,
+    (newLength, oldLength) => {
+        if (newLength > oldLength) {
+            const newShape = shapes.value[shapes.value.length - 1];
+            if (newShape) {
+                setTimeout(() => {
+                    startEditing(newShape.id);
+                }, 100);
+            }
+        }
+    }
+);
 
 function getShapeNumberProp(key: string, fallback: number | '') {
     if (!selectedShape.value) return fallback;
@@ -400,8 +456,36 @@ function getShapeStringProp(key: string, fallback: string) {
     return typeof value === 'string' ? value : fallback;
 }
 
-const shapeWidth = computed(() => getShapeNumberProp('width', ''));
-const shapeHeight = computed(() => getShapeNumberProp('height', ''));
+const hasFill = computed(() => {
+    if (!selectedShape.value) return false;
+    const type = selectedShape.value.type;
+    return ['rect', 'circle', 'triangle', 'polygon', 'star', 'hexagon', 'arrow'].includes(type);
+});
+
+const shapeWidth = computed(() => {
+    if (!selectedShape.value) return '';
+    const type = selectedShape.value.type;
+    if (type === 'curve') {
+        return getShapeNumberProp('width', '');
+    }
+    return getShapeNumberProp('width', '');
+});
+
+const shapeHeight = computed(() => {
+    if (!selectedShape.value) return '';
+    const type = selectedShape.value.type;
+    if (type === 'curve') {
+        return getShapeNumberProp('height', '');
+    }
+    return getShapeNumberProp('height', '');
+});
+
+const curvePointsCount = computed(() => {
+    if (!selectedShape.value || selectedShape.value.type !== 'curve') return 0;
+    const shape = selectedShape.value as any;
+    return shape.anchorPoints?.length || 0;
+});
+
 const fillColor = computed(() => getShapeStringProp('fill', '#000000'));
 const strokeColor = computed(() => getShapeStringProp('stroke', '#000000'));
 const fillOpacity = computed(() => getShapeNumberProp('fillOpacity', 1));
@@ -481,6 +565,14 @@ function onFlip(key: 'scaleX' | 'scaleY') {
 
     const currentScale = Number((selectedShape.value as Partial<Shape>)[key]);
     const currentRotation = selectedShape.value.rotation;
+
+    if (selectedShape.value.type === 'curve') {
+        canvasStore.updateShape(selectedShape.value.id, {
+            [key]: currentScale * -1,
+            rotation: currentRotation, 
+        });
+        return;
+    }
 
     const newRotation =
         key === 'scaleX'
@@ -707,7 +799,7 @@ function moveLayerDown() {
         layerIndexToShapeIndex(toLayerIndex)
     );
 }
-// ============ МЕТОДЫ РЕДАКТИРОВАНИЯ (ТОЛЬКО ЗДЕСЬ, ОДИН РАЗ) ============
+
 function startEditing(shapeId: string) {
     console.log('DOUBLE CLICK WORKS', shapeId);
     editingLayerId.value = shapeId;

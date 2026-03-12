@@ -24,11 +24,17 @@ abstract class BaseCurveShape extends BaseShape {
     abstract move(delta: Point): void;
     abstract setSize(width: number, height: number): void;
 <<<<<<< HEAD
+<<<<<<< HEAD
     getPointsCount(): number {
         return 0;
     }
 =======
 >>>>>>> 9bc4801 (все вроде работает)
+=======
+    getPointsCount(): number {
+        return 0;
+    }
+>>>>>>> 55d4cf5 (поправил)
 }
 
 export class CurveShape extends BaseCurveShape {
@@ -162,6 +168,9 @@ export class CurveShape extends BaseCurveShape {
     }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 55d4cf5 (поправил)
 private getCurvePoints(): Point[] {
     if (this.anchorPoints.length < 2) return [];
     
@@ -169,6 +178,7 @@ private getCurvePoints(): Point[] {
     const steps = 30;
     
     for (let i = 0; i < this.anchorPoints.length - 1; i++) {
+<<<<<<< HEAD
 =======
     private getCurvePoints(): Point[] {
         if (this.anchorPoints.length < 2) return [];
@@ -234,17 +244,23 @@ private getCurvePoints(): Point[] {
             : p2;
 =======
         if (!p1 || !p2) return { x: 0, y: 0 };
+=======
+        const p1 = this.anchorPoints[i];
+        const p2 = this.anchorPoints[i + 1];
         
-        const t2 = t * t;
-        const t3 = t2 * t;
+        if (!p1 || !p2) continue;
+>>>>>>> 55d4cf5 (поправил)
         
-        const x = 0.5 * (
-            (2 * p1.x) +
-            (-p0.x + p2.x) * t +
-            (2 * p0.x - 5 * p1.x + 4 * p2.x - (p3?.x || p2.x)) * t2 +
-            (-p0.x + 3 * p1.x - 3 * p2.x + (p3?.x || p2.x)) * t3
-        );
+        // Безопасное получение p0 и p3 с явной проверкой
+        const p0: Point = i > 0 && this.anchorPoints[i - 1] 
+            ? this.anchorPoints[i - 1]! 
+            : p1;
         
+        const p3: Point = i < this.anchorPoints.length - 2 && this.anchorPoints[i + 2]
+            ? this.anchorPoints[i + 2]!
+            : p2;
+        
+<<<<<<< HEAD
         const y = 0.5 * (
             (2 * p1.y) +
             (-p0.y + p2.y) * t +
@@ -253,6 +269,8 @@ private getCurvePoints(): Point[] {
         );
 >>>>>>> 67e8942 (1)
         
+=======
+>>>>>>> 55d4cf5 (поправил)
         for (let s = 0; s <= steps; s++) {
             const t = s / steps;
             

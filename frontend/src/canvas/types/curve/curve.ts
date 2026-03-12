@@ -4,17 +4,51 @@ import { Editable, HideProperties } from '../property';
 import { shapeRegistry } from '../registry';
 
 export interface CurveParams {
-    points: Point[];  // Точки в локальных координатах относительно position
+    points: Point[];  
     stroke?: string;
     strokeOpacity?: number;
     strokeWidth?: number;
 }
 
-@HideProperties(['x', 'y', 'points']) // Скрываем ненужные свойства
-export class CurveShape extends BaseShape {
+@HideProperties(['x', 'y', 'points'])
+abstract class BaseCurveShape extends BaseShape {
+    constructor(id: string, position: Point) {
+        super(id, position);
+    }
+    
+    abstract type: string;
+    abstract hitTest(globalPoint: Point): boolean;
+    abstract getBoundingBox(): BoundingBox;
+    abstract getLocalBox(): BoundingBox;
+    abstract render(ctx: CanvasRenderingContext2D): void;
+    abstract move(delta: Point): void;
+    abstract setSize(width: number, height: number): void;
+}
+
+export class CurveShape extends BaseCurveShape {
     type = 'curve';
 
-    private anchorPoints: Point[] = []; // Опорные точки
+    private anchorPoints: Point[] = []; 
+    private _width: number = 100;
+    private _height: number = 100;
+
+    @Editable({ label: 'Ширина', type: 'number', min: 10, max: 500, step: 1 })
+    get width(): number {
+        return this._width;
+    }
+    set width(v: number) {
+        this._width = v;
+        this.updatePointsFromSize();
+    }
+
+    @Editable({ label: 'Высота', type: 'number', min: 10, max: 500, step: 1 })
+    get height(): number {
+        return this._height;
+    }
+    set height(v: number) {
+        this._height = v;
+        this.updatePointsFromSize();
+    }
 
     @Editable({ label: 'Цвет обводки', type: 'color' })
     stroke: string;
@@ -65,9 +99,37 @@ export class CurveShape extends BaseShape {
         
         this.anchorPoints = params.points.map(p => ({ ...p }));
         
+        // Вычисляем размеры из точек
+        const xs = this.anchorPoints.map(p => p.x);
+        const ys = this.anchorPoints.map(p => p.y);
+        this._width = Math.max(...xs) - Math.min(...xs);
+        this._height = Math.max(...ys) - Math.min(...ys);
+        
         this.stroke = params.stroke || '#000000';
         this.strokeOpacity = params.strokeOpacity || 1;
         this.strokeWidth = params.strokeWidth || 2;
+    }
+
+    private updatePointsFromSize() {
+        if (this.anchorPoints.length === 0) return;
+        
+        const xs = this.anchorPoints.map(p => p.x);
+        const ys = this.anchorPoints.map(p => p.y);
+        const currentWidth = Math.max(...xs) - Math.min(...xs);
+        const currentHeight = Math.max(...ys) - Math.min(...ys);
+        
+        if (currentWidth === 0 || currentHeight === 0) return;
+        
+        const centerX = (Math.max(...xs) + Math.min(...xs)) / 2;
+        const centerY = (Math.max(...ys) + Math.min(...ys)) / 2;
+        
+        const scaleX = this._width / currentWidth;
+        const scaleY = this._height / currentHeight;
+        
+        this.anchorPoints = this.anchorPoints.map(p => ({
+            x: centerX + (p.x - centerX) * scaleX,
+            y: centerY + (p.y - centerY) * scaleY
+        }));
     }
 
     getGlobalPoints(): Point[] {
@@ -86,9 +148,13 @@ export class CurveShape extends BaseShape {
         this.position.y = centerY;
         
         this.anchorPoints = points.map(p => this.toVLocalPoint(p));
+        
+        const xs = this.anchorPoints.map(p => p.x);
+        const ys = this.anchorPoints.map(p => p.y);
+        this._width = Math.max(...xs) - Math.min(...xs);
+        this._height = Math.max(...ys) - Math.min(...ys);
     }
 
-    // Получить все точки для отрисовки кривой Безье
     private getCurvePoints(): Point[] {
         if (this.anchorPoints.length < 2) return [];
         
@@ -127,7 +193,6 @@ export class CurveShape extends BaseShape {
         return result;
     }
 
-    // Получить точку на кривой в глобальных координатах
     getPointOnCurveAtSegment(segmentIndex: number, t: number): Point {
         if (segmentIndex < 0 || segmentIndex >= this.anchorPoints.length - 1) {
             return { x: 0, y: 0 };
@@ -159,48 +224,41 @@ export class CurveShape extends BaseShape {
         return this.toGlobalPoint({ x, y });
     }
 
-    // Вставить новую опорную точку
     insertAnchorPoint(index: number, point: Point) {
         const localPoint = this.toVLocalPoint(point);
         this.anchorPoints.splice(index, 0, localPoint);
+        
+        const xs = this.anchorPoints.map(p => p.x);
+        const ys = this.anchorPoints.map(p => p.y);
+        this._width = Math.max(...xs) - Math.min(...xs);
+        this._height = Math.max(...ys) - Math.min(...ys);
     }
 
     addPoint(index: number, globalPoint: Point) {
         const localPoint = this.toVLocalPoint(globalPoint);
         this.anchorPoints.splice(index, 0, localPoint);
+        
+        const xs = this.anchorPoints.map(p => p.x);
+        const ys = this.anchorPoints.map(p => p.y);
+        this._width = Math.max(...xs) - Math.min(...xs);
+        this._height = Math.max(...ys) - Math.min(...ys);
     }
 
     removePoint(index: number) {
         if (this.anchorPoints.length > 2) {
             this.anchorPoints.splice(index, 1);
+            
+            // Обновляем размеры
+            const xs = this.anchorPoints.map(p => p.x);
+            const ys = this.anchorPoints.map(p => p.y);
+            this._width = Math.max(...xs) - Math.min(...xs);
+            this._height = Math.max(...ys) - Math.min(...ys);
         }
     }
 
     setSize(width: number, height: number): void {
-        const globalPoints = this.anchorPoints.map(p => this.toGlobalPoint(p));
-        
-        const minX = Math.min(...globalPoints.map(p => p.x));
-        const minY = Math.min(...globalPoints.map(p => p.y));
-        const maxX = Math.max(...globalPoints.map(p => p.x));
-        const maxY = Math.max(...globalPoints.map(p => p.y));
-        
-        const currentWidth = maxX - minX;
-        const currentHeight = maxY - minY;
-        
-        if (currentWidth === 0 || currentHeight === 0) return;
-        
-        const centerX = (minX + maxX) / 2;
-        const centerY = (minY + maxY) / 2;
-        
-        const scaleX = width / currentWidth;
-        const scaleY = height / currentHeight;
-        
-        const scaledPoints = globalPoints.map(p => ({
-            x: centerX + (p.x - centerX) * scaleX,
-            y: centerY + (p.y - centerY) * scaleY
-        }));
-        
-        this.setGlobalPoints(scaledPoints);
+        this.width = width;
+        this.height = height;
     }
 
     getLocalBox(): BoundingBox {
@@ -283,9 +341,7 @@ export class CurveShape extends BaseShape {
         const m = this.getVMatrix();
         ctx.transform(m.a, m.b, m.c, m.d, m.e, m.f);
         
-        const sx = Math.sign(this.scaleX);
-        const sy = Math.sign(this.scaleY);
-        ctx.scale(sx, sy);
+        ctx.scale(this.scaleX, this.scaleY);
 
         const curvePoints = this.getCurvePoints();
         

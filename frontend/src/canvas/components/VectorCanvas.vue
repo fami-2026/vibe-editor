@@ -54,11 +54,6 @@ const drawTemporaryPoints = () => {
             ctx.lineWidth = 2;
             ctx.stroke();
         });
-        if (points.length === 1) {
-            ctx.font = '14px Arial';
-            ctx.fillStyle = '#666';
-            ctx.fillText('Кликните для конечной точки', 20, 30);
-        }
     }
     
     if (isEditingMode.value && editingCurve.value) {
@@ -161,8 +156,8 @@ function findClosestPointIndex(x: number, y: number): number {
     return closestIndex;
 }
 
-function getPointOnCurve(points: Point[], t: number, segment: number): Point {
-    const i = segment;
+function getPointOnCurveAtSegment(points: Point[], segmentIndex: number, t: number): Point {
+    const i = segmentIndex;
     const p0 = i > 0 ? points[i - 1] : points[i];
     const p1 = points[i];
     const p2 = points[i + 1];
@@ -186,41 +181,6 @@ function getPointOnCurve(points: Point[], t: number, segment: number): Point {
     );
     
     return { x, y };
-}
-
-function splitSegment(index: number): number {
-    if (!editingCurve.value) return index;
-    
-    const points = editingCurve.value.getGlobalPoints();
-    
-    if (index > 0 && index < points.length - 1) {
-        const prevPoint = points[index - 1];
-        const currentPoint = points[index];
-        const nextPoint = points[index + 1];
-        
-        // Точки ровно посередине отрезков
-        const point1 = {
-            x: (prevPoint.x + currentPoint.x) / 2,
-            y: (prevPoint.y + currentPoint.y) / 2
-        };
-        
-        const point2 = {
-            x: (currentPoint.x + nextPoint.x) / 2,
-            y: (currentPoint.y + nextPoint.y) / 2
-        };
-        
-        const newPoints = [
-            ...points.slice(0, index),
-            point1,
-            currentPoint,
-            point2,
-            ...points.slice(index + 1)
-        ];
-        
-        editingCurve.value.setGlobalPoints(newPoints);
-        return index + 1;
-    }
-    return index;
 }
 
 const handleCanvasClick = (e: MouseEvent) => {
@@ -309,7 +269,19 @@ const handleCanvasMouseUp = (e: MouseEvent) => {
         if (initialPoint && currentPoint) {
             const moved = Math.hypot(currentPoint.x - initialPoint.x, currentPoint.y - initialPoint.y) > 1;
             if (moved && draggedIndex > 0 && draggedIndex < points.length - 1) {
-                draggedPointIndex.value = splitSegment(draggedIndex);
+                const point1 = getPointOnCurveAtSegment(points, draggedIndex - 1, 0.5);
+                const point2 = getPointOnCurveAtSegment(points, draggedIndex, 0.5);
+                
+                const newPoints = [
+                    ...points.slice(0, draggedIndex),
+                    point1,
+                    points[draggedIndex],
+                    point2,
+                    ...points.slice(draggedIndex + 1)
+                ];
+                
+                editingCurve.value.setGlobalPoints(newPoints);
+                draggedPointIndex.value = draggedIndex + 1;
             }
         }
         canvasStore.pushHistoryForCurve();
@@ -442,6 +414,19 @@ watch(
 <template>
     <div ref="containerRef" class="canvas-wrapper">
         <canvas ref="canvasRef" class="main-canvas"></canvas>
+        
+        <!-- Подсказки поверх канваса -->
+        <div class="hints">
+            <div v-if="curveDrawing" class="hint">
+                <p v-if="curveDrawing.points.length === 1">
+                    👆 Кликните для конечной точки
+                </p>
+            </div>
+            
+            <div v-if="isEditingMode" class="hint editing-hint">
+                <p>✏️ Режим редактирования: перетаскивайте точки, Enter для выхода</p>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -459,5 +444,34 @@ watch(
     width: 100%;
     height: 100%;
     cursor: default;
+}
+.hints {
+    position: absolute;
+    top: 20px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 10;
+}
+.hint {
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    animation: fadeIn 0.3s ease;
+}
+.editing-hint {
+    background: rgba(33, 150, 243, 0.9);
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 </style>

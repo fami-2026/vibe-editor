@@ -28,7 +28,6 @@
             </div>
 
             <!-- Размер: 2 поля (для всех фигур, кроме line) -->
-            <!-- Размер: 2 поля (для всех фигур, кроме line) -->
             <div v-if="selectedShape?.type !== 'line'" class="fieldBlock">
                 <div class="fieldBlock">
                     <div class="fieldLabel">Размер</div>
@@ -421,15 +420,7 @@ function getShapeStringProp(key: string, fallback: string) {
 const hasFill = computed(() => {
     if (!selectedShape.value) return false;
     const type = selectedShape.value.type;
-    return [
-        'rect',
-        'circle',
-        'triangle',
-        'polygon',
-        'star',
-        'hexagon',
-        'arrow',
-    ].includes(type);
+    return ['rect', 'circle', 'triangle', 'polygon', 'star', 'hexagon', 'arrow'].includes(type);
 });
 
 const shapeWidth = computed(() => {
@@ -452,8 +443,8 @@ const shapeHeight = computed(() => {
 
 const curvePointsCount = computed(() => {
     if (!selectedShape.value || selectedShape.value.type !== 'curve') return 0;
-    const shape = selectedShape.value as CurveShape;
-    return shape.getPointsCount?.() || 0;
+    const shape = selectedShape.value as any;
+    return shape.anchorPoints?.length || 0;
 });
 
 const fillColor = computed(() => getShapeStringProp('fill', '#000000'));
@@ -501,7 +492,7 @@ function onFlip(key: 'scaleX' | 'scaleY') {
     if (selectedShape.value.type === 'curve') {
         canvasStore.updateShape(selectedShape.value.id, {
             [key]: currentScale * -1,
-            rotation: currentRotation,
+            rotation: currentRotation, 
         });
         return;
     }

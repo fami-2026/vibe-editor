@@ -499,7 +499,6 @@ onUnmounted(() => {
     resizeObserver?.disconnect();
     detachListeners?.();
     isEditInteraction.value = false;
-    isEditInteraction.value = false;
 });
 
 watch(

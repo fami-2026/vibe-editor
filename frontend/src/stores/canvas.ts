@@ -56,11 +56,6 @@ export const useCanvasStore = defineStore('canvas', () => {
     const editingCurve = ref<CurveShapeWrapper | null>(null);
     const isEditingMode = ref(false);
 
-    // Новые состояния для кривой
-    const curveDrawing = ref<CurveDrawingState | null>(null);
-    const editingCurve = ref<CurveShapeWrapper | null>(null);
-    const isEditingMode = ref(false);
-
     const undoStack = ref<SceneSnapshot[]>([]);
     const redoStack = ref<SceneSnapshot[]>([]);
     const isInteractionActive = ref(false);

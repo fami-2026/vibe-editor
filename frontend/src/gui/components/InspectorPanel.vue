@@ -240,27 +240,50 @@
                         <span class="thumb" aria-hidden="true">
                             <svg class="thumbSvg" viewBox="0 0 20 20">
                                 <!-- Прямоугольник -->
-                                <rect v-if="shape.type === 'rect'"
-                                    x="2" y="4" width="16" height="12" rx="1"
-                                    :fill="thumbFill(shape)" :fill-opacity="thumbFillOpacity(shape)"
-                                    :stroke="thumbStroke(shape)" stroke-width="1.5"
+                                <rect
+                                    v-if="shape.type === 'rect'"
+                                    x="2"
+                                    y="4"
+                                    width="16"
+                                    height="12"
+                                    rx="1"
+                                    :fill="thumbFill(shape)"
+                                    :fill-opacity="thumbFillOpacity(shape)"
+                                    :stroke="thumbStroke(shape)"
+                                    stroke-width="1.5"
                                 />
                                 <!-- Круг / эллипс -->
-                                <ellipse v-else-if="shape.type === 'circle'"
-                                    cx="10" cy="10" rx="8" ry="7"
-                                    :fill="thumbFill(shape)" :fill-opacity="thumbFillOpacity(shape)"
-                                    :stroke="thumbStroke(shape)" stroke-width="1.5"
+                                <ellipse
+                                    v-else-if="shape.type === 'circle'"
+                                    cx="10"
+                                    cy="10"
+                                    rx="8"
+                                    ry="7"
+                                    :fill="thumbFill(shape)"
+                                    :fill-opacity="thumbFillOpacity(shape)"
+                                    :stroke="thumbStroke(shape)"
+                                    stroke-width="1.5"
                                 />
                                 <!-- Линия -->
-                                <line v-else-if="shape.type === 'line'"
-                                    x1="3" y1="17" x2="17" y2="3"
-                                    :stroke="thumbStroke(shape)" stroke-width="2" stroke-linecap="round"
+                                <line
+                                    v-else-if="shape.type === 'line'"
+                                    x1="3"
+                                    y1="17"
+                                    x2="17"
+                                    y2="3"
+                                    :stroke="thumbStroke(shape)"
+                                    stroke-width="2"
+                                    stroke-linecap="round"
                                 />
                                 <!-- Все остальные полигональные фигуры -->
-                                <polygon v-else
+                                <polygon
+                                    v-else
                                     :points="getThumbPoints(shape)"
-                                    :fill="thumbFill(shape)" :fill-opacity="thumbFillOpacity(shape)"
-                                    :stroke="thumbStroke(shape)" stroke-width="1.5" stroke-linejoin="round"
+                                    :fill="thumbFill(shape)"
+                                    :fill-opacity="thumbFillOpacity(shape)"
+                                    :stroke="thumbStroke(shape)"
+                                    stroke-width="1.5"
+                                    stroke-linejoin="round"
                                 />
                             </svg>
                         </span>
@@ -438,25 +461,37 @@ function onOpacityChange(key: OpacityFieldKey, event: Event) {
 // ============ МИНИАТЮРЫ СЛОЁВ (SVG) ============
 
 function thumbFill(shape: Shape): string {
-    const fill = (shape as unknown as Record<string, unknown>).fill as string | undefined;
+    const fill = (shape as unknown as Record<string, unknown>).fill as
+        | string
+        | undefined;
     if (!fill || fill === 'transparent') return '#e5e7eb';
     return fill;
 }
 
 function thumbFillOpacity(shape: Shape): number {
-    const fill = (shape as unknown as Record<string, unknown>).fill as string | undefined;
+    const fill = (shape as unknown as Record<string, unknown>).fill as
+        | string
+        | undefined;
     if (!fill || fill === 'transparent') return 0.4;
-    const opacity = (shape as unknown as Record<string, unknown>).fillOpacity as number | undefined;
+    const opacity = (shape as unknown as Record<string, unknown>)
+        .fillOpacity as number | undefined;
     return typeof opacity === 'number' ? Math.max(0.15, opacity) : 1;
 }
 
 function thumbStroke(shape: Shape): string {
-    const stroke = (shape as unknown as Record<string, unknown>).stroke as string | undefined;
+    const stroke = (shape as unknown as Record<string, unknown>).stroke as
+        | string
+        | undefined;
     if (!stroke || stroke === 'transparent') return '#6b7280';
     return stroke;
 }
 
-function generatePolygonPoints(sides: number, cx: number, cy: number, r: number): string {
+function generatePolygonPoints(
+    sides: number,
+    cx: number,
+    cy: number,
+    r: number
+): string {
     const pts: string[] = [];
     for (let i = 0; i < sides; i++) {
         const a = (i * 2 * Math.PI) / sides - Math.PI / 2;
@@ -467,7 +502,13 @@ function generatePolygonPoints(sides: number, cx: number, cy: number, r: number)
     return pts.join(' ');
 }
 
-function generateStarPoints(numPoints: number, cx: number, cy: number, outerR: number, innerR: number): string {
+function generateStarPoints(
+    numPoints: number,
+    cx: number,
+    cy: number,
+    outerR: number,
+    innerR: number
+): string {
     const pts: string[] = [];
     for (let i = 0; i < numPoints * 2; i++) {
         const r = i % 2 === 0 ? outerR : innerR;
@@ -485,11 +526,15 @@ function getThumbPoints(shape: Shape): string {
         case 'triangle':
             return '10,3 2,17 18,17';
         case 'polygon': {
-            const sides = (shape as unknown as Record<string, unknown>).sides as number || 5;
+            const sides =
+                ((shape as unknown as Record<string, unknown>)
+                    .sides as number) || 5;
             return generatePolygonPoints(sides, 10, 10, 8);
         }
         case 'star': {
-            const numPoints = (shape as unknown as Record<string, unknown>).numPoints as number || 5;
+            const numPoints =
+                ((shape as unknown as Record<string, unknown>)
+                    .numPoints as number) || 5;
             return generateStarPoints(numPoints, 10, 10, 8, 4);
         }
         case 'hexagon':

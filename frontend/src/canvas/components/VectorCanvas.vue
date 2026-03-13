@@ -13,9 +13,6 @@ const canvasRef = ref<HTMLCanvasElement | null>(null);
 const canvasStore = useCanvasStore();
 const { shapes, selectedId, curveDrawing, editingCurve, isEditingMode } =
     storeToRefs(canvasStore);
-const canvasStore = useCanvasStore();
-const { shapes, selectedId, curveDrawing, editingCurve, isEditingMode } =
-    storeToRefs(canvasStore);
 
 const { draw } = useCanvasRender(canvasRef, shapes, selectedId);
 const { attachListeners } = useInteractions(canvasRef, shapes);
@@ -40,7 +37,6 @@ const updateCanvasSize = () => {
         canvasRef.value.width = clientWidth;
         canvasRef.value.height = clientHeight;
         draw();
-        drawTemporaryPoints();
         drawTemporaryPoints();
     }
 };

@@ -15,7 +15,6 @@ import {
     ArrowUp,
     Pentagon,
     Spline, // Импортируем иконку для кривой
-    Spline, // Импортируем иконку для кривой
 } from 'lucide-vue-next';
 import { useToolsStore, type ToolType } from '@/stores/tools';
 import { useCanvasStore } from '@/stores/canvas';

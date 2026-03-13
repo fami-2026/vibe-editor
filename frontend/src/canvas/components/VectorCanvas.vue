@@ -45,7 +45,9 @@ onUnmounted(() => {
     detachListeners?.();
 });
 
-watch([shapes, selectedId, zoom], () => requestAnimationFrame(draw), { deep: true });
+watch([shapes, selectedId, zoom], () => requestAnimationFrame(draw), {
+    deep: true,
+});
 </script>
 
 <template>

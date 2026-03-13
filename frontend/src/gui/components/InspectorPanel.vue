@@ -238,7 +238,31 @@
                         @click="onSelectLayer(shape.id)"
                     >
                         <span class="thumb" aria-hidden="true">
-                            {{ shapeThumb(shape.type) }}
+                            <svg class="thumbSvg" viewBox="0 0 20 20">
+                                <!-- Прямоугольник -->
+                                <rect v-if="shape.type === 'rect'"
+                                    x="2" y="4" width="16" height="12" rx="1"
+                                    :fill="thumbFill(shape)" :fill-opacity="thumbFillOpacity(shape)"
+                                    :stroke="thumbStroke(shape)" stroke-width="1.5"
+                                />
+                                <!-- Круг / эллипс -->
+                                <ellipse v-else-if="shape.type === 'circle'"
+                                    cx="10" cy="10" rx="8" ry="7"
+                                    :fill="thumbFill(shape)" :fill-opacity="thumbFillOpacity(shape)"
+                                    :stroke="thumbStroke(shape)" stroke-width="1.5"
+                                />
+                                <!-- Линия -->
+                                <line v-else-if="shape.type === 'line'"
+                                    x1="3" y1="17" x2="17" y2="3"
+                                    :stroke="thumbStroke(shape)" stroke-width="2" stroke-linecap="round"
+                                />
+                                <!-- Все остальные полигональные фигуры -->
+                                <polygon v-else
+                                    :points="getThumbPoints(shape)"
+                                    :fill="thumbFill(shape)" :fill-opacity="thumbFillOpacity(shape)"
+                                    :stroke="thumbStroke(shape)" stroke-width="1.5" stroke-linejoin="round"
+                                />
+                            </svg>
                         </span>
 
                         <!-- Режим редактирования -->
@@ -411,18 +435,84 @@ function onOpacityChange(key: OpacityFieldKey, event: Event) {
     } as Partial<Shape>);
 }
 
-function shapeThumb(type: string) {
-    if (type === 'rect') return '▭';
-    if (type === 'circle') return '◯';
-    if (type === 'line') return '/';
-    return '?';
+// ============ МИНИАТЮРЫ СЛОЁВ (SVG) ============
+
+function thumbFill(shape: Shape): string {
+    const fill = (shape as unknown as Record<string, unknown>).fill as string | undefined;
+    if (!fill || fill === 'transparent') return '#e5e7eb';
+    return fill;
+}
+
+function thumbFillOpacity(shape: Shape): number {
+    const fill = (shape as unknown as Record<string, unknown>).fill as string | undefined;
+    if (!fill || fill === 'transparent') return 0.4;
+    const opacity = (shape as unknown as Record<string, unknown>).fillOpacity as number | undefined;
+    return typeof opacity === 'number' ? Math.max(0.15, opacity) : 1;
+}
+
+function thumbStroke(shape: Shape): string {
+    const stroke = (shape as unknown as Record<string, unknown>).stroke as string | undefined;
+    if (!stroke || stroke === 'transparent') return '#6b7280';
+    return stroke;
+}
+
+function generatePolygonPoints(sides: number, cx: number, cy: number, r: number): string {
+    const pts: string[] = [];
+    for (let i = 0; i < sides; i++) {
+        const a = (i * 2 * Math.PI) / sides - Math.PI / 2;
+        const x = Math.round((cx + r * Math.cos(a)) * 10) / 10;
+        const y = Math.round((cy + r * Math.sin(a)) * 10) / 10;
+        pts.push(`${x},${y}`);
+    }
+    return pts.join(' ');
+}
+
+function generateStarPoints(numPoints: number, cx: number, cy: number, outerR: number, innerR: number): string {
+    const pts: string[] = [];
+    for (let i = 0; i < numPoints * 2; i++) {
+        const r = i % 2 === 0 ? outerR : innerR;
+        const a = (i * Math.PI) / numPoints - Math.PI / 2;
+        const x = Math.round((cx + r * Math.cos(a)) * 10) / 10;
+        const y = Math.round((cy + r * Math.sin(a)) * 10) / 10;
+        pts.push(`${x},${y}`);
+    }
+    return pts.join(' ');
+}
+
+function getThumbPoints(shape: Shape): string {
+    const type = shape.type;
+    switch (type) {
+        case 'triangle':
+            return '10,3 2,17 18,17';
+        case 'polygon': {
+            const sides = (shape as unknown as Record<string, unknown>).sides as number || 5;
+            return generatePolygonPoints(sides, 10, 10, 8);
+        }
+        case 'star': {
+            const numPoints = (shape as unknown as Record<string, unknown>).numPoints as number || 5;
+            return generateStarPoints(numPoints, 10, 10, 8, 4);
+        }
+        case 'hexagon':
+            return generatePolygonPoints(6, 10, 10, 8);
+        case 'arrow':
+            return '1,8 12,8 12,3 19,10 12,17 12,12 1,12';
+        default:
+            return generatePolygonPoints(5, 10, 10, 8);
+    }
 }
 
 function shapeLabel(type: string) {
-    if (type === 'rect') return 'Прямоугольник';
-    if (type === 'circle') return 'Круг';
-    if (type === 'line') return 'Линия';
-    return type;
+    const labels: Record<string, string> = {
+        rect: 'Прямоугольник',
+        circle: 'Круг',
+        line: 'Линия',
+        triangle: 'Треугольник',
+        polygon: 'Многоугольник',
+        star: 'Звезда',
+        arrow: 'Стрелка',
+        hexagon: 'Шестиугольник',
+    };
+    return labels[type] ?? type;
 }
 
 function onSelectLayer(id: string) {
@@ -666,9 +756,9 @@ function saveLayerName(shapeId: string, newName: string) {
 .layerItem {
     width: 100%;
     display: grid;
-    grid-template-columns: 20px 1fr;
+    grid-template-columns: 24px 1fr;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
 
     padding: 6px 8px;
     border-radius: 10px;
@@ -701,8 +791,8 @@ function saveLayerName(shapeId: string, newName: string) {
 }
 
 .thumb {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     border-radius: 6px;
 
     display: grid;
@@ -711,11 +801,14 @@ function saveLayerName(shapeId: string, newName: string) {
     background: #ffffff;
     border: 1px solid #e5e7eb;
 
-    font-size: 12px;
-    font-weight: 700;
-    color: #374151;
-
     user-select: none;
+    flex-shrink: 0;
+}
+
+.thumbSvg {
+    width: 18px;
+    height: 18px;
+    display: block;
 }
 
 .layerName {

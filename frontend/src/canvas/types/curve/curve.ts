@@ -23,18 +23,9 @@ abstract class BaseCurveShape extends BaseShape {
     abstract render(ctx: CanvasRenderingContext2D): void;
     abstract move(delta: Point): void;
     abstract setSize(width: number, height: number): void;
-<<<<<<< HEAD
-<<<<<<< HEAD
     getPointsCount(): number {
         return 0;
     }
-=======
->>>>>>> 9bc4801 (все вроде работает)
-=======
-    getPointsCount(): number {
-        return 0;
-    }
->>>>>>> 55d4cf5 (поправил)
 }
 
 export class CurveShape extends BaseCurveShape {

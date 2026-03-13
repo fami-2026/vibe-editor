@@ -28,6 +28,7 @@
             </div>
 
             <!-- Размер: 2 поля (для всех фигур, кроме line) -->
+            <!-- Размер: 2 поля (для всех фигур, кроме line) -->
             <div v-if="selectedShape?.type !== 'line'" class="fieldBlock">
                 <div class="fieldBlock">
                     <div class="fieldLabel">Размер</div>
@@ -420,7 +421,15 @@ function getShapeStringProp(key: string, fallback: string) {
 const hasFill = computed(() => {
     if (!selectedShape.value) return false;
     const type = selectedShape.value.type;
-    return ['rect', 'circle', 'triangle', 'polygon', 'star', 'hexagon', 'arrow'].includes(type);
+    return [
+        'rect',
+        'circle',
+        'triangle',
+        'polygon',
+        'star',
+        'hexagon',
+        'arrow',
+    ].includes(type);
 });
 
 const shapeWidth = computed(() => {
@@ -453,6 +462,7 @@ const fillOpacity = computed(() => getShapeNumberProp('fillOpacity', 1));
 const strokeOpacity = computed(() => getShapeNumberProp('strokeOpacity', 1));
 const strokeWidth = computed(() => getShapeNumberProp('strokeWidth', ''));
 
+const layers = computed(() => shapes.value);
 // список слоёв — сверху вниз (верхний слой отображается первым)
 const layers = computed(() => [...shapes.value].reverse());
 
@@ -492,7 +502,7 @@ function onFlip(key: 'scaleX' | 'scaleY') {
     if (selectedShape.value.type === 'curve') {
         canvasStore.updateShape(selectedShape.value.id, {
             [key]: currentScale * -1,
-            rotation: currentRotation, 
+            rotation: currentRotation,
         });
         return;
     }
@@ -666,6 +676,7 @@ function onLayerDrop(targetIndex: number, event: DragEvent) {
     canvasStore.moveShape(fromShapeIndex, toShapeIndex);
 }
 
+const selectedIndex = computed(() => {
 const selectedLayerIndex = computed(() => {
     if (!selectedShape.value) return -1;
     return layers.value.findIndex((s) => s.id === selectedShape.value?.id);

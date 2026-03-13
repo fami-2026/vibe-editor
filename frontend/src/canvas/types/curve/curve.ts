@@ -23,9 +23,7 @@ abstract class BaseCurveShape extends BaseShape {
     abstract render(ctx: CanvasRenderingContext2D): void;
     abstract move(delta: Point): void;
     abstract setSize(width: number, height: number): void;
-    getPointsCount(): number {
-        return 0;
-    }
+
     getPointsCount(): number {
         return 0;
     }

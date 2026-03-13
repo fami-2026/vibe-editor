@@ -39,7 +39,6 @@ const updateCanvasSize = () => {
         canvasRef.value.height = clientHeight;
         draw();
         drawTemporaryPoints();
-        drawTemporaryPoints();
     }
 };
 

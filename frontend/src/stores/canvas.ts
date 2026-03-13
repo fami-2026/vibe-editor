@@ -1,11 +1,9 @@
 import { defineStore } from 'pinia';
 import { ref, computed, watch } from 'vue';
 import type { Shape, Point } from '@/canvas/types';
-import type { Shape, Point } from '@/canvas/types';
 import { shapeRegistry } from '@/canvas/types';
 import { generateId } from '@/canvas/utils/math';
 import { PolygonShape } from '@/canvas/types/polygon/polygon';
-import { CurveShapeWrapper } from '@/canvas/types/curve/curve';
 import { CurveShapeWrapper } from '@/canvas/types/curve/curve';
 
 interface ShapeParams extends Record<string, unknown> {

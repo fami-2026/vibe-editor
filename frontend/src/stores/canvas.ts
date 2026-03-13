@@ -42,6 +42,10 @@ export const useCanvasStore = defineStore('canvas', () => {
     const redoStack = ref<SceneSnapshot[]>([]);
     const isInteractionActive = ref(false);
     const HISTORY_LIMIT = 50;
+    const MIN_ZOOM = 10;
+    const MAX_ZOOM = 500;
+    const ZOOM_STEP = 10;
+    const zoom = ref(100);
 
     let isContinuousChangeActive = false;
     let continuousChangeTimer: number | null = null;
@@ -239,6 +243,18 @@ export const useCanvasStore = defineStore('canvas', () => {
         selectedId.value = id;
     }
 
+    function setZoom(value: number) {
+        zoom.value = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Math.round(value)));
+    }
+
+    function zoomIn() {
+        setZoom(zoom.value + ZOOM_STEP);
+    }
+
+    function zoomOut() {
+        setZoom(zoom.value - ZOOM_STEP);
+    }
+
     return {
         shapes,
         selectedId,
@@ -252,6 +268,10 @@ export const useCanvasStore = defineStore('canvas', () => {
         redo,
         canUndo,
         canRedo,
+        zoom,
+        setZoom,
+        zoomIn,
+        zoomOut,
         startInteraction,
         endInteraction,
     };

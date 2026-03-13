@@ -462,6 +462,7 @@ const fillOpacity = computed(() => getShapeNumberProp('fillOpacity', 1));
 const strokeOpacity = computed(() => getShapeNumberProp('strokeOpacity', 1));
 const strokeWidth = computed(() => getShapeNumberProp('strokeWidth', ''));
 
+const layers = computed(() => shapes.value);
 // список слоёв — сверху вниз (верхний слой отображается первым)
 const layers = computed(() => [...shapes.value].reverse());
 
@@ -686,6 +687,7 @@ function onLayerDrop(targetIndex: number, event: DragEvent) {
     canvasStore.moveShape(fromShapeIndex, toShapeIndex);
 }
 
+const selectedIndex = computed(() => {
 const selectedLayerIndex = computed(() => {
     if (!selectedShape.value) return -1;
     return layers.value.findIndex((s) => s.id === selectedShape.value?.id);

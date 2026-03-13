@@ -6,10 +6,15 @@ import { useCanvasRender } from '@/canvas/composables/useCanvasRender';
 import { useInteractions } from '@/canvas/composables/useInteractions';
 import type { CurveShapeWrapper } from '@/canvas/types/curve/curve';
 import type { Point } from '@/canvas/types';
+import type { CurveShapeWrapper } from '@/canvas/types/curve/curve';
+import type { Point } from '@/canvas/types';
 
 const containerRef = ref<HTMLDivElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 
+const canvasStore = useCanvasStore();
+const { shapes, selectedId, curveDrawing, editingCurve, isEditingMode } =
+    storeToRefs(canvasStore);
 const canvasStore = useCanvasStore();
 const { shapes, selectedId, curveDrawing, editingCurve, isEditingMode } =
     storeToRefs(canvasStore);
@@ -19,6 +24,12 @@ const { attachListeners } = useInteractions(canvasRef, shapes);
 
 let resizeObserver: ResizeObserver | null = null;
 let detachListeners: (() => void) | undefined;
+
+const draggedPointIndex = ref<number | null>(null);
+const isDragging = ref(false);
+const lastMousePos = ref<{ x: number; y: number } | null>(null);
+const initialPoints = ref<{ x: number; y: number }[]>([]);
+const isEditInteraction = ref(false);
 
 const draggedPointIndex = ref<number | null>(null);
 const isDragging = ref(false);
@@ -36,6 +47,7 @@ const updateCanvasSize = () => {
         canvasRef.value.width = clientWidth;
         canvasRef.value.height = clientHeight;
         draw();
+        drawTemporaryPoints();
         drawTemporaryPoints();
     }
 };

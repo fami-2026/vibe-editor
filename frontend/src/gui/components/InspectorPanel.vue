@@ -55,7 +55,7 @@
             </div>
         </section>
 
-        <!-- Масштаб -->
+        <!-- Отражение -->
         <div class="fieldBlock">
             <div class="fieldLabel">Масштаб</div>
             <div class="grid2">
@@ -83,7 +83,7 @@
                 />
             </div>
             <div class="fieldLabel">Отражение</div>
-            <div class="grid2" style="margin-top: 4px">
+            <div class="grid2">
                 <button
                     class="iconBtnSmall"
                     :disabled="!selectedShape"
@@ -415,6 +415,12 @@ const strokeOpacity = computed(() => getShapeNumberProp('strokeOpacity', 1));
 const strokeWidth = computed(() => getShapeNumberProp('strokeWidth', ''));
 
 const layers = computed(() => shapes.value);
+// список слоёв — сверху вниз (верхний слой отображается первым)
+const layers = computed(() => [...shapes.value].reverse());
+
+function layerIndexToShapeIndex(layerIndex: number) {
+    return shapes.value.length - 1 - layerIndex;
+}
 
 const draggedLayerIndex = ref<number | null>(null);
 
@@ -541,32 +547,45 @@ function onLayerDrop(targetIndex: number, event: DragEvent) {
     const to = targetIndex;
     draggedLayerIndex.value = null;
     if (from === to) return;
-    canvasStore.moveShape(from, to);
+    const fromShapeIndex = layerIndexToShapeIndex(from);
+    const toShapeIndex = layerIndexToShapeIndex(to);
+    canvasStore.moveShape(fromShapeIndex, toShapeIndex);
 }
 
 const selectedIndex = computed(() => {
+const selectedLayerIndex = computed(() => {
     if (!selectedShape.value) return -1;
-    return shapes.value.findIndex((s) => s.id === selectedShape.value?.id);
+    return layers.value.findIndex((s) => s.id === selectedShape.value?.id);
 });
 
 const canMoveUp = computed(() => {
     if (!selectedShape.value) return false;
-    return selectedIndex.value > 0;
+    return selectedLayerIndex.value > 0;
 });
 
 const canMoveDown = computed(() => {
     if (!selectedShape.value) return false;
-    return selectedIndex.value < shapes.value.length - 1;
+    return selectedLayerIndex.value < layers.value.length - 1;
 });
 
 function moveLayerUp() {
     if (!canMoveUp.value) return;
-    canvasStore.moveShape(selectedIndex.value, selectedIndex.value - 1);
+    const fromLayerIndex = selectedLayerIndex.value;
+    const toLayerIndex = fromLayerIndex - 1;
+    canvasStore.moveShape(
+        layerIndexToShapeIndex(fromLayerIndex),
+        layerIndexToShapeIndex(toLayerIndex)
+    );
 }
 
 function moveLayerDown() {
     if (!canMoveDown.value) return;
-    canvasStore.moveShape(selectedIndex.value, selectedIndex.value + 1);
+    const fromLayerIndex = selectedLayerIndex.value;
+    const toLayerIndex = fromLayerIndex + 1;
+    canvasStore.moveShape(
+        layerIndexToShapeIndex(fromLayerIndex),
+        layerIndexToShapeIndex(toLayerIndex)
+    );
 }
 
 function startEditing(shapeId: string) {

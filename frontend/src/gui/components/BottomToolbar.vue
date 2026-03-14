@@ -16,7 +16,6 @@ import {
     Pentagon,
 } from 'lucide-vue-next';
 import { useToolsStore, type ToolType } from '@/stores/tools';
-import { useCanvasStore } from '@/stores/canvas';
 
 type ToolId =
     | 'hand'

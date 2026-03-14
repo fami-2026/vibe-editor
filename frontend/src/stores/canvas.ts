@@ -19,6 +19,7 @@ interface ShapeParams extends Record<string, unknown> {
     rotation?: number;
 }
 
+// Интерфейсы для кривой
 interface CurveDrawingState {
     points: Point[]; // Точки [start, end]
 }
@@ -50,8 +51,11 @@ type SceneSnapshot = {
 export const useCanvasStore = defineStore('canvas', () => {
     const shapes = ref<Shape[]>([]);
     const selectedId = ref<string | null>(null);
+    
+    // Состояния для зума
+    const zoom = ref(1);
 
-    // Новые состояния для кривой
+    // Состояния для кривой
     const curveDrawing = ref<CurveDrawingState | null>(null);
     const editingCurve = ref<CurveShapeWrapper | null>(null);
     const isEditingMode = ref(false);
@@ -60,10 +64,6 @@ export const useCanvasStore = defineStore('canvas', () => {
     const redoStack = ref<SceneSnapshot[]>([]);
     const isInteractionActive = ref(false);
     const HISTORY_LIMIT = 50;
-    const MIN_ZOOM = 10;
-    const MAX_ZOOM = 500;
-    const ZOOM_STEP = 10;
-    const zoom = ref(100);
 
     let isContinuousChangeActive = false;
     let continuousChangeTimer: number | null = null;
@@ -262,25 +262,92 @@ export const useCanvasStore = defineStore('canvas', () => {
         selectedId.value = id;
     }
 
+    // ===== МЕТОДЫ ДЛЯ КРИВОЙ =====
+    function startCurveDrawing() {
+        curveDrawing.value = { points: [] };
+    }
+
+    function handleCanvasClick(x: number, y: number) {
+        if (!curveDrawing.value) return;
+        curveDrawing.value.points.push({ x, y });
+        if (curveDrawing.value.points.length === 2) {
+            createStraightCurve();
+        }
+    }
+
+    function createStraightCurve() {
+        if (!curveDrawing.value || curveDrawing.value.points.length !== 2) return;
+        
+        const points = curveDrawing.value.points;
+        const start = points[0];
+        const end = points[1];
+        
+        if (start && end) {
+            const existingCurves = shapes.value.filter(s => s.type === 'curve');
+            const defaultName = `Кривая ${existingCurves.length + 1}`;
+            
+            const curve = new CurveShapeWrapper(generateId(), start);
+            
+            const globalPoints = [
+                start,
+                { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 },
+                end
+            ];
+            curve.setGlobalPoints(globalPoints);
+            (curve as Shape).name = defaultName;
+            
+            shapes.value.push(curve);
+            curveDrawing.value = null;
+        }
+    }
+
+    function editCurve(shape: CurveShapeWrapper) {
+        editingCurve.value = shape;
+        isEditingMode.value = true;
+        selectedId.value = shape.id;
+    }
+
+    function exitEditMode() {
+        editingCurve.value = null;
+        isEditingMode.value = false;
+        selectedId.value = null;
+    }
+
+    function pushHistoryForCurve() {
+        if (editingCurve.value) {
+            pushHistory();
+        }
+    }
+
+    function cancelCurveDrawing() {
+        curveDrawing.value = null;
+    }
+
+    // ===== МЕТОДЫ ДЛЯ ЗУМА =====
     function setZoom(value: number) {
-        zoom.value = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Math.round(value)));
+        zoom.value = Math.max(0.1, Math.min(5, value));
     }
 
     function zoomIn() {
-        setZoom(zoom.value + ZOOM_STEP);
+        setZoom(zoom.value + 0.1);
     }
 
     function zoomOut() {
-        setZoom(zoom.value - ZOOM_STEP);
+        setZoom(zoom.value - 0.1);
     }
 
+    function resetZoom() {
+        zoom.value = 1;
+    }
+
+    // ===== СОХРАНЕНИЕ В LOCALSTORAGE =====
     const STORAGE_KEY = 'vector-editor-canvas';
 
     function saveToLocalStorage() {
         try {
             const data = {
                 shapes: shapes.value.map(serializeShape),
-                selectedId: selectedId.value,
+                selectedId: selectedId.value
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         } catch (e) {
@@ -293,19 +360,17 @@ export const useCanvasStore = defineStore('canvas', () => {
             const saved = localStorage.getItem(STORAGE_KEY);
             if (!saved) return;
 
-            const data = JSON.parse(saved) as {
-                shapes: SerializedShape[];
-                selectedId: string | null;
+            const data = JSON.parse(saved) as { 
+                shapes: SerializedShape[]; 
+                selectedId: string | null 
             };
-
-            const restored: Shape[] = data.shapes.map(
-                (plain: SerializedShape) => {
-                    const { type, id, position, ...rest } = plain;
-                    const shape = shapeRegistry.create(type, id, position);
-                    Object.assign(shape, rest);
-                    return shape as Shape;
-                }
-            );
+            
+            const restored: Shape[] = data.shapes.map((plain: SerializedShape) => {
+                const { type, id, position, ...rest } = plain;
+                const shape = shapeRegistry.create(type, id, position);
+                Object.assign(shape, rest);
+                return shape as Shape;
+            });
 
             shapes.value = restored;
             selectedId.value = data.selectedId || null;
@@ -405,6 +470,10 @@ export const useCanvasStore = defineStore('canvas', () => {
         shapes,
         selectedId,
         selectedShape,
+        zoom,
+        curveDrawing,
+        editingCurve,
+        isEditingMode,
         addShape,
         updateShape,
         deleteShape,
@@ -414,16 +483,8 @@ export const useCanvasStore = defineStore('canvas', () => {
         redo,
         canUndo,
         canRedo,
-        zoom,
-        setZoom,
-        zoomIn,
-        zoomOut,
         startInteraction,
         endInteraction,
-        // Новые экспорты для кривой
-        curveDrawing,
-        editingCurve,
-        isEditingMode,
         startCurveDrawing,
         handleCanvasClick,
         createStraightCurve,
@@ -431,5 +492,11 @@ export const useCanvasStore = defineStore('canvas', () => {
         exitEditMode,
         pushHistoryForCurve,
         cancelCurveDrawing,
+        setZoom,
+        zoomIn,
+        zoomOut,
+        resetZoom,
+        saveToLocalStorage,
+        loadFromLocalStorage,
     };
 });

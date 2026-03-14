@@ -136,55 +136,57 @@ export const useCanvasStore = defineStore('canvas', () => {
             continuousChangeTimer = null;
         }, CONTINUOUS_CHANGE_TIMEOUT);
     }
-const STORAGE_KEY = 'vector-editor-canvas';
+    const STORAGE_KEY = 'vector-editor-canvas';
 
-function saveToLocalStorage() {
-    try {
-        const data = {
-            shapes: shapes.value.map(serializeShape),
-            selectedId: selectedId.value
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch (e) {
-        console.error('Ошибка сохранения:', e);
-    }
-}
-
-function loadFromLocalStorage() {
-    try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (!saved) {
-            return;
+    function saveToLocalStorage() {
+        try {
+            const data = {
+                shapes: shapes.value.map(serializeShape),
+                selectedId: selectedId.value,
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        } catch (e) {
+            console.error('Ошибка сохранения:', e);
         }
-
-        const data = JSON.parse(saved) as { 
-            shapes: SerializedShape[]; 
-            selectedId: string | null 
-        };
-        
-        const restored: Shape[] = data.shapes.map((plain: SerializedShape) => {
-            const { type, id, position, ...rest } = plain;
-            const shape = shapeRegistry.create(type, id, position);
-            Object.assign(shape, rest);
-            return shape as Shape;
-        });
-
-        shapes.value = restored;
-        selectedId.value = data.selectedId || null;
-    } catch (e) {
-        console.error('Ошибка загрузки:', e);
     }
-}
 
-loadFromLocalStorage();
+    function loadFromLocalStorage() {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (!saved) {
+                return;
+            }
 
-watch(
-    [shapes, selectedId],
-    () => {
-        saveToLocalStorage();
-    },
-    { deep: true }
-);
+            const data = JSON.parse(saved) as {
+                shapes: SerializedShape[];
+                selectedId: string | null;
+            };
+
+            const restored: Shape[] = data.shapes.map(
+                (plain: SerializedShape) => {
+                    const { type, id, position, ...rest } = plain;
+                    const shape = shapeRegistry.create(type, id, position);
+                    Object.assign(shape, rest);
+                    return shape as Shape;
+                }
+            );
+
+            shapes.value = restored;
+            selectedId.value = data.selectedId || null;
+        } catch (e) {
+            console.error('Ошибка загрузки:', e);
+        }
+    }
+
+    loadFromLocalStorage();
+
+    watch(
+        [shapes, selectedId],
+        () => {
+            saveToLocalStorage();
+        },
+        { deep: true }
+    );
     function undo() {
         const snapshot = undoStack.value.pop();
         if (!snapshot) return;

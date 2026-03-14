@@ -384,22 +384,6 @@ const setInputRef = (el: HTMLInputElement | null, shapeId: string) => {
     }
 };
 
-// Отслеживаем новые фигуры
-watch(
-    () => shapes.value.length,
-    (newLength, oldLength) => {
-        if (newLength > oldLength) {
-            // Появилась новая фигура
-            const newShape = shapes.value[shapes.value.length - 1];
-            if (newShape) {
-                setTimeout(() => {
-                    startEditing(newShape.id);
-                }, 100);
-            }
-        }
-    }
-);
-
 function getShapeNumberProp(key: string, fallback: number | '') {
     if (!selectedShape.value) return fallback;
     const value = (selectedShape.value as unknown as Record<string, unknown>)[

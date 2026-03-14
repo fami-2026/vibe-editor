@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed,nextTick, watch, ref } from 'vue';
+import { computed, nextTick, watch, ref } from 'vue';
 import type { Component } from 'vue';
 import {
     Hand,
@@ -87,7 +87,6 @@ watch(showPolygonDialog, async (isOpen) => {
     }
 });
 
-
 function handleClick(tool: Tool) {
     switch (tool.id) {
         case 'cursor':
@@ -134,17 +133,15 @@ function handleClick(tool: Tool) {
     }
 }
 
-
 function closePolygonDialog() {
     showPolygonDialog.value = false;
     polygonSides.value = 5;
 }
 
 function createPolygon() {
+    const sides = Number(polygonSides.value);
 
-    const sides = Number(polygonSides.value)
-
-    if (!Number.isInteger(sides) || sides < 3 || sides > 20){
+    if (!Number.isInteger(sides) || sides < 3 || sides > 20) {
         return;
     }
 
@@ -192,7 +189,7 @@ const activeId = computed<ToolId>(() => {
             />
         </button>
 
-<Teleport to="body">
+        <Teleport to="body">
             <div
                 v-if="showPolygonDialog"
                 class="modal-overlay"
@@ -244,7 +241,10 @@ const activeId = computed<ToolId>(() => {
                         >
                             Создать
                         </button>
-                        <button class="secondaryBtn" @click="closePolygonDialog">
+                        <button
+                            class="secondaryBtn"
+                            @click="closePolygonDialog"
+                        >
                             Отмена
                         </button>
                     </div>

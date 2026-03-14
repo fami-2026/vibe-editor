@@ -374,7 +374,15 @@ function getShapeStringProp(key: string, fallback: string) {
 const hasFill = computed(() => {
     if (!selectedShape.value) return false;
     const type = selectedShape.value.type;
-    return ['rect', 'circle', 'triangle', 'polygon', 'star', 'hexagon', 'arrow'].includes(type);
+    return [
+        'rect',
+        'circle',
+        'triangle',
+        'polygon',
+        'star',
+        'hexagon',
+        'arrow',
+    ].includes(type);
 });
 
 const shapeWidth = computed(() => getShapeNumberProp('width', ''));
@@ -384,8 +392,6 @@ const strokeColor = computed(() => getShapeStringProp('stroke', '#000000'));
 const fillOpacity = computed(() => getShapeNumberProp('fillOpacity', 1));
 const strokeOpacity = computed(() => getShapeNumberProp('strokeOpacity', 1));
 const strokeWidth = computed(() => getShapeNumberProp('strokeWidth', ''));
-
-
 
 const curvePointsCount = computed(() => {
     if (!selectedShape.value || selectedShape.value.type !== 'curve') return 0;

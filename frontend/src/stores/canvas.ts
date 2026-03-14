@@ -51,7 +51,6 @@ export const useCanvasStore = defineStore('canvas', () => {
     const shapes = ref<Shape[]>([]);
     const selectedId = ref<string | null>(null);
 
-
     // Новые состояния для кривой
     const curveDrawing = ref<CurveDrawingState | null>(null);
     const editingCurve = ref<CurveShapeWrapper | null>(null);
@@ -274,45 +273,48 @@ export const useCanvasStore = defineStore('canvas', () => {
     }
 
     function createStraightCurve() {
-    if (!curveDrawing.value || curveDrawing.value.points.length !== 2) return;
-    
-    const points = curveDrawing.value.points;
-    const start = points[0];
-    const end = points[1];
-    
-    if (start && end) {
-        const existingCurves = shapes.value.filter(s => s.type === 'curve');
-        const defaultName = `Кривая ${existingCurves.length + 1}`;
-        
-        // Проверяем границы
-        const canvas = document.querySelector('canvas');
-        if (canvas) {
-            const maxX = canvas.width;
-            const maxY = canvas.height;
-            
-            start.x = Math.max(5, Math.min(maxX - 5, start.x));
-            start.y = Math.max(5, Math.min(maxY - 5, start.y));
-            end.x = Math.max(5, Math.min(maxX - 5, end.x));
-            end.y = Math.max(5, Math.min(maxY - 5, end.y));
+        if (!curveDrawing.value || curveDrawing.value.points.length !== 2)
+            return;
+
+        const points = curveDrawing.value.points;
+        const start = points[0];
+        const end = points[1];
+
+        if (start && end) {
+            const existingCurves = shapes.value.filter(
+                (s) => s.type === 'curve'
+            );
+            const defaultName = `Кривая ${existingCurves.length + 1}`;
+
+            // Проверяем границы
+            const canvas = document.querySelector('canvas');
+            if (canvas) {
+                const maxX = canvas.width;
+                const maxY = canvas.height;
+
+                start.x = Math.max(5, Math.min(maxX - 5, start.x));
+                start.y = Math.max(5, Math.min(maxY - 5, start.y));
+                end.x = Math.max(5, Math.min(maxX - 5, end.x));
+                end.y = Math.max(5, Math.min(maxY - 5, end.y));
+            }
+
+            const curve = new CurveShapeWrapper(generateId(), start);
+
+            const globalPoints = [
+                start,
+                {
+                    x: (start.x + end.x) / 2,
+                    y: (start.y + end.y) / 2,
+                },
+                end,
+            ];
+            curve.setGlobalPoints(globalPoints);
+            (curve as Shape).name = defaultName;
+
+            shapes.value.push(curve);
+            curveDrawing.value = null;
         }
-        
-        const curve = new CurveShapeWrapper(generateId(), start);
-        
-        const globalPoints = [
-            start,
-            { 
-                x: (start.x + end.x) / 2, 
-                y: (start.y + end.y) / 2 
-            },
-            end
-        ];
-        curve.setGlobalPoints(globalPoints);
-        (curve as Shape).name = defaultName;
-        
-        shapes.value.push(curve);
-        curveDrawing.value = null;
     }
-}
 
     function editCurve(shape: CurveShapeWrapper) {
         editingCurve.value = shape;

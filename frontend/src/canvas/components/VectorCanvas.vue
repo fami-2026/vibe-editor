@@ -35,18 +35,22 @@ function updateCanvasBounds() {
         minX: 0,
         minY: 0,
         maxX: canvasRef.value.width,
-        maxY: canvasRef.value.height
+        maxY: canvasRef.value.height,
     };
 }
 
 function clampToBounds(point: Point): Point {
     return {
-        x: Math.max(canvasBounds.value.minX, Math.min(canvasBounds.value.maxX, point.x)),
-        y: Math.max(canvasBounds.value.minY, Math.min(canvasBounds.value.maxY, point.y))
+        x: Math.max(
+            canvasBounds.value.minX,
+            Math.min(canvasBounds.value.maxX, point.x)
+        ),
+        y: Math.max(
+            canvasBounds.value.minY,
+            Math.min(canvasBounds.value.maxY, point.y)
+        ),
     };
 }
-
-
 
 function getSplinePoints(points: Point[]): Point[] {
     if (points.length < 2) return points;
@@ -62,21 +66,21 @@ function getSplinePoints(points: Point[]): Point[] {
 
         for (let s = 0; s <= 20; s++) {
             const t = s / 20;
-            
-            const x = 0.5 * (
-                2 * p1!.x +
-                (-p0!.x + p2!.x) * t +
-                (2 * p0!.x - 5 * p1!.x + 4 * p2!.x - p3!.x) * t * t +
-                (-p0!.x + 3 * p1!.x - 3 * p2!.x + p3!.x) * t * t * t
-            );
-            
-            const y = 0.5 * (
-                2 * p1!.y +
-                (-p0!.y + p2!.y) * t +
-                (2 * p0!.y - 5 * p1!.y + 4 * p2!.y - p3!.y) * t * t +
-                (-p0!.y + 3 * p1!.y - 3 * p2!.y + p3!.y) * t * t * t
-            );
-            
+
+            const x =
+                0.5 *
+                (2 * p1!.x +
+                    (-p0!.x + p2!.x) * t +
+                    (2 * p0!.x - 5 * p1!.x + 4 * p2!.x - p3!.x) * t * t +
+                    (-p0!.x + 3 * p1!.x - 3 * p2!.x + p3!.x) * t * t * t);
+
+            const y =
+                0.5 *
+                (2 * p1!.y +
+                    (-p0!.y + p2!.y) * t +
+                    (2 * p0!.y - 5 * p1!.y + 4 * p2!.y - p3!.y) * t * t +
+                    (-p0!.y + 3 * p1!.y - 3 * p2!.y + p3!.y) * t * t * t);
+
             result.push({ x, y });
         }
     }
@@ -113,19 +117,19 @@ function catmullRomPoint(
     const t2 = t * t;
     const t3 = t2 * t;
 
-    const x = 0.5 * (
-        2 * p1.x +
-        (-p0.x + p2.x) * t +
-        (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
-        (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3
-    );
+    const x =
+        0.5 *
+        (2 * p1.x +
+            (-p0.x + p2.x) * t +
+            (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
+            (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3);
 
-    const y = 0.5 * (
-        2 * p1.y +
-        (-p0.y + p2.y) * t +
-        (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
-        (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3
-    );
+    const y =
+        0.5 *
+        (2 * p1.y +
+            (-p0.y + p2.y) * t +
+            (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
+            (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3);
 
     return { x, y };
 }
@@ -141,7 +145,8 @@ function splitSegment(index: number): number {
         const pPrev = points[index - 1];
         const pCurr = points[index];
         const pNext = points[index + 1];
-        const pNextNext = index + 2 < points.length ? points[index + 2] : points[index + 1];
+        const pNextNext =
+            index + 2 < points.length ? points[index + 2] : points[index + 1];
 
         if (!pPrev || !pCurr || !pNext || !pNextNext) return index;
 
@@ -212,7 +217,10 @@ const drawTemporaryPoints = () => {
             if (!point) return;
             ctx.beginPath();
             ctx.arc(point.x, point.y, 8, 0, 2 * Math.PI);
-            ctx.fillStyle = index === 0 || index === points.length - 1 ? '#4CAF50' : '#FF9800';
+            ctx.fillStyle =
+                index === 0 || index === points.length - 1
+                    ? '#4CAF50'
+                    : '#FF9800';
             ctx.fill();
             ctx.strokeStyle = 'white';
             ctx.lineWidth = 2;
@@ -234,9 +242,10 @@ const drawTemporaryPoints = () => {
     ctx.textBaseline = 'top';
 
     if (curveDrawing.value) {
-        const text = curveDrawing.value.points.length === 1
-            ? 'Кликните для конечной точки'
-            : 'Рисование кривой';
+        const text =
+            curveDrawing.value.points.length === 1
+                ? 'Кликните для конечной точки'
+                : 'Рисование кривой';
         ctx.fillText(text, canvasRef.value.width / 2, 20);
     } else if (isEditingMode.value) {
         ctx.fillText(
@@ -369,10 +378,11 @@ const handleCanvasMouseUp = (e: MouseEvent) => {
         const currentPoint = points[draggedIndex];
 
         if (initialPoint && currentPoint) {
-            const moved = Math.hypot(
-                currentPoint.x - initialPoint.x,
-                currentPoint.y - initialPoint.y
-            ) > 1;
+            const moved =
+                Math.hypot(
+                    currentPoint.x - initialPoint.x,
+                    currentPoint.y - initialPoint.y
+                ) > 1;
             if (moved && draggedIndex > 0 && draggedIndex < points.length - 1) {
                 draggedPointIndex.value = splitSegment(draggedIndex);
             }

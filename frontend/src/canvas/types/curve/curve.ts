@@ -315,43 +315,48 @@ export class CurveShape extends BaseCurveShape {
         return { minX, minY, maxX, maxY };
     }
 
-getBoundingBox(): BoundingBox {
-    // Получаем все точки кривой (включая промежуточные для сплайна)
-    const globalPoints = this.getGlobalPoints();
-    const splinePoints = this.getCurvePoints().map(p => this.toGlobalPoint(p));
-    
-    const allPoints = [...globalPoints, ...splinePoints];
-    
-    if (allPoints.length === 0) {
+    getBoundingBox(): BoundingBox {
+        // Получаем все точки кривой (включая промежуточные для сплайна)
+        const globalPoints = this.getGlobalPoints();
+        const splinePoints = this.getCurvePoints().map((p) =>
+            this.toGlobalPoint(p)
+        );
+
+        const allPoints = [...globalPoints, ...splinePoints];
+
+        if (allPoints.length === 0) {
+            return {
+                minX: this.position.x - 50,
+                minY: this.position.y - 50,
+                maxX: this.position.x + 50,
+                maxY: this.position.y + 50,
+            };
+        }
+
+        let minX = Infinity,
+            minY = Infinity,
+            maxX = -Infinity,
+            maxY = -Infinity;
+
+        for (const p of allPoints) {
+            if (p) {
+                minX = Math.min(minX, p.x);
+                minY = Math.min(minY, p.y);
+                maxX = Math.max(maxX, p.x);
+                maxY = Math.max(maxY, p.y);
+            }
+        }
+
+        // Добавляем отступ для учета толщины линии
+        const padding = Math.max(this.strokeWidth * 2, 10);
+
         return {
-            minX: this.position.x - 50,
-            minY: this.position.y - 50,
-            maxX: this.position.x + 50,
-            maxY: this.position.y + 50
+            minX: minX - padding,
+            minY: minY - padding,
+            maxX: maxX + padding,
+            maxY: maxY + padding,
         };
     }
-
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    
-    for (const p of allPoints) {
-        if (p) {
-            minX = Math.min(minX, p.x);
-            minY = Math.min(minY, p.y);
-            maxX = Math.max(maxX, p.x);
-            maxY = Math.max(maxY, p.y);
-        }
-    }
-
-    // Добавляем отступ для учета толщины линии
-    const padding = Math.max(this.strokeWidth * 2, 10);
-    
-    return {
-        minX: minX - padding,
-        minY: minY - padding,
-        maxX: maxX + padding,
-        maxY: maxY + padding,
-    };
-}
 
     hitTest(globalPoint: Point): boolean {
         const localPoint = this.toVLocalPoint(globalPoint);

@@ -8,10 +8,10 @@ import { useInteractions } from '@/canvas/composables/useInteractions';
 const containerRef = ref<HTMLDivElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 
-const { shapes, selectedId } = storeToRefs(useCanvasStore());
+const { shapes, selectedId, zoom } = storeToRefs(useCanvasStore());
 
-const { draw } = useCanvasRender(canvasRef, shapes, selectedId);
-const { attachListeners } = useInteractions(canvasRef, shapes);
+const { draw } = useCanvasRender(canvasRef, shapes, selectedId, zoom);
+const { attachListeners } = useInteractions(canvasRef, shapes, zoom);
 
 let resizeObserver: ResizeObserver | null = null;
 let detachListeners: (() => void) | undefined;
@@ -45,7 +45,9 @@ onUnmounted(() => {
     detachListeners?.();
 });
 
-watch([shapes, selectedId], () => requestAnimationFrame(draw), { deep: true });
+watch([shapes, selectedId, zoom], () => requestAnimationFrame(draw), {
+    deep: true,
+});
 </script>
 
 <template>

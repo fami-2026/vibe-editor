@@ -9,7 +9,6 @@ const toolsStore = useToolsStore();
 const canvasStore = useCanvasStore();
 const { activeTool } = storeToRefs(toolsStore);
 
-// Состояние для диалога многоугольника
 const showPolygonDialog = ref(false);
 const polygonSides = ref(5);
 

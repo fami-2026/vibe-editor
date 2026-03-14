@@ -27,7 +27,7 @@
                 </div>
             </div>
 
-            <!-- Размер: 2 поля (для всех фигур, кроме line) -->
+            <!-- Размер: 2 поля -->
             <div v-if="selectedShape?.type !== 'line'" class="fieldBlock">
                 <div class="fieldBlock">
                     <div class="fieldLabel">Размер</div>
@@ -103,7 +103,7 @@
             </div>
         </div>
 
-        <!-- Поворот (для всех фигур, кроме line) -->
+        <!-- Поворот -->
         <div v-if="selectedShape?.type !== 'line'" class="fieldBlock">
             <div class="fieldBlock">
                 <div class="fieldLabel">Поворот</div>
@@ -125,6 +125,24 @@
         </div>
 
         <div class="divider" />
+
+        <!-- Специальная секция для кривой -->
+        <section v-if="selectedShape?.type === 'curve'" class="group">
+            <h3 class="groupTitle">Кривая</h3>
+            <div class="fieldBlock">
+                <div class="fieldLabel">Количество точек</div>
+                <div class="grid2">
+                    <input
+                        class="fieldInput"
+                        type="number"
+                        :value="curvePointsCount"
+                        disabled
+                        readonly
+                    />
+                    <div class="spacer" aria-hidden="true" />
+                </div>
+            </div>
+        </section>
 
         <!-- Фигура (только для фигур с заливкой) -->
         <section v-if="hasFill" class="group">
@@ -164,27 +182,9 @@
             </div>
         </section>
 
-        <!-- Специальные свойства для кривой -->
-        <section v-if="selectedShape?.type === 'curve'" class="group">
-            <h3 class="groupTitle">Кривая</h3>
-            <div class="fieldBlock">
-                <div class="fieldLabel">Количество точек</div>
-                <div class="grid2">
-                    <input
-                        class="fieldInput"
-                        type="number"
-                        :value="curvePointsCount"
-                        disabled
-                        readonly
-                    />
-                    <div class="spacer" aria-hidden="true" />
-                </div>
-            </div>
-        </section>
-
         <div class="divider" />
 
-        <!-- Обводка (для всех фигур) -->
+        <!-- Обводка -->
         <section class="group">
             <h3 class="groupTitle">Обводка</h3>
 
@@ -328,6 +328,7 @@ import { storeToRefs } from 'pinia';
 import { useCanvasStore } from '@/stores/canvas';
 import type { Shape } from '@/canvas/types';
 import type { CurveShape } from '@/canvas/types/curve/curve';
+
 const canvasStore = useCanvasStore();
 const { selectedShape, shapes } = storeToRefs(canvasStore);
 
@@ -373,34 +374,18 @@ function getShapeStringProp(key: string, fallback: string) {
 const hasFill = computed(() => {
     if (!selectedShape.value) return false;
     const type = selectedShape.value.type;
-    return [
-        'rect',
-        'circle',
-        'triangle',
-        'polygon',
-        'star',
-        'hexagon',
-        'arrow',
-    ].includes(type);
+    return ['rect', 'circle', 'triangle', 'polygon', 'star', 'hexagon', 'arrow'].includes(type);
 });
 
-const shapeWidth = computed(() => {
-    if (!selectedShape.value) return '';
-    const type = selectedShape.value.type;
-    if (type === 'curve') {
-        return getShapeNumberProp('width', '');
-    }
-    return getShapeNumberProp('width', '');
-});
+const shapeWidth = computed(() => getShapeNumberProp('width', ''));
+const shapeHeight = computed(() => getShapeNumberProp('height', ''));
+const fillColor = computed(() => getShapeStringProp('fill', '#000000'));
+const strokeColor = computed(() => getShapeStringProp('stroke', '#000000'));
+const fillOpacity = computed(() => getShapeNumberProp('fillOpacity', 1));
+const strokeOpacity = computed(() => getShapeNumberProp('strokeOpacity', 1));
+const strokeWidth = computed(() => getShapeNumberProp('strokeWidth', ''));
 
-const shapeHeight = computed(() => {
-    if (!selectedShape.value) return '';
-    const type = selectedShape.value.type;
-    if (type === 'curve') {
-        return getShapeNumberProp('height', '');
-    }
-    return getShapeNumberProp('height', '');
-});
+
 
 const curvePointsCount = computed(() => {
     if (!selectedShape.value || selectedShape.value.type !== 'curve') return 0;
@@ -408,14 +393,7 @@ const curvePointsCount = computed(() => {
     return shape.getPointsCount?.() || 0;
 });
 
-const fillColor = computed(() => getShapeStringProp('fill', '#000000'));
-const strokeColor = computed(() => getShapeStringProp('stroke', '#000000'));
-const fillOpacity = computed(() => getShapeNumberProp('fillOpacity', 1));
-const strokeOpacity = computed(() => getShapeNumberProp('strokeOpacity', 1));
-const strokeWidth = computed(() => getShapeNumberProp('strokeWidth', ''));
-
 const layers = computed(() => shapes.value);
-
 const draggedLayerIndex = ref<number | null>(null);
 
 type NumberFieldKey =
@@ -622,14 +600,9 @@ function saveLayerName(shapeId: string, newName: string) {
     border: 1px solid #e5e7eb;
     border-radius: 14px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
-
     padding: 12px;
-
     max-height: 55vh;
     overflow: auto;
-}
-
-.panel {
     scrollbar-gutter: stable;
 }
 
@@ -678,13 +651,6 @@ function saveLayerName(shapeId: string, newName: string) {
     gap: 14px;
 }
 
-.fieldStub {
-    height: 16px;
-    border-radius: 8px;
-    background: #f3f4f6;
-    border: 1px solid #e5e7eb;
-}
-
 .fieldInput {
     width: 100%;
     height: 24px;
@@ -708,103 +674,6 @@ function saveLayerName(shapeId: string, newName: string) {
     border: 1px solid #e5e7eb;
     padding: 0;
     background: #ffffff;
-}
-
-.layersRow {
-    display: flex;
-    gap: 10px;
-    margin-top: 4px;
-}
-
-.iconBtn {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    cursor: pointer;
-}
-
-.iconBtn:hover {
-    background: #f3f4f6;
-}
-
-.spacer {
-    height: 20px;
-}
-
-.layersList {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-
-    display: grid;
-    gap: 6px;
-}
-
-.layerItem {
-    width: 100%;
-    display: grid;
-    grid-template-columns: 20px 1fr;
-    align-items: center;
-    gap: 10px;
-
-    padding: 6px 8px;
-    border-radius: 10px;
-
-    background: #ffffff;
-    border: 1px solid transparent;
-    cursor: pointer;
-
-    text-align: left;
-    color: #111827;
-}
-
-.layerItem:hover {
-    background: #f3f4f6;
-}
-
-.layerItem:focus {
-    outline: none;
-}
-
-.layerItem:focus-visible {
-    outline: 2px solid rgba(37, 99, 235, 0.55);
-    outline-offset: 2px;
-    border-radius: 10px;
-}
-
-.layerItem.isActive {
-    background: rgba(37, 99, 235, 0.12);
-    border-color: rgba(37, 99, 235, 0.3);
-}
-
-.thumb {
-    width: 20px;
-    height: 20px;
-    border-radius: 6px;
-
-    display: grid;
-    place-items: center;
-
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-
-    font-size: 12px;
-    font-weight: 700;
-    color: #374151;
-
-    user-select: none;
-}
-
-.layerName {
-    font-size: 12px;
-    font-weight: 500;
-    color: #111827;
-
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .iconBtnSmall {
@@ -838,6 +707,61 @@ function saveLayerName(shapeId: string, newName: string) {
     background: #f9fafb;
 }
 
+.layersList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 6px;
+}
+
+.layerItem {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 20px 1fr;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px;
+    border-radius: 10px;
+    background: #ffffff;
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-align: left;
+    color: #111827;
+}
+
+.layerItem:hover {
+    background: #f3f4f6;
+}
+
+.layerItem.isActive {
+    background: rgba(37, 99, 235, 0.12);
+    border-color: rgba(37, 99, 235, 0.3);
+}
+
+.thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    display: grid;
+    place-items: center;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    font-size: 12px;
+    font-weight: 700;
+    color: #374151;
+    user-select: none;
+}
+
+.layerName {
+    font-size: 12px;
+    font-weight: 500;
+    color: #111827;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .layersHeader {
     display: flex;
     align-items: center;
@@ -851,26 +775,6 @@ function saveLayerName(shapeId: string, newName: string) {
     gap: 4px;
 }
 
-.layerItem:hover {
-    background: #f3f4f6;
-}
-
-.layerItem:focus {
-    outline: none;
-}
-
-.layerItem:focus-visible {
-    outline: 2px solid rgba(37, 99, 235, 0.55);
-    outline-offset: 2px;
-    border-radius: 10px;
-}
-
-.layerItem.isActive {
-    background: rgba(37, 99, 235, 0.12);
-    border-color: rgba(37, 99, 235, 0.3);
-}
-
-/* Стили для инпута редактирования имени */
 .layerNameInput {
     font-size: 12px;
     font-weight: 500;

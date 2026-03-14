@@ -439,7 +439,9 @@ const wheelStepConfig: Record<NumberFieldKey, number> = {
     width: 1,
     height: 1,
     rotation: 5,
-    strokeWidth: 0.5
+    strokeWidth: 0.5,
+    scaleX: 0.1,
+    scaleY: 0.1
 };
 
 type NumberFieldKey =

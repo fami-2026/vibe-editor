@@ -355,7 +355,10 @@ const handleCanvasMouseDown = (e: MouseEvent) => {
             isEditInteraction.value = true;
             lastMousePos.value = { x, y };
 
-            if (handle.kind === 'passive' && handle.segmentIndex !== undefined) {
+            if (
+                handle.kind === 'passive' &&
+                handle.segmentIndex !== undefined
+            ) {
                 const insertIndex = handle.segmentIndex + 1;
                 editingCurve.value.addPoint(insertIndex, handle.point);
                 const globalPoints = getEditingCurvePoints();

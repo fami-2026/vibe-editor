@@ -51,7 +51,7 @@ type SceneSnapshot = {
 export const useCanvasStore = defineStore('canvas', () => {
     const shapes = ref<Shape[]>([]);
     const selectedId = ref<string | null>(null);
-    
+
     // Состояния для зума
     const zoom = ref(1);
 
@@ -276,26 +276,29 @@ export const useCanvasStore = defineStore('canvas', () => {
     }
 
     function createStraightCurve() {
-        if (!curveDrawing.value || curveDrawing.value.points.length !== 2) return;
-        
+        if (!curveDrawing.value || curveDrawing.value.points.length !== 2)
+            return;
+
         const points = curveDrawing.value.points;
         const start = points[0];
         const end = points[1];
-        
+
         if (start && end) {
-            const existingCurves = shapes.value.filter(s => s.type === 'curve');
+            const existingCurves = shapes.value.filter(
+                (s) => s.type === 'curve'
+            );
             const defaultName = `Кривая ${existingCurves.length + 1}`;
-            
+
             const curve = new CurveShapeWrapper(generateId(), start);
-            
+
             const globalPoints = [
                 start,
                 { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 },
-                end
+                end,
             ];
             curve.setGlobalPoints(globalPoints);
             (curve as Shape).name = defaultName;
-            
+
             shapes.value.push(curve);
             curveDrawing.value = null;
         }
@@ -347,7 +350,7 @@ export const useCanvasStore = defineStore('canvas', () => {
         try {
             const data = {
                 shapes: shapes.value.map(serializeShape),
-                selectedId: selectedId.value
+                selectedId: selectedId.value,
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         } catch (e) {
@@ -360,17 +363,19 @@ export const useCanvasStore = defineStore('canvas', () => {
             const saved = localStorage.getItem(STORAGE_KEY);
             if (!saved) return;
 
-            const data = JSON.parse(saved) as { 
-                shapes: SerializedShape[]; 
-                selectedId: string | null 
+            const data = JSON.parse(saved) as {
+                shapes: SerializedShape[];
+                selectedId: string | null;
             };
-            
-            const restored: Shape[] = data.shapes.map((plain: SerializedShape) => {
-                const { type, id, position, ...rest } = plain;
-                const shape = shapeRegistry.create(type, id, position);
-                Object.assign(shape, rest);
-                return shape as Shape;
-            });
+
+            const restored: Shape[] = data.shapes.map(
+                (plain: SerializedShape) => {
+                    const { type, id, position, ...rest } = plain;
+                    const shape = shapeRegistry.create(type, id, position);
+                    Object.assign(shape, rest);
+                    return shape as Shape;
+                }
+            );
 
             shapes.value = restored;
             selectedId.value = data.selectedId || null;

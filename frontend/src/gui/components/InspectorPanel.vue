@@ -414,12 +414,7 @@ const fillOpacity = computed(() => getShapeNumberProp('fillOpacity', 1));
 const strokeOpacity = computed(() => getShapeNumberProp('strokeOpacity', 1));
 const strokeWidth = computed(() => getShapeNumberProp('strokeWidth', ''));
 
-// список слоёв — сверху вниз (верхний слой отображается первым)
-const layers = computed(() => [...shapes.value].reverse());
-
-function layerIndexToShapeIndex(layerIndex: number) {
-    return shapes.value.length - 1 - layerIndex;
-}
+const layers = computed(() => shapes.value);
 
 const draggedLayerIndex = ref<number | null>(null);
 

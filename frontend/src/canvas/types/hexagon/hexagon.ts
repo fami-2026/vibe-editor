@@ -96,7 +96,7 @@ export class HexagonShape extends BaseShape {
 
     private getPoints(): Point[] {
         const tempPoints: Point[] = [];
-        const startAngle = 0; 
+        const startAngle = 0;
         const angleStep = (Math.PI * 2) / 6;
 
         for (let i = 0; i < 6; i++) {
@@ -107,15 +107,15 @@ export class HexagonShape extends BaseShape {
             });
         }
 
-        const minX = Math.min(...tempPoints.map(p => p.x));
-        const maxX = Math.max(...tempPoints.map(p => p.x));
-        const minY = Math.min(...tempPoints.map(p => p.y));
-        const maxY = Math.max(...tempPoints.map(p => p.y));
+        const minX = Math.min(...tempPoints.map((p) => p.x));
+        const maxX = Math.max(...tempPoints.map((p) => p.x));
+        const minY = Math.min(...tempPoints.map((p) => p.y));
+        const maxY = Math.max(...tempPoints.map((p) => p.y));
 
         const currentW = maxX - minX;
         const currentH = maxY - minY;
 
-        return tempPoints.map(p => ({
+        return tempPoints.map((p) => ({
             x: ((p.x - minX) / currentW - 0.5) * this.width,
             y: ((p.y - minY) / currentH - 0.5) * this.height,
         }));
@@ -146,7 +146,8 @@ export class HexagonShape extends BaseShape {
             const intersect =
                 p1.y > localPoint.y !== p2.y > localPoint.y &&
                 localPoint.x <
-                    ((p2.x - p1.x) * (localPoint.y - p1.y)) / (p2.y - p1.y) + p1.x;
+                    ((p2.x - p1.x) * (localPoint.y - p1.y)) / (p2.y - p1.y) +
+                        p1.x;
 
             if (intersect) inside = !inside;
         }
@@ -195,7 +196,10 @@ export class HexagonShape extends BaseShape {
         const cos = Math.cos(rad);
         const sin = Math.sin(rad);
 
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        let minX = Infinity,
+            minY = Infinity,
+            maxX = -Infinity,
+            maxY = -Infinity;
 
         for (const p of points) {
             const worldX = this.position.x + (p.x * cos - p.y * sin);
@@ -209,8 +213,10 @@ export class HexagonShape extends BaseShape {
 
         const padding = this.strokeWidth / 2 + 5;
         return {
-            minX: minX - padding, minY: minY - padding,
-            maxX: maxX + padding, maxY: maxY + padding,
+            minX: minX - padding,
+            minY: minY - padding,
+            maxX: maxX + padding,
+            maxY: maxY + padding,
         };
     }
 

@@ -13,11 +13,11 @@ const canvasRef = ref<HTMLCanvasElement | null>(null);
 
 
 const canvasStore = useCanvasStore();
-const { shapes, selectedId, curveDrawing, editingCurve, isEditingMode, zoom } =
+const { shapes, selectedId, curveDrawing, editingCurve, isEditingMode } =
     storeToRefs(canvasStore);
 
-const { draw } = useCanvasRender(canvasRef, shapes, selectedId, zoom);
-const { attachListeners } = useInteractions(canvasRef, shapes, zoom);
+const { draw } = useCanvasRender(canvasRef, shapes, selectedId);
+const { attachListeners } = useInteractions(canvasRef, shapes);
 
 let resizeObserver: ResizeObserver | null = null;
 let detachListeners: (() => void) | undefined;
@@ -356,10 +356,7 @@ const handleCanvasMouseDown = (e: MouseEvent) => {
             isEditInteraction.value = true;
             lastMousePos.value = { x, y };
 
-            if (
-                handle.kind === 'passive' &&
-                handle.segmentIndex !== undefined
-            ) {
+            if (handle.kind === 'passive' && handle.segmentIndex !== undefined) {
                 const insertIndex = handle.segmentIndex + 1;
                 editingCurve.value.addPoint(insertIndex, handle.point);
                 const globalPoints = getEditingCurvePoints();
@@ -514,6 +511,7 @@ const customAttachListeners = () => {
 
     const originalMouseMove = canvas.onmousemove;
     const originalMouseUp = canvas.onmouseup;
+
 
     const originalMouseDown = canvas.onmousedown;
 

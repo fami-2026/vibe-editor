@@ -35,32 +35,9 @@ import { useCanvasStore } from '@/stores/canvas';
 
 const canvasStore = useCanvasStore();
 
-function isEditableElement(target: EventTarget | null): boolean {
-    if (!(target instanceof HTMLElement)) return false;
-    const tag = target.tagName;
-    return (
-        target.isContentEditable ||
-        tag === 'INPUT' ||
-        tag === 'TEXTAREA' ||
-        tag === 'SELECT'
-    );
-}
-
 function handleKeydown(e: KeyboardEvent) {
-    if (isEditableElement(e.target)) return;
-
     const isCtrl = e.ctrlKey || e.metaKey;
-
-    if (!isCtrl) {
-        if (e.code === 'Equal' || e.code === 'NumpadAdd') {
-            e.preventDefault();
-            canvasStore.zoomIn();
-        } else if (e.code === 'Minus' || e.code === 'NumpadSubtract') {
-            e.preventDefault();
-            canvasStore.zoomOut();
-        }
-        return;
-    }
+    if (!isCtrl) return;
 
     // Используем e.code, чтобы горячие клавиши были независимы от раскладки
     if (e.code === 'KeyZ') {

@@ -6,7 +6,6 @@ import { ref } from 'vue';
 const toolsStore = useToolsStore();
 const { activeTool } = storeToRefs(toolsStore);
 
-// Состояние для диалога многоугольника
 const showPolygonDialog = ref(false);
 const polygonSides = ref(5);
 

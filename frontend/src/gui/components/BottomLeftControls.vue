@@ -47,20 +47,27 @@ git
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { Minus, Plus, Undo2, Redo2 } from 'lucide-vue-next';
 import { useCanvasStore } from '@/stores/canvas';
 
-const canvasStore = useCanvasStore();
-const { canUndo, canRedo, zoom } = storeToRefs(canvasStore);
+const zoom = ref(60);
+
+function clamp(n: number, min: number, max: number) {
+    return Math.max(min, Math.min(max, n));
+}
 
 function zoomIn() {
-    canvasStore.zoomIn();
+    zoom.value = clamp(zoom.value + 10, 10, 500);
 }
 
 function zoomOut() {
-    canvasStore.zoomOut();
+    zoom.value = clamp(zoom.value - 10, 10, 500);
 }
+
+const canvasStore = useCanvasStore();
+const { canUndo, canRedo } = storeToRefs(canvasStore);
 
 function onUndo() {
     if (canUndo.value) {

@@ -164,10 +164,10 @@
                 </div>
 
                 <div class="fieldBlock">
-                    <div class="fieldLabel">Непрозрачность</div>
-                    <div class="opacityControl">
+                    <div class="fieldLabel">Прозрачность</div>
+                    <div class="grid1">
                         <input
-                            class="opacitySlider"
+                            class="fieldInput"
                             type="range"
                             aria-label="Fill opacity"
                             min="0"
@@ -177,17 +177,6 @@
                             :disabled="!selectedShape"
                             @input="onOpacityChange('fillOpacity', $event)"
                         />
-                        <button
-                            class="smallToggleBtn"
-                            type="button"
-                            :class="{
-                                isActive: isNoColorActive('fillOpacity'),
-                            }"
-                            :disabled="!selectedShape"
-                            @click="setNoColor('fillOpacity')"
-                        >
-                            нет цвета
-                        </button>
                     </div>
                 </div>
             </div>
@@ -215,10 +204,10 @@
                 </div>
 
                 <div class="fieldBlock">
-                    <div class="fieldLabel">Непрозрачность</div>
-                    <div class="opacityControl">
+                    <div class="fieldLabel">Прозрачность</div>
+                    <div class="grid1">
                         <input
-                            class="opacitySlider"
+                            class="fieldInput"
                             type="range"
                             aria-label="Stroke opacity"
                             min="0"
@@ -228,17 +217,6 @@
                             :disabled="!selectedShape"
                             @input="onOpacityChange('strokeOpacity', $event)"
                         />
-                        <button
-                            class="smallToggleBtn"
-                            type="button"
-                            :class="{
-                                isActive: isNoColorActive('strokeOpacity'),
-                            }"
-                            :disabled="!selectedShape"
-                            @click="setNoColor('strokeOpacity')"
-                        >
-                            нет цвета
-                        </button>
                     </div>
                 </div>
             </div>
@@ -337,17 +315,6 @@
                         >
                             {{ (shape as any).name || shapeLabel(shape.type) }}
                         </span>
-
-                        <!-- Кнопка удаления -->
-                        <button
-                            class="deleteLayerBtn"
-                            type="button"
-                            title="Удалить слой"
-                            aria-label="Удалить слой"
-                            @click.stop="deleteLayer(shape.id)"
-                        >
-                            ×
-                        </button>
                     </div>
                 </li>
             </ul>
@@ -356,7 +323,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, nextTick, watch, onMounted, onUnmounted } from 'vue';
+import { computed, ref, nextTick, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useCanvasStore } from '@/stores/canvas';
 import type { Shape } from '@/canvas/types';
@@ -496,18 +463,10 @@ function onColorChange(key: ColorFieldKey, event: Event) {
 
 type OpacityFieldKey = 'fillOpacity' | 'strokeOpacity';
 
-const OPACITY_EPSILON = 0.0001;
-
-function normalizeOpacity(value: number) {
-    if (value <= OPACITY_EPSILON) return 0;
-    if (value >= 1 - OPACITY_EPSILON) return 1;
-    return Math.min(1, Math.max(0, value));
-}
-
 function onOpacityChange(key: OpacityFieldKey, event: Event) {
     if (!selectedShape.value) return;
     const target = event.target as HTMLInputElement;
-    const value = normalizeOpacity(Number(target.value));
+    const value = Number(target.value);
     if (Number.isNaN(value)) return;
 
     canvasStore.updateShape(selectedShape.value.id, {
@@ -526,20 +485,6 @@ function shapeThumb(type: string) {
     if (type === 'arrow') return '→';
     if (type === 'curve') return '〰️';
     return '?';
-}
-
-function isNoColorActive(key: OpacityFieldKey) {
-    const opacity =
-        key === 'fillOpacity' ? fillOpacity.value : strokeOpacity.value;
-    return typeof opacity === 'number' && normalizeOpacity(opacity) === 0;
-}
-
-function setNoColor(key: OpacityFieldKey) {
-    if (!selectedShape.value) return;
-
-    canvasStore.updateShape(selectedShape.value.id, {
-        [key]: 0,
-    } as Partial<Shape>);
 }
 
 function shapeLabel(type: string) {
@@ -650,33 +595,6 @@ function saveLayerName(shapeId: string, newName: string) {
 
     cancelEditing();
 }
-
-// Функции для удаления слоя
-function deleteLayer(id: string) {
-    if (editingLayerId.value === id) {
-        cancelEditing();
-    }
-
-    canvasStore.deleteShape(id);
-}
-
-function handleKeyDown(event: KeyboardEvent) {
-    if (editingLayerId.value) return;
-
-    if (event.key === 'Delete') {
-        if (!selectedShape.value) return;
-
-        canvasStore.deleteShape(selectedShape.value.id);
-    }
-}
-
-onMounted(() => {
-    window.addEventListener('keydown', handleKeyDown);
-});
-
-onUnmounted(() => {
-    window.removeEventListener('keydown', handleKeyDown);
-});
 </script>
 
 <style scoped>
@@ -755,24 +673,6 @@ onUnmounted(() => {
     color: #9ca3af;
 }
 
-.opacityControl {
-    display: grid;
-    gap: 6px;
-}
-
-.opacitySlider {
-    width: 100%;
-    height: 24px;
-    margin: 0;
-    padding: 0;
-    accent-color: #2563eb;
-    cursor: pointer;
-}
-
-.opacitySlider:disabled {
-    cursor: default;
-}
-
 .colorInput {
     width: 100%;
     height: 24px;
@@ -824,7 +724,7 @@ onUnmounted(() => {
 .layerItem {
     width: 100%;
     display: grid;
-    grid-template-columns: 20px 1fr 20px;
+    grid-template-columns: 20px 1fr;
     align-items: center;
     gap: 10px;
     padding: 6px 8px;
@@ -868,35 +768,6 @@ onUnmounted(() => {
     text-overflow: ellipsis;
 }
 
-.smallToggleBtn {
-    height: 24px;
-    border-radius: 8px;
-    border: 1px solid #e5e7eb;
-    background: #ffffff;
-    color: #374151;
-    font-size: 12px;
-    line-height: 1;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.smallToggleBtn:hover:not(:disabled) {
-    background: #f3f4f6;
-    border-color: #d1d5db;
-}
-
-.smallToggleBtn.isActive {
-    background: rgba(37, 99, 235, 0.12);
-    border-color: rgba(37, 99, 235, 0.35);
-    color: #1d4ed8;
-}
-
-.smallToggleBtn:disabled {
-    background: #f9fafb;
-    color: #9ca3af;
-    cursor: default;
-}
-
 .layersHeader {
     display: flex;
     align-items: center;
@@ -927,41 +798,5 @@ onUnmounted(() => {
 .layerNameInput:focus {
     border-color: #2563eb;
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-}
-
-/* Стиль для крестика для удаления слоев */
-.deleteLayerBtn {
-    width: 20px;
-    height: 20px;
-    border: 0;
-    background: transparent;
-    color: #9ca3af;
-    border-radius: 6px;
-    cursor: pointer;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    font-size: 14px;
-    line-height: 1;
-
-    opacity: 0;
-    pointer-events: none;
-    transition:
-        opacity 0.15s ease,
-        background 0.15s ease,
-        color 0.15s ease;
-}
-
-.layerItem:hover .deleteLayerBtn,
-.layerItem:focus-within .deleteLayerBtn {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.deleteLayerBtn:hover {
-    background: #fee2e2;
-    color: #dc2626;
 }
 </style>

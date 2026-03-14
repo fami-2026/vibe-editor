@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue';
 import type { Shape, Point } from '@/canvas/types';
 import { shapeRegistry } from '@/canvas/types';
 import { generateId } from '@/canvas/utils/math';
@@ -19,7 +19,6 @@ interface ShapeParams extends Record<string, unknown> {
     rotation?: number;
 }
 
-// Интерфейсы для кривой
 interface CurveDrawingState {
     points: Point[]; // Точки [start, end]
 }
@@ -52,10 +51,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     const shapes = ref<Shape[]>([]);
     const selectedId = ref<string | null>(null);
 
-    // Состояния для зума
-    const zoom = ref(1);
-
-    // Состояния для кривой
+    // Новые состояния для кривой
     const curveDrawing = ref<CurveDrawingState | null>(null);
     const editingCurve = ref<CurveShapeWrapper | null>(null);
     const isEditingMode = ref(false);
@@ -169,6 +165,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     ) {
         pushHistory();
 
+        // Генерация уникального имени
         const existingShapesOfType = shapes.value.filter(
             (s) => s.type === type
         );
@@ -262,7 +259,7 @@ export const useCanvasStore = defineStore('canvas', () => {
         selectedId.value = id;
     }
 
-    // ===== МЕТОДЫ ДЛЯ КРИВОЙ =====
+    // ===== НОВЫЕ МЕТОДЫ ДЛЯ КРИВОЙ =====
     function startCurveDrawing() {
         curveDrawing.value = { points: [] };
     }
@@ -289,11 +286,26 @@ export const useCanvasStore = defineStore('canvas', () => {
             );
             const defaultName = `Кривая ${existingCurves.length + 1}`;
 
+            // Проверяем границы
+            const canvas = document.querySelector('canvas');
+            if (canvas) {
+                const maxX = canvas.width;
+                const maxY = canvas.height;
+
+                start.x = Math.max(5, Math.min(maxX - 5, start.x));
+                start.y = Math.max(5, Math.min(maxY - 5, start.y));
+                end.x = Math.max(5, Math.min(maxX - 5, end.x));
+                end.y = Math.max(5, Math.min(maxY - 5, end.y));
+            }
+
             const curve = new CurveShapeWrapper(generateId(), start);
 
             const globalPoints = [
                 start,
-                { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 },
+                {
+                    x: (start.x + end.x) / 2,
+                    y: (start.y + end.y) / 2,
+                },
                 end,
             ];
             curve.setGlobalPoints(globalPoints);
@@ -317,91 +329,17 @@ export const useCanvasStore = defineStore('canvas', () => {
     }
 
     function pushHistoryForCurve() {
-        if (editingCurve.value) {
-            pushHistory();
-        }
+        pushHistory();
     }
 
     function cancelCurveDrawing() {
         curveDrawing.value = null;
     }
 
-    // ===== МЕТОДЫ ДЛЯ ЗУМА =====
-    function setZoom(value: number) {
-        zoom.value = Math.max(0.1, Math.min(5, value));
-    }
-
-    function zoomIn() {
-        setZoom(zoom.value + 0.1);
-    }
-
-    function zoomOut() {
-        setZoom(zoom.value - 0.1);
-    }
-
-    function resetZoom() {
-        zoom.value = 1;
-    }
-
-    // ===== СОХРАНЕНИЕ В LOCALSTORAGE =====
-    const STORAGE_KEY = 'vector-editor-canvas';
-
-    function saveToLocalStorage() {
-        try {
-            const data = {
-                shapes: shapes.value.map(serializeShape),
-                selectedId: selectedId.value,
-            };
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        } catch (e) {
-            console.error('Ошибка сохранения:', e);
-        }
-    }
-
-    function loadFromLocalStorage() {
-        try {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (!saved) return;
-
-            const data = JSON.parse(saved) as {
-                shapes: SerializedShape[];
-                selectedId: string | null;
-            };
-
-            const restored: Shape[] = data.shapes.map(
-                (plain: SerializedShape) => {
-                    const { type, id, position, ...rest } = plain;
-                    const shape = shapeRegistry.create(type, id, position);
-                    Object.assign(shape, rest);
-                    return shape as Shape;
-                }
-            );
-
-            shapes.value = restored;
-            selectedId.value = data.selectedId || null;
-        } catch (e) {
-            console.error('Ошибка загрузки:', e);
-        }
-    }
-
-    loadFromLocalStorage();
-
-    watch(
-        [shapes, selectedId],
-        () => {
-            saveToLocalStorage();
-        },
-        { deep: true }
-    );
-
     return {
         shapes,
         selectedId,
         selectedShape,
-        zoom,
-        curveDrawing,
-        editingCurve,
-        isEditingMode,
         addShape,
         updateShape,
         deleteShape,
@@ -413,6 +351,10 @@ export const useCanvasStore = defineStore('canvas', () => {
         canRedo,
         startInteraction,
         endInteraction,
+        // Новые экспорты для кривой
+        curveDrawing,
+        editingCurve,
+        isEditingMode,
         startCurveDrawing,
         handleCanvasClick,
         createStraightCurve,
@@ -420,11 +362,5 @@ export const useCanvasStore = defineStore('canvas', () => {
         exitEditMode,
         pushHistoryForCurve,
         cancelCurveDrawing,
-        setZoom,
-        zoomIn,
-        zoomOut,
-        resetZoom,
-        saveToLocalStorage,
-        loadFromLocalStorage,
     };
 });

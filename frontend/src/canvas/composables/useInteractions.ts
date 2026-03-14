@@ -23,8 +23,7 @@ type ResizeHandle =
 
 export function useInteractions(
     canvasRef: Ref<HTMLCanvasElement | null>,
-    shapes: Ref<Shape[]>,
-    zoom: Ref<number>
+    shapes: Ref<Shape[]>
 ) {
     const canvasStore = useCanvasStore();
     const toolsStore = useToolsStore();
@@ -71,32 +70,9 @@ export function useInteractions(
      */
     function getLocalPoint(e: MouseEvent): Point {
         const rect = canvasRef.value?.getBoundingClientRect();
-        if (!rect) return { x: 0, y: 0 };
-
-        const zoomFactor = zoom.value / 100;
-        const screenX = e.clientX - rect.left;
-        const screenY = e.clientY - rect.top;
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
-
-        return {
-            x: centerX + (screenX - centerX) / zoomFactor,
-            y: centerY + (screenY - centerY) / zoomFactor,
-        };
-    }
-
-    function onWheel(e: WheelEvent) {
-        if (!(e.ctrlKey || e.metaKey)) return;
-        e.preventDefault();
-
-        if (e.deltaY < 0) {
-            canvasStore.zoomIn();
-            return;
-        }
-
-        if (e.deltaY > 0) {
-            canvasStore.zoomOut();
-        }
+        return rect
+            ? { x: e.clientX - rect.left, y: e.clientY - rect.top }
+            : { x: 0, y: 0 };
     }
 
     /**
@@ -497,13 +473,11 @@ export function useInteractions(
         const el = canvasRef.value;
         if (!el) return;
         el.addEventListener('mousedown', onMouseDown);
-        el.addEventListener('wheel', onWheel, { passive: false });
         window.addEventListener('mousemove', onMouseMove);
         window.addEventListener('mouseup', onMouseUp);
 
         return () => {
             el.removeEventListener('mousedown', onMouseDown);
-            el.removeEventListener('wheel', onWheel);
             window.removeEventListener('mousemove', onMouseMove);
             window.removeEventListener('mouseup', onMouseUp);
         };

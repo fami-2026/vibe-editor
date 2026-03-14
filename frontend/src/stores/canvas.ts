@@ -243,10 +243,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     }
 
     function setZoom(value: number) {
-        zoom.value = Math.max(
-            MIN_ZOOM,
-            Math.min(MAX_ZOOM, Math.round(value))
-        );
+        zoom.value = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Math.round(value)));
     }
 
     function zoomIn() {

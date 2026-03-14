@@ -365,7 +365,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, nextTick, watch, onMounted, onUnmounted } from 'vue';
+import { computed, ref, nextTick, onMounted, onUnmounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useCanvasStore } from '@/stores/canvas';
 import type { Shape } from '@/canvas/types';

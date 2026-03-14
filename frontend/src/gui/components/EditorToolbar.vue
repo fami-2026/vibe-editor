@@ -1,12 +1,9 @@
 <script setup lang="ts">
 import { useToolsStore, type ToolType } from '@/stores/tools';
-import { useCanvasStore } from '@/stores/canvas';
 import { storeToRefs } from 'pinia';
-import type { ShapeType } from '@/canvas/types';
 import { ref } from 'vue';
 
 const toolsStore = useToolsStore();
-const canvasStore = useCanvasStore();
 const { activeTool } = storeToRefs(toolsStore);
 
 // Состояние для диалога многоугольника
@@ -85,11 +82,6 @@ function handleToolClick(tool: ToolConfig) {
     } else {
         toolsStore.setActiveTool(tool.id);
     }
-}
-
-interface ShapeParams {
-    sides?: number;
-    [key: string]: unknown;
 }
 
 function createPolygon() {

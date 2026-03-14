@@ -12,11 +12,11 @@ const containerRef = ref<HTMLDivElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 
 const canvasStore = useCanvasStore();
-const { shapes, selectedId, curveDrawing, editingCurve, isEditingMode } =
+const { shapes, selectedId, curveDrawing, editingCurve, isEditingMode, zoom } =
     storeToRefs(canvasStore);
 
-const { draw } = useCanvasRender(canvasRef, shapes, selectedId);
-const { attachListeners } = useInteractions(canvasRef, shapes);
+const { draw } = useCanvasRender(canvasRef, shapes, selectedId, zoom);
+const { attachListeners } = useInteractions(canvasRef, shapes, zoom);
 
 let resizeObserver: ResizeObserver | null = null;
 let detachListeners: (() => void) | undefined;
@@ -510,7 +510,6 @@ const customAttachListeners = () => {
 
     const originalMouseMove = canvas.onmousemove;
     const originalMouseUp = canvas.onmouseup;
-
     const originalMouseDown = canvas.onmousedown;
 
     canvas.onmousedown = (e) => {
@@ -573,7 +572,7 @@ onUnmounted(() => {
 });
 
 watch(
-    [shapes, selectedId, curveDrawing, isEditingMode, editingCurve],
+    [shapes, selectedId, zoom, curveDrawing, isEditingMode, editingCurve],
     () => {
         if (editingCurve.value) {
             editingCurve.value.getBoundingBox();

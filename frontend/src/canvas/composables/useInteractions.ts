@@ -245,7 +245,6 @@ export function useInteractions(
             return;
         }
 
-
         if (toolsStore.activeTool !== 'select') {
             canvasStore.selectShape(null);
             activeShape.value = null;
@@ -253,7 +252,9 @@ export function useInteractions(
             createStart.value = point;
             createToolType.value = toolsStore.activeTool;
             if ('creationParams' in toolsStore) {
-                const store = toolsStore as { creationParams?: Record<string, unknown> | null };
+                const store = toolsStore as {
+                    creationParams?: Record<string, unknown> | null;
+                };
                 createParams.value = store.creationParams ?? null;
             } else {
                 createParams.value = null;
@@ -333,7 +334,8 @@ export function useInteractions(
                     const length = Math.sqrt(distanceSq);
                     if (length > 0) {
                         const angle = Math.atan2(dy, dx);
-                        const snap = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
+                        const snap =
+                            Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
                         dx = length * Math.cos(snap);
                         dy = length * Math.sin(snap);
                         current = { x: start.x + dx, y: start.y + dy };
@@ -584,7 +586,11 @@ export function useInteractions(
                 }
                 toolsStore.setActiveTool('select');
                 if ('setCreationParams' in toolsStore) {
-                    const store = toolsStore as { setCreationParams?: (params: Record<string, unknown> | null) => void };
+                    const store = toolsStore as {
+                        setCreationParams?: (
+                            params: Record<string, unknown> | null
+                        ) => void;
+                    };
                     store.setCreationParams?.(null);
                 }
             }

@@ -96,7 +96,6 @@ export class HexagonShape extends BaseShape {
 
     private getPoints(): Point[] {
         const tempPoints: Point[] = [];
-        // Угол 0 делает шестиугольник "плоским" сверху (как на вашем фото)
         const startAngle = 0; 
         const angleStep = (Math.PI * 2) / 6;
 
@@ -108,7 +107,6 @@ export class HexagonShape extends BaseShape {
             });
         }
 
-        // 1. Находим границы "сырых" точек
         const minX = Math.min(...tempPoints.map(p => p.x));
         const maxX = Math.max(...tempPoints.map(p => p.x));
         const minY = Math.min(...tempPoints.map(p => p.y));
@@ -117,15 +115,11 @@ export class HexagonShape extends BaseShape {
         const currentW = maxX - minX;
         const currentH = maxY - minY;
 
-        // 2. Растягиваем их точно в заданные width и height
-        // Это гарантирует, что BoundingBox будет идеальным (без зазоров)
         return tempPoints.map(p => ({
             x: ((p.x - minX) / currentW - 0.5) * this.width,
             y: ((p.y - minY) / currentH - 0.5) * this.height,
         }));
     }
-
-
 
     hitTest(point: Point): boolean {
         const points = this.getPoints();
@@ -142,7 +136,7 @@ export class HexagonShape extends BaseShape {
             y: dx * Math.sin(rad) + dy * Math.cos(rad),
         };
 
-        let inside = false; // Объявляем переменную
+        let inside = false;
         for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
             const p1 = points[i];
             const p2 = points[j];
@@ -204,7 +198,6 @@ export class HexagonShape extends BaseShape {
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
         for (const p of points) {
-            // Применяем поворот и смещение для вычисления мировых координат рамки
             const worldX = this.position.x + (p.x * cos - p.y * sin);
             const worldY = this.position.y + (p.x * sin + p.y * cos);
 

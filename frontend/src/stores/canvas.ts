@@ -140,6 +140,7 @@ export const useCanvasStore = defineStore('canvas', () => {
         undoStack.value.push(current);
         restoreSnapshot(snapshot);
     }
+    
 
     const canUndo = computed(() => undoStack.value.length > 0);
     const canRedo = computed(() => redoStack.value.length > 0);

@@ -140,7 +140,6 @@ export const useCanvasStore = defineStore('canvas', () => {
         undoStack.value.push(current);
         restoreSnapshot(snapshot);
     }
-    
 
     const canUndo = computed(() => undoStack.value.length > 0);
     const canRedo = computed(() => redoStack.value.length > 0);
@@ -268,7 +267,7 @@ export const useCanvasStore = defineStore('canvas', () => {
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         } catch (e) {
-            // ignore
+            console.error('Ошибка сохранения:', e);
         }
     }
 
@@ -277,14 +276,19 @@ export const useCanvasStore = defineStore('canvas', () => {
             const saved = localStorage.getItem(STORAGE_KEY);
             if (!saved) return;
 
-            const data = JSON.parse(saved);
+            const data = JSON.parse(saved) as {
+                shapes: SerializedShape[];
+                selectedId: string | null;
+            };
 
-            const restored: Shape[] = data.shapes.map((plain: any) => {
-                const { type, id, position, ...rest } = plain;
-                const shape = shapeRegistry.create(type, id, position);
-                Object.assign(shape, rest);
-                return shape as Shape;
-            });
+            const restored: Shape[] = data.shapes.map(
+                (plain: SerializedShape) => {
+                    const { type, id, position, ...rest } = plain;
+                    const shape = shapeRegistry.create(type, id, position);
+                    Object.assign(shape, rest);
+                    return shape as Shape;
+                }
+            );
 
             shapes.value = restored;
             selectedId.value = data.selectedId || null;

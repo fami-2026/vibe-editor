@@ -139,7 +139,6 @@ const activeId = computed<ToolId>(() => {
     if (active === 'hexagon') return 'hexagon';
     if (active === 'arrow') return 'arrow';
     if (active === 'curve') return 'curve'; // Добавляем обработку для кривой
-    if (active === 'curve') return 'curve'; // Добавляем обработку для кривой
     if (active === 'eraser') return 'eraser';
     return 'cursor';
 });

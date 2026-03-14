@@ -26,21 +26,60 @@ const lastMousePos = ref<{ x: number; y: number } | null>(null);
 const initialPoints = ref<{ x: number; y: number }[]>([]);
 const isEditInteraction = ref(false);
 
-const updateCanvasSize = () => {
-    if (!containerRef.value || !canvasRef.value) return;
-    const { clientWidth, clientHeight } = containerRef.value;
-    if (
-        canvasRef.value.width !== clientWidth ||
-        canvasRef.value.height !== clientHeight
-    ) {
-    if (canvasRef.value.width !== clientWidth || canvasRef.value.height !== clientHeight) {
-        canvasRef.value.width = clientWidth;
-        canvasRef.value.height = clientHeight;
-        draw();
-        drawTemporaryPoints();
-    }
-};
 
+function getSplinePoints(points: Point[]): Point[] {
+    if (points.length < 2) return points;
+    const result: Point[] = [];
+
+    for (let i = 0; i < points.length - 1; i++) {
+        const p0 = i > 0 ? points[i - 1] : points[i];
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        const p3 = i < points.length - 2 ? points[i + 2] : points[i + 1];
+
+        if (!p1 || !p2) continue;
+
+        for (let s = 0; s <= 20; s++) {
+            const t = s / 20;
+            const x =
+                0.5 *
+                (2 * (p1?.x || 0) +
+                    (-(p0?.x || 0) + (p2?.x || 0)) * t +
+                    (2 * (p0?.x || 0) -
+                        5 * (p1?.x || 0) +
+                        4 * (p2?.x || 0) -
+                        (p3?.x || 0)) *
+                        t *
+                        t +
+                    (-(p0?.x || 0) +
+                        3 * (p1?.x || 0) -
+                        3 * (p2?.x || 0) +
+                        (p3?.x || 0)) *
+                        t *
+                        t *
+                        t);
+            const y =
+                0.5 *
+                (2 * (p1?.y || 0) +
+                    (-(p0?.y || 0) + (p2?.y || 0)) * t +
+                    (2 * (p0?.y || 0) -
+                        5 * (p1?.y || 0) +
+                        4 * (p2?.y || 0) -
+                        (p3?.y || 0)) *
+                        t *
+                        t +
+                    (-(p0?.y || 0) +
+                        3 * (p1?.y || 0) -
+                        3 * (p2?.y || 0) +
+                        (p3?.y || 0)) *
+                        t *
+                        t *
+                        t);
+            result.push({ x, y });
+        }
+    }
+    return result;
+}
 const drawTemporaryPoints = () => {
     if (!canvasRef.value) return;
     const ctx = canvasRef.value.getContext('2d');
@@ -131,60 +170,21 @@ const drawTemporaryPoints = () => {
 
     ctx.restore();
 };
-
-function getSplinePoints(points: Point[]): Point[] {
-    if (points.length < 2) return points;
-    const result: Point[] = [];
-
-    for (let i = 0; i < points.length - 1; i++) {
-        const p0 = i > 0 ? points[i - 1] : points[i];
-        const p1 = points[i];
-        const p2 = points[i + 1];
-        const p3 = i < points.length - 2 ? points[i + 2] : points[i + 1];
-
-        if (!p1 || !p2) continue;
-
-        for (let s = 0; s <= 20; s++) {
-            const t = s / 20;
-            const x =
-                0.5 *
-                (2 * (p1?.x || 0) +
-                    (-(p0?.x || 0) + (p2?.x || 0)) * t +
-                    (2 * (p0?.x || 0) -
-                        5 * (p1?.x || 0) +
-                        4 * (p2?.x || 0) -
-                        (p3?.x || 0)) *
-                        t *
-                        t +
-                    (-(p0?.x || 0) +
-                        3 * (p1?.x || 0) -
-                        3 * (p2?.x || 0) +
-                        (p3?.x || 0)) *
-                        t *
-                        t *
-                        t);
-            const y =
-                0.5 *
-                (2 * (p1?.y || 0) +
-                    (-(p0?.y || 0) + (p2?.y || 0)) * t +
-                    (2 * (p0?.y || 0) -
-                        5 * (p1?.y || 0) +
-                        4 * (p2?.y || 0) -
-                        (p3?.y || 0)) *
-                        t *
-                        t +
-                    (-(p0?.y || 0) +
-                        3 * (p1?.y || 0) -
-                        3 * (p2?.y || 0) +
-                        (p3?.y || 0)) *
-                        t *
-                        t *
-                        t);
-            result.push({ x, y });
-        }
+const updateCanvasSize = () => {
+    if (!containerRef.value || !canvasRef.value) return;
+    const { clientWidth, clientHeight } = containerRef.value;
+    if (
+        canvasRef.value.width !== clientWidth ||
+        canvasRef.value.height !== clientHeight
+    ) {
+    if (canvasRef.value.width !== clientWidth || canvasRef.value.height !== clientHeight) {
+        canvasRef.value.width = clientWidth;
+        canvasRef.value.height = clientHeight;
+        draw();
+        drawTemporaryPoints();
     }
-    return result;
-}
+};
+
 
 function findClosestPointIndex(x: number, y: number): number {
     if (!editingCurve.value) return -1;

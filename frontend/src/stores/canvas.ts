@@ -394,9 +394,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     }
 
     function pushHistoryForCurve() {
-        if (editingCurve.value) {
-            pushHistory();
-        }
+        pushHistory();
     }
 
     function cancelCurveDrawing() {

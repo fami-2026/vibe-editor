@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useCanvasStore } from '@/stores/canvas';
 import { useCanvasRender } from '@/canvas/composables/useCanvasRender';
 import { useInteractions } from '@/canvas/composables/useInteractions';
 import type { CurveShapeWrapper } from '@/canvas/types/curve/curve';
+import type { CurveShape } from '@/canvas/types/curve/curve';
 import type { Point } from '@/canvas/types';
 
 const containerRef = ref<HTMLDivElement | null>(null);
@@ -26,6 +27,7 @@ const isDragging = ref(false);
 const lastMousePos = ref<{ x: number; y: number } | null>(null);
 const initialPoints = ref<Point[]>([]);
 const isEditInteraction = ref(false);
+const selectedPointIndex = ref<number | null>(null);
 
 // Границы холста
 const canvasBounds = ref({ minX: 0, minY: 0, maxX: 0, maxY: 0 });
@@ -52,6 +54,21 @@ function clampToBounds(point: Point): Point {
         ),
     };
 }
+
+type CurveHandleKind = 'active' | 'passive';
+
+interface CurveHandleInfo {
+    kind: CurveHandleKind;
+    index: number;
+    segmentIndex?: number;
+    point: Point;
+}
+
+const selectedCurve = computed<CurveShape | null>(() => {
+    const shape = shapes.value.find((s) => s.id === selectedId.value) || null;
+    if (!shape || shape.type !== 'curve') return null;
+    return shape as CurveShape;
+});
 
 function getSplinePoints(points: Point[]): Point[] {
     if (points.length < 2) return points;
@@ -88,84 +105,61 @@ function getSplinePoints(points: Point[]): Point[] {
     return result;
 }
 
-function findClosestPointIndex(x: number, y: number): number {
-    if (!editingCurve.value) return -1;
-    const points = editingCurve.value
+function getEditingCurvePoints(): Point[] {
+    if (!editingCurve.value) return [];
+    return editingCurve.value
         .getGlobalPoints()
         .filter((p): p is Point => p !== undefined && p !== null);
+}
+
+function getCurveHandlesForEditing(): {
+    active: Point[];
+    passive: { point: Point; segmentIndex: number }[];
+} {
+    const points = getEditingCurvePoints();
+    const passive: { point: Point; segmentIndex: number }[] = [];
+
+    if (editingCurve.value) {
+        for (let i = 0; i < points.length - 1; i++) {
+            const mid = editingCurve.value.getPointOnCurveAtSegment(i, 0.5);
+            passive.push({ point: mid, segmentIndex: i });
+        }
+    }
+
+    return { active: points, passive };
+}
+
+function findClosestHandle(x: number, y: number): CurveHandleInfo | null {
+    if (!editingCurve.value) return null;
+    const { active, passive } = getCurveHandlesForEditing();
     const threshold = 15;
     let minDist = Infinity;
-    let closestIndex = -1;
+    let closest: CurveHandleInfo | null = null;
 
-    points.forEach((point, index) => {
+    active.forEach((point, index) => {
         if (!point) return;
         const dist = Math.hypot(point.x - x, point.y - y);
         if (dist < minDist && dist < threshold) {
             minDist = dist;
-            closestIndex = index;
+            closest = { kind: 'active', index, point };
         }
     });
-    return closestIndex;
-}
 
-function catmullRomPoint(
-    p0: Point,
-    p1: Point,
-    p2: Point,
-    p3: Point,
-    t: number
-): Point {
-    const t2 = t * t;
-    const t3 = t2 * t;
+    passive.forEach(({ point, segmentIndex }, index) => {
+        if (!point) return;
+        const dist = Math.hypot(point.x - x, point.y - y);
+        if (dist < minDist && dist < threshold) {
+            minDist = dist;
+            closest = {
+                kind: 'passive',
+                index,
+                segmentIndex,
+                point,
+            };
+        }
+    });
 
-    const x =
-        0.5 *
-        (2 * p1.x +
-            (-p0.x + p2.x) * t +
-            (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
-            (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3);
-
-    const y =
-        0.5 *
-        (2 * p1.y +
-            (-p0.y + p2.y) * t +
-            (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
-            (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3);
-
-    return { x, y };
-}
-
-function splitSegment(index: number): number {
-    if (!editingCurve.value) return index;
-
-    const points = editingCurve.value
-        .getGlobalPoints()
-        .filter((p): p is Point => p !== undefined && p !== null);
-
-    if (index > 0 && index < points.length - 1) {
-        const pPrev = points[index - 1];
-        const pCurr = points[index];
-        const pNext = points[index + 1];
-        const pNextNext =
-            index + 2 < points.length ? points[index + 2] : points[index + 1];
-
-        if (!pPrev || !pCurr || !pNext || !pNextNext) return index;
-
-        const point1 = catmullRomPoint(pPrev, pPrev, pCurr, pNext, 0.5);
-        const point2 = catmullRomPoint(pPrev, pCurr, pNext, pNextNext, 0.5);
-
-        const newPoints = [
-            ...points.slice(0, index),
-            point1,
-            pCurr,
-            point2,
-            ...points.slice(index + 1),
-        ];
-
-        editingCurve.value.setGlobalPoints(newPoints);
-        return index + 1;
-    }
-    return index;
+    return closest;
 }
 
 const drawTemporaryPoints = () => {
@@ -190,9 +184,7 @@ const drawTemporaryPoints = () => {
     }
 
     if (isEditingMode.value && editingCurve.value) {
-        const points = editingCurve.value
-            .getGlobalPoints()
-            .filter((p): p is Point => p !== undefined && p !== null);
+        const points = getEditingCurvePoints();
 
         if (points.length > 0) {
             const splinePoints = getSplinePoints(points);
@@ -207,33 +199,74 @@ const drawTemporaryPoints = () => {
                             ctx.lineTo(point.x, point.y);
                         }
                     }
-                    ctx.strokeStyle = '#2196f3';
-                    ctx.lineWidth = 4;
+                    ctx.strokeStyle = editingCurve.value.stroke;
+                    ctx.globalAlpha = editingCurve.value.strokeOpacity ?? 1;
+                    ctx.lineWidth = editingCurve.value.strokeWidth ?? 2;
                     ctx.stroke();
+                    ctx.globalAlpha = 1;
                 }
             }
         }
+
+        const { passive } = getCurveHandlesForEditing();
+
+        passive.forEach(({ point }) => {
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 6, 0, 2 * Math.PI);
+            ctx.fillStyle = 'rgba(37, 99, 235, 0.2)';
+            ctx.strokeStyle = '#2563eb';
+            ctx.lineWidth = 1.5;
+            ctx.fill();
+            ctx.stroke();
+        });
 
         points.forEach((point, index) => {
             if (!point) return;
             ctx.beginPath();
             ctx.arc(point.x, point.y, 8, 0, 2 * Math.PI);
-            ctx.fillStyle =
-                index === 0 || index === points.length - 1
-                    ? '#4CAF50'
-                    : '#FF9800';
+            ctx.fillStyle = '#2563eb';
             ctx.fill();
             ctx.strokeStyle = 'white';
             ctx.lineWidth = 2;
             ctx.stroke();
 
-            if (isDragging.value && draggedPointIndex.value === index) {
+            if (
+                isDragging.value &&
+                draggedPointIndex.value !== null &&
+                draggedPointIndex.value === index
+            ) {
                 ctx.beginPath();
                 ctx.arc(point.x, point.y, 12, 0, 2 * Math.PI);
-                ctx.strokeStyle = '#f44336';
+                ctx.strokeStyle = '#1d4ed8';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            } else if (
+                !isDragging.value &&
+                selectedPointIndex.value !== null &&
+                selectedPointIndex.value === index
+            ) {
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 11, 0, 2 * Math.PI);
+                ctx.strokeStyle = '#1d4ed8';
                 ctx.lineWidth = 2;
                 ctx.stroke();
             }
+        });
+    } else if (!isEditingMode.value && selectedCurve.value) {
+        const curve = selectedCurve.value;
+        const points = curve
+            .getGlobalPoints()
+            .filter((p): p is Point => p !== undefined && p !== null);
+
+        points.forEach((point) => {
+            if (!point) return;
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 6, 0, 2 * Math.PI);
+            ctx.fillStyle = '#2563eb';
+            ctx.fill();
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.stroke();
         });
     }
 
@@ -308,24 +341,70 @@ const handleCanvasDoubleClick = (e: MouseEvent) => {
 };
 
 const handleCanvasMouseDown = (e: MouseEvent) => {
-    if (!canvasRef.value || !isEditingMode.value || !editingCurve.value) return;
+    if (!canvasRef.value) return;
 
     const rect = canvasRef.value.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    const pointIndex = findClosestPointIndex(x, y);
-    if (pointIndex !== -1) {
-        e.preventDefault();
-        e.stopPropagation();
-        isEditInteraction.value = true;
-        draggedPointIndex.value = pointIndex;
-        lastMousePos.value = { x, y };
-        isDragging.value = true;
-        const globalPoints = editingCurve.value
+    if (isEditingMode.value && editingCurve.value) {
+        const handle = findClosestHandle(x, y);
+        if (handle) {
+            e.preventDefault();
+            e.stopPropagation();
+            (e as MouseEvent).stopImmediatePropagation?.();
+            isEditInteraction.value = true;
+            lastMousePos.value = { x, y };
+
+            if (handle.kind === 'passive' && handle.segmentIndex !== undefined) {
+                const insertIndex = handle.segmentIndex + 1;
+                editingCurve.value.addPoint(insertIndex, handle.point);
+                const globalPoints = getEditingCurvePoints();
+                initialPoints.value = globalPoints.map((p) => ({ ...p }));
+                draggedPointIndex.value = insertIndex;
+                selectedPointIndex.value = insertIndex;
+            } else {
+                const globalPoints = getEditingCurvePoints();
+                initialPoints.value = globalPoints.map((p) => ({ ...p }));
+                draggedPointIndex.value = handle.index;
+                selectedPointIndex.value = handle.index;
+            }
+
+            isDragging.value = true;
+        } else {
+            selectedPointIndex.value = null;
+        }
+        return;
+    }
+
+    if (!isEditingMode.value && selectedCurve.value) {
+        const curve = selectedCurve.value;
+        const points = curve
             .getGlobalPoints()
             .filter((p): p is Point => p !== undefined && p !== null);
-        initialPoints.value = globalPoints.map((p) => ({ ...p }));
+
+        const threshold = 15;
+        let minDist = Infinity;
+        let closestIndex: number | null = null;
+
+        points.forEach((point, index) => {
+            const dist = Math.hypot(point.x - x, point.y - y);
+            if (dist < minDist && dist < threshold) {
+                minDist = dist;
+                closestIndex = index;
+            }
+        });
+
+        if (closestIndex !== null) {
+            e.preventDefault();
+            e.stopPropagation();
+            (e as MouseEvent).stopImmediatePropagation?.();
+            isEditInteraction.value = true;
+            lastMousePos.value = { x, y };
+            initialPoints.value = points.map((p) => ({ ...p }));
+            draggedPointIndex.value = closestIndex;
+            isDragging.value = true;
+        }
     }
 };
 
@@ -333,7 +412,6 @@ const handleCanvasMouseMove = (e: MouseEvent) => {
     if (
         !isDragging.value ||
         draggedPointIndex.value === null ||
-        !editingCurve.value ||
         !lastMousePos.value
     )
         return;
@@ -357,37 +435,20 @@ const handleCanvasMouseMove = (e: MouseEvent) => {
             }
             return { ...p };
         });
-        editingCurve.value.setGlobalPoints(newPoints);
+
+        if (isEditingMode.value && editingCurve.value) {
+            editingCurve.value.setGlobalPoints(newPoints);
+        } else if (!isEditingMode.value && selectedCurve.value) {
+            selectedCurve.value.setGlobalPoints(newPoints);
+        }
     }
     customDraw();
 };
 
 const handleCanvasMouseUp = (e: MouseEvent) => {
-    if (
-        isDragging.value &&
-        editingCurve.value &&
-        draggedPointIndex.value !== null
-    ) {
+    if (isDragging.value && draggedPointIndex.value !== null) {
         e.preventDefault();
         e.stopPropagation();
-
-        const points = editingCurve.value
-            .getGlobalPoints()
-            .filter((p): p is Point => p !== undefined && p !== null);
-        const draggedIndex = draggedPointIndex.value;
-        const initialPoint = initialPoints.value[draggedIndex];
-        const currentPoint = points[draggedIndex];
-
-        if (initialPoint && currentPoint) {
-            const moved =
-                Math.hypot(
-                    currentPoint.x - initialPoint.x,
-                    currentPoint.y - initialPoint.y
-                ) > 1;
-            if (moved && draggedIndex > 0 && draggedIndex < points.length - 1) {
-                draggedPointIndex.value = splitSegment(draggedIndex);
-            }
-        }
         canvasStore.pushHistoryForCurve();
     }
 
@@ -413,6 +474,25 @@ const handleKeyDown = (e: KeyboardEvent) => {
         canvasStore.exitEditMode();
         customDraw();
     }
+    if (
+        (e.key === 'Delete' || e.key === 'Backspace') &&
+        isEditingMode.value &&
+        editingCurve.value &&
+        selectedPointIndex.value !== null
+    ) {
+        e.preventDefault();
+        const index = selectedPointIndex.value;
+        editingCurve.value.removePoint(index);
+        canvasStore.pushHistoryForCurve();
+
+        const points = getEditingCurvePoints();
+        if (points.length <= 2) {
+            selectedPointIndex.value = null;
+        } else if (index >= points.length) {
+            selectedPointIndex.value = points.length - 1;
+        }
+        customDraw();
+    }
 };
 
 const customAttachListeners = () => {
@@ -429,9 +509,10 @@ const customAttachListeners = () => {
 
     const originalAttach = attachListeners();
 
-    const originalMouseDown = canvas.onmousedown;
     const originalMouseMove = canvas.onmousemove;
     const originalMouseUp = canvas.onmouseup;
+
+    const originalMouseDown = canvas.onmousedown;
 
     canvas.onmousedown = (e) => {
         if (isEditInteraction.value || isEditingMode.value) {

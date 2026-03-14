@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import type { Shape } from '@/canvas/types';
 import { shapeRegistry } from '@/canvas/types';
 import { generateId } from '@/canvas/utils/math';
@@ -151,7 +151,6 @@ export const useCanvasStore = defineStore('canvas', () => {
     ) {
         pushHistory();
 
-        // Генерация уникального имени
         const existingShapesOfType = shapes.value.filter(
             (s) => s.type === type
         );
@@ -254,6 +253,56 @@ export const useCanvasStore = defineStore('canvas', () => {
     function zoomOut() {
         setZoom(zoom.value - ZOOM_STEP);
     }
+
+    const STORAGE_KEY = 'vector-editor-canvas';
+
+    function saveToLocalStorage() {
+        try {
+            const data = {
+                shapes: shapes.value.map(serializeShape),
+                selectedId: selectedId.value,
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        } catch (e) {
+            console.error('Ошибка сохранения:', e);
+        }
+    }
+
+    function loadFromLocalStorage() {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (!saved) return;
+
+            const data = JSON.parse(saved) as {
+                shapes: SerializedShape[];
+                selectedId: string | null;
+            };
+
+            const restored: Shape[] = data.shapes.map(
+                (plain: SerializedShape) => {
+                    const { type, id, position, ...rest } = plain;
+                    const shape = shapeRegistry.create(type, id, position);
+                    Object.assign(shape, rest);
+                    return shape as Shape;
+                }
+            );
+
+            shapes.value = restored;
+            selectedId.value = data.selectedId || null;
+        } catch (e) {
+            console.error('Ошибка загрузки:', e);
+        }
+    }
+
+    loadFromLocalStorage();
+
+    watch(
+        [shapes, selectedId],
+        () => {
+            saveToLocalStorage();
+        },
+        { deep: true }
+    );
 
     return {
         shapes,

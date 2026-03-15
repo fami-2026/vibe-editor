@@ -28,7 +28,7 @@ const initialPoints = ref<Point[]>([]);
 const isEditInteraction = ref(false);
 const selectedPointIndex = ref<number | null>(null);
 
-// Границы холста (не используются для ограничения)
+// Границы холста в мировых координатах (с учетом зума)
 const canvasBounds = ref({ minX: 0, minY: 0, maxX: 0, maxY: 0 });
 
 // Функция для преобразования экранных координат в координаты холста с учетом зума
@@ -51,17 +51,36 @@ function getCanvasPoint(e: MouseEvent): Point {
 
 function updateCanvasBounds() {
     if (!canvasRef.value) return;
+    
+    // Границы в пикселях холста
+    const width = canvasRef.value.width;
+    const height = canvasRef.value.height;
+    
+    // Преобразуем в мировые координаты (инвертируем zoom трансформацию)
+    const zoomFactor = zoom.value / 100;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    
     canvasBounds.value = {
-        minX: 0,
-        minY: 0,
-        maxX: canvasRef.value.width,
-        maxY: canvasRef.value.height,
+        minX: centerX + (0 - centerX) / zoomFactor,
+        minY: centerY + (0 - centerY) / zoomFactor,
+        maxX: centerX + (width - centerX) / zoomFactor,
+        maxY: centerY + (height - centerY) / zoomFactor,
     };
 }
 
-// Функция больше не используется для ограничения, но оставляем для совместимости
+// Функция ограничения координат границами холста с учетом зума
 function clampToBounds(point: Point): Point {
-    return point; // Просто возвращаем точку без ограничений
+    return {
+        x: Math.max(
+            canvasBounds.value.minX,
+            Math.min(canvasBounds.value.maxX, point.x)
+        ),
+        y: Math.max(
+            canvasBounds.value.minY,
+            Math.min(canvasBounds.value.maxY, point.y)
+        ),
+    };
 }
 
 type CurveHandleKind = 'active' | 'passive';
@@ -435,7 +454,7 @@ const handleCanvasMouseDown = (e: MouseEvent) => {
     }
 };
 
-// ИСПРАВЛЕННЫЙ обработчик движения мыши
+// ИСПРАВЛЕННЫЙ обработчик движения мыши с clampToBounds
 const handleCanvasMouseMove = (e: MouseEvent) => {
     if (
         !isDragging.value ||
@@ -470,11 +489,12 @@ const handleCanvasMouseMove = (e: MouseEvent) => {
             return;
         }
 
-        // Применяем дельту только к перемещаемой точке
+        // Применяем дельту только к перемещаемой точке и ограничиваем координаты
         const newPoints = currentPoints.map((p, idx) => {
             if (!p) return { x: 0, y: 0 };
             if (idx === pointIndex) {
-                return { x: p.x + deltaX, y: p.y + deltaY };
+                // Ограничиваем координаты границами холста
+                return clampToBounds({ x: p.x + deltaX, y: p.y + deltaY });
             }
             return { ...p };
         });
@@ -631,6 +651,8 @@ watch(
         if (editingCurve.value) {
             editingCurve.value.getBoundingBox();
         }
+        // Обновляем границы при изменении зума
+        updateCanvasBounds();
         requestAnimationFrame(customDraw);
     },
     { deep: true }

@@ -34,15 +34,15 @@ const canvasBounds = ref({ minX: 0, minY: 0, maxX: 0, maxY: 0 });
 // Функция для преобразования экранных координат в координаты холста с учетом зума
 function getCanvasPoint(e: MouseEvent): Point {
     if (!canvasRef.value) return { x: 0, y: 0 };
-    
+
     const rect = canvasRef.value.getBoundingClientRect();
     const zoomFactor = zoom.value / 100;
-    
+
     const screenX = e.clientX - rect.left;
     const screenY = e.clientY - rect.top;
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
-    
+
     return {
         x: centerX + (screenX - centerX) / zoomFactor,
         y: centerY + (screenY - centerY) / zoomFactor,
@@ -51,16 +51,16 @@ function getCanvasPoint(e: MouseEvent): Point {
 
 function updateCanvasBounds() {
     if (!canvasRef.value) return;
-    
+
     // Границы в пикселях холста
     const width = canvasRef.value.width;
     const height = canvasRef.value.height;
-    
+
     // Преобразуем в мировые координаты (инвертируем zoom трансформацию)
     const zoomFactor = zoom.value / 100;
     const centerX = width / 2;
     const centerY = height / 2;
-    
+
     canvasBounds.value = {
         minX: centerX + (0 - centerX) / zoomFactor,
         minY: centerY + (0 - centerY) / zoomFactor,
@@ -160,7 +160,7 @@ function getCurveHandlesForEditing(): {
 function findClosestHandle(x: number, y: number): CurveHandleInfo | null {
     if (!editingCurve.value) return null;
     const { active, passive } = getCurveHandlesForEditing();
-    
+
     // Динамический threshold в зависимости от зума
     const baseThreshold = 15;
     const threshold = baseThreshold / (zoom.value / 100);
@@ -312,7 +312,7 @@ const drawTemporaryPoints = () => {
     // Текст рисуем без трансформации зума (в экранных координатах)
     ctx.restore();
     ctx.save();
-    
+
     ctx.font = 'bold 16px Arial';
     ctx.fillStyle = '#333';
     ctx.textAlign = 'center';
@@ -359,7 +359,7 @@ const customDraw = () => {
 const handleCanvasClick = (e: MouseEvent) => {
     if (!canvasRef.value) return;
     const point = getCanvasPoint(e);
-    
+
     if (canvasStore.curveDrawing) {
         canvasStore.handleCanvasClick(point.x, point.y);
         e.stopPropagation();
@@ -397,7 +397,10 @@ const handleCanvasMouseDown = (e: MouseEvent) => {
             isEditInteraction.value = true;
             lastMousePos.value = { x: point.x, y: point.y };
 
-            if (handle.kind === 'passive' && handle.segmentIndex !== undefined) {
+            if (
+                handle.kind === 'passive' &&
+                handle.segmentIndex !== undefined
+            ) {
                 // Добавляем новую точку в середине сегмента
                 const insertIndex = handle.segmentIndex + 1;
                 editingCurve.value.addPoint(insertIndex, handle.point);
@@ -475,7 +478,7 @@ const handleCanvasMouseMove = (e: MouseEvent) => {
     if (pointIndex >= 0) {
         // Получаем текущие точки кривой
         let currentPoints: Point[];
-        
+
         if (isEditingMode.value && editingCurve.value) {
             currentPoints = editingCurve.value.getGlobalPoints();
         } else if (!isEditingMode.value && selectedCurve.value) {
@@ -504,7 +507,7 @@ const handleCanvasMouseMove = (e: MouseEvent) => {
         } else if (!isEditingMode.value && selectedCurve.value) {
             selectedCurve.value.setGlobalPoints(newPoints);
         }
-        
+
         // Обновляем lastMousePos для следующего шага
         lastMousePos.value = { x: point.x, y: point.y };
     }
@@ -516,7 +519,7 @@ const handleCanvasMouseUp = (e: MouseEvent) => {
     if (isDragging.value && draggedPointIndex.value !== null) {
         e.preventDefault();
         e.stopPropagation();
-        
+
         if (isEditingMode.value && editingCurve.value) {
             canvasStore.pushHistoryForCurve();
             selectedPointIndex.value = draggedPointIndex.value;

@@ -14,10 +14,10 @@ import {
     Hexagon,
     ArrowUp,
     Pentagon,
-    Spline,  // Добавлен импорт для кривой
+    Spline, // Добавлен импорт для кривой
 } from 'lucide-vue-next';
 import { useToolsStore, type ToolType } from '@/stores/tools';
-import { useCanvasStore } from '@/stores/canvas';  // Добавлен импорт
+import { useCanvasStore } from '@/stores/canvas'; // Добавлен импорт
 
 type ToolId =
     | 'hand'
@@ -30,7 +30,7 @@ type ToolId =
     | 'star'
     | 'hexagon'
     | 'arrow'
-    | 'curve'    // Добавлен тип для кривой
+    | 'curve' // Добавлен тип для кривой
     | 'eraser'
     | 'text';
 
@@ -51,13 +51,13 @@ const tools: Tool[] = [
     { id: 'star', title: 'Звезда', icon: Star },
     { id: 'hexagon', title: 'Шестиугольник', icon: Hexagon },
     { id: 'arrow', title: 'Стрелка', icon: ArrowUp },
-    { id: 'curve', title: 'Кривая', icon: Spline }, 
+    { id: 'curve', title: 'Кривая', icon: Spline },
     { id: 'eraser', title: 'Ластик', icon: Eraser },
     { id: 'text', title: 'Текст', icon: Type },
 ];
 
 const toolsStore = useToolsStore();
-const canvasStore = useCanvasStore();  
+const canvasStore = useCanvasStore();
 
 // Состояние для диалога многоугольника
 const showPolygonDialog = ref(false);
@@ -121,7 +121,7 @@ function handleClick(tool: Tool) {
         case 'arrow':
             toolsStore.setActiveTool('arrow');
             break;
-        case 'curve':  // Добавлен обработчик для кривой
+        case 'curve': // Добавлен обработчик для кривой
             toolsStore.setActiveTool('curve');
             canvasStore.startCurveDrawing();
             break;
@@ -161,7 +161,7 @@ const activeId = computed<ToolId>(() => {
     if (active === 'star') return 'star';
     if (active === 'hexagon') return 'hexagon';
     if (active === 'arrow') return 'arrow';
-    if (active === 'curve') return 'curve';  // Добавлен возврат для кривой
+    if (active === 'curve') return 'curve'; // Добавлен возврат для кривой
     if (active === 'eraser') return 'eraser';
     return 'cursor';
 });

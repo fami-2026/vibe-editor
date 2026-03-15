@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { useToolsStore, type ToolType } from '@/stores/tools';
-import { useCanvasStore } from '@/stores/canvas';  // Добавлен импорт
+import { useCanvasStore } from '@/stores/canvas'; // Добавлен импорт
 import { storeToRefs } from 'pinia';
 import { ref } from 'vue';
 
 const toolsStore = useToolsStore();
-const canvasStore = useCanvasStore();  // Добавлен стор канваса
+const canvasStore = useCanvasStore(); // Добавлен стор канваса
 const { activeTool } = storeToRefs(toolsStore);
 
 // Состояние для диалога многоугольника

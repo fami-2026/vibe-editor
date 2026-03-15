@@ -32,9 +32,10 @@ type SerializedShapeBase = {
     scaleY: number;
 };
 
-type SerializedShape = SerializedShapeBase & Record<string, unknown> & {
-    points?: Point[];
-};
+type SerializedShape = SerializedShapeBase &
+    Record<string, unknown> & {
+        points?: Point[];
+    };
 
 type SceneSnapshot = {
     shapes: SerializedShape[];
@@ -81,13 +82,13 @@ export const useCanvasStore = defineStore('canvas', () => {
         plain.rotation = shape.rotation;
         plain.scaleX = shape.scaleX;
         plain.scaleY = shape.scaleY;
-        
+
         // Сохраняем точки для кривой
         if (shape.type === 'curve') {
             const curve = shape as CurveShapeWrapper;
             plain.points = curve.getGlobalPoints();
         }
-        
+
         return plain;
     }
 
@@ -102,23 +103,23 @@ export const useCanvasStore = defineStore('canvas', () => {
         const restored: Shape[] = snapshot.shapes.map((plain) => {
             const { type, id, position, points, ...rest } = plain;
             const shape = shapeRegistry.create(type, id, position);
-            
+
             // Специальная обработка для кривой
             if (type === 'curve' && points) {
                 const curve = shape as CurveShapeWrapper;
                 curve.setGlobalPoints(points);
             }
-            
+
             Object.assign(shape, rest);
             return shape as Shape;
         });
 
         shapes.value = restored;
         selectedId.value = snapshot.selectedId;
-        
+
         // Если мы в режиме редактирования, обновляем ссылку на кривую
         if (isEditingMode.value && selectedId.value) {
-            const curve = shapes.value.find(s => s.id === selectedId.value);
+            const curve = shapes.value.find((s) => s.id === selectedId.value);
             if (curve && curve.type === 'curve') {
                 editingCurve.value = curve as CurveShapeWrapper;
             }
@@ -356,16 +357,16 @@ export const useCanvasStore = defineStore('canvas', () => {
     function pushHistoryForCurve() {
         // Создаем снапшот текущего состояния
         const snapshot = createSnapshot();
-        
+
         // Добавляем в историю
         undoStack.value.push(snapshot);
         if (undoStack.value.length > HISTORY_LIMIT) {
             undoStack.value.shift();
         }
-        
+
         // Очищаем redo стек
         redoStack.value = [];
-        
+
         // Сохраняем ссылку на редактируемую кривую
         if (editingCurve.value) {
             selectedId.value = editingCurve.value.id;
@@ -398,23 +399,25 @@ export const useCanvasStore = defineStore('canvas', () => {
 
             const data = JSON.parse(saved) as StorageData;
 
-            const restored: Shape[] = data.shapes.map((plain: SerializedShape) => {
-                const { type, id, position, points, ...rest } = plain;
-                const shape = shapeRegistry.create(type, id, position);
-                
-                // Специальная обработка для кривой
-                if (type === 'curve' && points) {
-                    const curve = shape as CurveShapeWrapper;
-                    curve.setGlobalPoints(points);
+            const restored: Shape[] = data.shapes.map(
+                (plain: SerializedShape) => {
+                    const { type, id, position, points, ...rest } = plain;
+                    const shape = shapeRegistry.create(type, id, position);
+
+                    // Специальная обработка для кривой
+                    if (type === 'curve' && points) {
+                        const curve = shape as CurveShapeWrapper;
+                        curve.setGlobalPoints(points);
+                    }
+
+                    Object.assign(shape, rest);
+                    return shape as Shape;
                 }
-                
-                Object.assign(shape, rest);
-                return shape as Shape;
-            });
+            );
 
             shapes.value = restored;
             selectedId.value = data.selectedId || null;
-            
+
             // Восстанавливаем zoom
             if (data.zoom !== undefined) {
                 zoom.value = data.zoom;

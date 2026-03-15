@@ -365,7 +365,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, nextTick, watch, onMounted, onUnmounted } from 'vue';
+import { computed, ref, nextTick, onMounted, onUnmounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useCanvasStore } from '@/stores/canvas';
 import type { Shape } from '@/canvas/types';
@@ -383,22 +383,6 @@ const setInputRef = (el: HTMLInputElement | null, shapeId: string) => {
         inputRefs.value[shapeId] = el;
     }
 };
-
-// Отслеживаем новые фигуры
-watch(
-    () => shapes.value.length,
-    (newLength, oldLength) => {
-        if (newLength > oldLength) {
-            // Появилась новая фигура
-            const newShape = shapes.value[shapes.value.length - 1];
-            if (newShape) {
-                setTimeout(() => {
-                    startEditing(newShape.id);
-                }, 100);
-            }
-        }
-    }
-);
 
 function getShapeNumberProp(key: string, fallback: number | '') {
     if (!selectedShape.value) return fallback;

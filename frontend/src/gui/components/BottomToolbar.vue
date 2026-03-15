@@ -16,7 +16,6 @@ import {
     Pentagon,
 } from 'lucide-vue-next';
 import { useToolsStore, type ToolType } from '@/stores/tools';
-import { useCanvasStore } from '@/stores/canvas';
 
 type ToolId =
     | 'hand'
@@ -54,7 +53,6 @@ const tools: Tool[] = [
 ];
 
 const toolsStore = useToolsStore();
-const canvasStore = useCanvasStore();
 
 // Состояние для диалога многоугольника
 const showPolygonDialog = ref(false);
@@ -94,36 +92,29 @@ function handleClick(tool: Tool) {
             toolsStore.setActiveTool('select');
             break;
         case 'rect':
-            canvasStore.addShape('rect', { x: 400, y: 300 });
-            toolsStore.setActiveTool('select');
+            toolsStore.setActiveTool('rect');
             break;
         case 'circle':
-            canvasStore.addShape('circle', { x: 400, y: 300 });
-            toolsStore.setActiveTool('select');
+            toolsStore.setActiveTool('circle');
             break;
         case 'line':
-            canvasStore.addShape('line', { x: 400, y: 300 });
-            toolsStore.setActiveTool('select');
+            toolsStore.setActiveTool('line');
             break;
         case 'triangle':
-            canvasStore.addShape('triangle', { x: 400, y: 300 });
-            toolsStore.setActiveTool('select');
+            toolsStore.setActiveTool('triangle');
             break;
         case 'polygon':
             // Показываем диалог для выбора количества углов
             showPolygonDialog.value = true;
             break;
         case 'star':
-            canvasStore.addShape('star', { x: 400, y: 300 });
-            toolsStore.setActiveTool('select');
+            toolsStore.setActiveTool('star');
             break;
         case 'hexagon':
-            canvasStore.addShape('hexagon', { x: 400, y: 300 });
-            toolsStore.setActiveTool('select');
+            toolsStore.setActiveTool('hexagon');
             break;
         case 'arrow':
-            canvasStore.addShape('arrow', { x: 400, y: 300 });
-            toolsStore.setActiveTool('select');
+            toolsStore.setActiveTool('arrow');
             break;
         case 'eraser':
             toolsStore.setActiveTool('eraser');
@@ -145,14 +136,10 @@ function createPolygon() {
         return;
     }
 
-    canvasStore.addShape(
-        'polygon',
-        { x: 400, y: 300 },
-        { sides: polygonSides.value }
-    );
+    toolsStore.setCreationParams({ sides: polygonSides.value });
+    toolsStore.setActiveTool('polygon');
     showPolygonDialog.value = false;
     polygonSides.value = 5;
-    toolsStore.setActiveTool('select');
 }
 
 const activeId = computed<ToolId>(() => {

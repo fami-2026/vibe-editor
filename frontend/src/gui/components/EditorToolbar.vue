@@ -1,12 +1,9 @@
 <script setup lang="ts">
 import { useToolsStore, type ToolType } from '@/stores/tools';
-import { useCanvasStore } from '@/stores/canvas';
 import { storeToRefs } from 'pinia';
-import type { ShapeType } from '@/canvas/types';
 import { ref } from 'vue';
 
 const toolsStore = useToolsStore();
-const canvasStore = useCanvasStore();
 const { activeTool } = storeToRefs(toolsStore);
 
 // Состояние для диалога многоугольника
@@ -31,25 +28,25 @@ const tools: ToolConfig[] = [
         id: 'rect',
         icon: '▭',
         title: 'Прямоугольник',
-        action: () => addShape('rect'),
+        action: () => toolsStore.setActiveTool('rect'),
     },
     {
         id: 'circle',
         icon: '◯',
         title: 'Круг',
-        action: () => addShape('circle'),
+        action: () => toolsStore.setActiveTool('circle'),
     },
     {
         id: 'line',
         icon: '/',
         title: 'Линия',
-        action: () => addShape('line'),
+        action: () => toolsStore.setActiveTool('line'),
     },
     {
         id: 'triangle',
         icon: '△',
         title: 'Треугольник',
-        action: () => addShape('triangle'),
+        action: () => toolsStore.setActiveTool('triangle'),
     },
     {
         id: 'polygon',
@@ -63,19 +60,19 @@ const tools: ToolConfig[] = [
         id: 'star',
         icon: '☆',
         title: 'Звезда',
-        action: () => addShape('star'),
+        action: () => toolsStore.setActiveTool('star'),
     },
     {
         id: 'hexagon',
         icon: '⬡',
         title: 'Шестиугольник',
-        action: () => addShape('hexagon'),
+        action: () => toolsStore.setActiveTool('hexagon'),
     },
     {
         id: 'arrow',
         icon: '→',
         title: 'Стрелка',
-        action: () => addShape('arrow'),
+        action: () => toolsStore.setActiveTool('arrow'),
     },
 ];
 
@@ -87,18 +84,9 @@ function handleToolClick(tool: ToolConfig) {
     }
 }
 
-interface ShapeParams {
-    sides?: number;
-    [key: string]: unknown;
-}
-
-function addShape(type: ShapeType, customParams?: ShapeParams) {
-    canvasStore.addShape(type, { x: 400, y: 300 }, customParams);
-    toolsStore.setActiveTool('select');
-}
-
 function createPolygon() {
-    addShape('polygon', { sides: polygonSides.value });
+    toolsStore.setCreationParams({ sides: polygonSides.value });
+    toolsStore.setActiveTool('polygon');
     showPolygonDialog.value = false;
     polygonSides.value = 5;
 }

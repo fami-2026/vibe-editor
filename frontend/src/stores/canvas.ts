@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia';
 import { ref, computed, watch } from 'vue';
-import type { Shape, Point } from '@/canvas/types'; // Добавлен Point
+import type { Shape, Point } from '@/canvas/types';
 import { shapeRegistry } from '@/canvas/types';
 import { generateId } from '@/canvas/utils/math';
 import { PolygonShape } from '@/canvas/types/polygon/polygon';
-import { CurveShapeWrapper } from '@/canvas/types/curve/curve'; // Добавлен импорт кривой
+import { CurveShapeWrapper } from '@/canvas/types/curve/curve';
 
 interface ShapeParams extends Record<string, unknown> {
     sides?: number;
@@ -19,9 +19,8 @@ interface ShapeParams extends Record<string, unknown> {
     rotation?: number;
 }
 
-// Добавлен интерфейс для состояния рисования кривой
 interface CurveDrawingState {
-    points: Point[]; // Точки [start, end]
+    points: Point[];
 }
 
 type SerializedShapeBase = {
@@ -34,7 +33,7 @@ type SerializedShapeBase = {
 };
 
 type SerializedShape = SerializedShapeBase & Record<string, unknown> & {
-    points?: Point[]; // Добавлено для кривой
+    points?: Point[];
 };
 
 type SceneSnapshot = {
@@ -42,11 +41,17 @@ type SceneSnapshot = {
     selectedId: string | null;
 };
 
+// Тип для данных в localStorage
+type StorageData = {
+    shapes: SerializedShape[];
+    selectedId: string | null;
+    zoom: number; // Добавляем zoom
+};
+
 export const useCanvasStore = defineStore('canvas', () => {
     const shapes = ref<Shape[]>([]);
     const selectedId = ref<string | null>(null);
 
-    // Добавлены состояния для кривой
     const curveDrawing = ref<CurveDrawingState | null>(null);
     const editingCurve = ref<CurveShapeWrapper | null>(null);
     const isEditingMode = ref(false);
@@ -68,23 +73,23 @@ export const useCanvasStore = defineStore('canvas', () => {
         () => shapes.value.find((s) => s.id === selectedId.value) ?? null
     );
 
-function serializeShape(shape: Shape): SerializedShape {
-    const plain = JSON.parse(JSON.stringify(shape)) as SerializedShape;
-    plain.type = (shape as unknown as { type: string }).type;
-    plain.id = shape.id;
-    plain.position = { x: shape.position.x, y: shape.position.y };
-    plain.rotation = shape.rotation;
-    plain.scaleX = shape.scaleX;
-    plain.scaleY = shape.scaleY;
-    
-    // Сохраняем точки для кривой
-    if (shape.type === 'curve') {
-        const curve = shape as CurveShapeWrapper;
-        plain.points = curve.getGlobalPoints();
+    function serializeShape(shape: Shape): SerializedShape {
+        const plain = JSON.parse(JSON.stringify(shape)) as SerializedShape;
+        plain.type = (shape as unknown as { type: string }).type;
+        plain.id = shape.id;
+        plain.position = { x: shape.position.x, y: shape.position.y };
+        plain.rotation = shape.rotation;
+        plain.scaleX = shape.scaleX;
+        plain.scaleY = shape.scaleY;
+        
+        // Сохраняем точки для кривой
+        if (shape.type === 'curve') {
+            const curve = shape as CurveShapeWrapper;
+            plain.points = curve.getGlobalPoints();
+        }
+        
+        return plain;
     }
-    
-    return plain;
-}
 
     function createSnapshot(): SceneSnapshot {
         return {
@@ -93,28 +98,32 @@ function serializeShape(shape: Shape): SerializedShape {
         };
     }
 
-// Добавьте этот метод в класс store
-function restoreSnapshot(snapshot: SceneSnapshot) {
-    const restored: Shape[] = snapshot.shapes.map((plain) => {
-        const { type, id, position, ...rest } = plain;
-        const shape = shapeRegistry.create(type, id, position);
+    function restoreSnapshot(snapshot: SceneSnapshot) {
+        const restored: Shape[] = snapshot.shapes.map((plain) => {
+            const { type, id, position, points, ...rest } = plain;
+            const shape = shapeRegistry.create(type, id, position);
+            
+            // Специальная обработка для кривой
+            if (type === 'curve' && points) {
+                const curve = shape as CurveShapeWrapper;
+                curve.setGlobalPoints(points);
+            }
+            
+            Object.assign(shape, rest);
+            return shape as Shape;
+        });
+
+        shapes.value = restored;
+        selectedId.value = snapshot.selectedId;
         
-        // Специальная обработка для кривой
-        if (type === 'curve') {
-            // Восстанавливаем точки кривой
-            const curve = shape as CurveShapeWrapper;
-            if (rest.points) {
-                curve.setGlobalPoints(rest.points as Point[]);
+        // Если мы в режиме редактирования, обновляем ссылку на кривую
+        if (isEditingMode.value && selectedId.value) {
+            const curve = shapes.value.find(s => s.id === selectedId.value);
+            if (curve && curve.type === 'curve') {
+                editingCurve.value = curve as CurveShapeWrapper;
             }
         }
-        
-        Object.assign(shape, rest);
-        return shape as Shape;
-    });
-
-    shapes.value = restored;
-    selectedId.value = snapshot.selectedId;
-}
+    }
 
     function pushHistory() {
         const snapshot = createSnapshot();
@@ -202,7 +211,7 @@ function restoreSnapshot(snapshot: SceneSnapshot) {
                             ? 'Стрелка'
                             : type === 'hexagon'
                               ? 'Шестиугольник'
-                              : type === 'curve'  // Добавлен тип кривой
+                              : type === 'curve'
                                 ? 'Кривая'
                                 : type;
 
@@ -344,7 +353,6 @@ function restoreSnapshot(snapshot: SceneSnapshot) {
         selectedId.value = null;
     }
 
-
     function pushHistoryForCurve() {
         // Создаем снапшот текущего состояния
         const snapshot = createSnapshot();
@@ -372,9 +380,10 @@ function restoreSnapshot(snapshot: SceneSnapshot) {
 
     function saveToLocalStorage() {
         try {
-            const data = {
+            const data: StorageData = {
                 shapes: shapes.value.map(serializeShape),
                 selectedId: selectedId.value,
+                zoom: zoom.value, // Сохраняем zoom
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         } catch (e) {
@@ -387,22 +396,29 @@ function restoreSnapshot(snapshot: SceneSnapshot) {
             const saved = localStorage.getItem(STORAGE_KEY);
             if (!saved) return;
 
-            const data = JSON.parse(saved) as {
-                shapes: SerializedShape[];
-                selectedId: string | null;
-            };
+            const data = JSON.parse(saved) as StorageData;
 
-            const restored: Shape[] = data.shapes.map(
-                (plain: SerializedShape) => {
-                    const { type, id, position, ...rest } = plain;
-                    const shape = shapeRegistry.create(type, id, position);
-                    Object.assign(shape, rest);
-                    return shape as Shape;
+            const restored: Shape[] = data.shapes.map((plain: SerializedShape) => {
+                const { type, id, position, points, ...rest } = plain;
+                const shape = shapeRegistry.create(type, id, position);
+                
+                // Специальная обработка для кривой
+                if (type === 'curve' && points) {
+                    const curve = shape as CurveShapeWrapper;
+                    curve.setGlobalPoints(points);
                 }
-            );
+                
+                Object.assign(shape, rest);
+                return shape as Shape;
+            });
 
             shapes.value = restored;
             selectedId.value = data.selectedId || null;
+            
+            // Восстанавливаем zoom
+            if (data.zoom !== undefined) {
+                zoom.value = data.zoom;
+            }
         } catch (e) {
             console.error('Ошибка загрузки:', e);
         }
@@ -411,7 +427,7 @@ function restoreSnapshot(snapshot: SceneSnapshot) {
     loadFromLocalStorage();
 
     watch(
-        [shapes, selectedId],
+        [shapes, selectedId, zoom], // Добавляем zoom в watch
         () => {
             saveToLocalStorage();
         },

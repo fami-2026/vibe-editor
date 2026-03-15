@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, watch, ref } from 'vue';
+import { computed, ref } from 'vue';
 import type { Component } from 'vue';
 import {
     Hand,
@@ -59,36 +59,8 @@ const tools: Tool[] = [
 const toolsStore = useToolsStore();
 const canvasStore = useCanvasStore();  
 
-// Состояние для диалога многоугольника
 const showPolygonDialog = ref(false);
 const polygonSides = ref(5);
-const polygonInputRef = ref<HTMLInputElement | null>(null);
-
-const polygonError = computed(() => {
-    const sides = Number(polygonSides.value);
-
-    if (!Number.isInteger(sides)) {
-        return 'Введите целое число';
-    }
-
-    if (sides < 3 || sides > 20) {
-        return 'Количество углов должно быть от 3 до 20';
-    }
-
-    return '';
-});
-
-const isPolygonValid = computed(() => polygonError.value === '');
-
-watch(showPolygonDialog, async (isOpen) => {
-    if (isOpen) {
-        polygonSides.value = 5;
-
-        await nextTick();
-        polygonInputRef.value?.focus();
-        polygonInputRef.value?.select();
-    }
-});
 
 function handleClick(tool: Tool) {
     switch (tool.id) {
@@ -109,7 +81,6 @@ function handleClick(tool: Tool) {
             toolsStore.setActiveTool('triangle');
             break;
         case 'polygon':
-            // Показываем диалог для выбора количества углов
             showPolygonDialog.value = true;
             break;
         case 'star':
@@ -119,9 +90,9 @@ function handleClick(tool: Tool) {
             toolsStore.setActiveTool('hexagon');
             break;
         case 'arrow':
-            toolsStore.setActiveTool('arrow');
+           toolsStore.setActiveTool('arrow');
             break;
-        case 'curve':  // Добавлен обработчик для кривой
+        case 'curve':
             toolsStore.setActiveTool('curve');
             canvasStore.startCurveDrawing();
             break;
@@ -131,11 +102,6 @@ function handleClick(tool: Tool) {
         default:
             toolsStore.setActiveTool('select');
     }
-}
-
-function closePolygonDialog() {
-    showPolygonDialog.value = false;
-    polygonSides.value = 5;
 }
 
 function createPolygon() {
@@ -190,58 +156,23 @@ const activeId = computed<ToolId>(() => {
             <div
                 v-if="showPolygonDialog"
                 class="modal-overlay"
-                @click="closePolygonDialog"
+                @click="showPolygonDialog = false"
             >
-                <div
-                    class="modal"
-                    @click.stop
-                    role="dialog"
-                    aria-modal="true"
-                    aria-labelledby="polygon-dialog-title"
-                >
-                    <h3 id="polygon-dialog-title">Создание многоугольника</h3>
-
+                <div class="modal" @click.stop>
+                    <h3>Создание многоугольника</h3>
                     <div class="form-group">
-                        <label for="polygon-sides-input">
-                            Количество углов (3–20):
-                        </label>
-
+                        <label>Количество углов (3-20):</label>
                         <input
-                            id="polygon-sides-input"
-                            ref="polygonInputRef"
-                            v-model.number="polygonSides"
                             type="number"
+                            v-model.number="polygonSides"
                             min="3"
                             max="20"
-                            step="1"
-                            class="modalInput"
-                            :class="{ invalid: polygonError }"
-                            aria-describedby="polygon-sides-error"
-                            :aria-invalid="Boolean(polygonError)"
                             @keyup.enter="createPolygon"
                         />
-
-                        <p
-                            v-if="polygonError"
-                            id="polygon-sides-error"
-                            class="fieldError"
-                        >
-                            {{ polygonError }}
-                        </p>
                     </div>
-
                     <div class="modal-buttons">
-                        <button
-                            class="primaryBtn"
-                            :disabled="!isPolygonValid"
-                            @click="createPolygon"
-                        >
-                            Создать
-                        </button>
-                        <button
-                            class="secondaryBtn"
-                            @click="closePolygonDialog"
-                        >
+                        <button @click="createPolygon">Создать</button>
+                        <button @click="showPolygonDialog = false">
                             Отмена
                         </button>
                     </div>
@@ -256,7 +187,6 @@ const activeId = computed<ToolId>(() => {
     display: flex;
     align-items: center;
     gap: 8px;
-
     padding: 8px 10px;
     background: #ffffff;
     border: 1px solid #e5e7eb;
@@ -269,14 +199,11 @@ const activeId = computed<ToolId>(() => {
 .toolBtn {
     width: 36px;
     height: 36px;
-
     display: grid;
     place-items: center;
-
     background: #ffffff;
     border: 1px solid transparent;
     border-radius: 10px;
-
     cursor: pointer;
     color: #111827;
 }
@@ -380,17 +307,5 @@ const activeId = computed<ToolId>(() => {
 
 .modal-buttons button:last-child:hover {
     background: #d1d5db;
-}
-
-.modalInput.invalid {
-    border-color: #dc2626;
-    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
-}
-
-.fieldError {
-    margin: 6px 0 0;
-    font-size: 12px;
-    line-height: 1.4;
-    color: #dc2626;
 }
 </style>

@@ -15,8 +15,8 @@ const canvasStore = useCanvasStore();
 const { shapes, selectedId, curveDrawing, editingCurve, isEditingMode, zoom } =
     storeToRefs(canvasStore);
 
-const { draw } = useCanvasRender(canvasRef, shapes, selectedId, zoom);
-const { attachListeners } = useInteractions(canvasRef, shapes, zoom);
+const { draw } = useCanvasRender(canvasRef, shapes, selectedId);
+const { attachListeners } = useInteractions(canvasRef, shapes);
 
 let resizeObserver: ResizeObserver | null = null;
 let detachListeners: (() => void) | undefined;
@@ -610,7 +610,6 @@ watch(
     position: relative;
     display: block;
 }
-
 .main-canvas {
     display: block;
     width: 100%;

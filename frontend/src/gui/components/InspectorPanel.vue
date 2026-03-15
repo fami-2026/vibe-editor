@@ -59,10 +59,35 @@
             </div>
         </section>
 
-        <!-- Отражение -->
+        <!-- Масштаб -->
         <div class="fieldBlock">
-            <div class="fieldLabel">Отражение</div>
+            <div class="fieldLabel">Масштаб</div>
             <div class="grid2">
+                <input
+                    class="fieldInput"
+                    type="number"
+                    aria-label="Scale X"
+                    :value="selectedShape?.scaleX ?? ''"
+                    :disabled="!selectedShape"
+                    min="-10"
+                    max="10"
+                    step="0.1"
+                    @input="onNumberChange('scaleX', $event)"
+                />
+                <input
+                    class="fieldInput"
+                    type="number"
+                    aria-label="Scale Y"
+                    :value="selectedShape?.scaleY ?? ''"
+                    :disabled="!selectedShape"
+                    min="-10"
+                    max="10"
+                    step="0.1"
+                    @input="onNumberChange('scaleY', $event)"
+                />
+            </div>
+            <div class="fieldLabel">Отражение</div>
+            <div class="grid2" style="margin-top: 4px">
                 <button
                     class="iconBtnSmall"
                     :disabled="!selectedShape"
@@ -95,6 +120,7 @@
                         :disabled="!selectedShape"
                         min="0"
                         max="360"
+                        step="1"
                         @input="onNumberChange('rotation', $event)"
                         @wheel.prevent="onWheelChange('rotation', $event)"
                     />
@@ -123,8 +149,8 @@
             </div>
         </section>
 
-        <!-- Фигура -->
-        <section class="group">
+        <!-- Фигура (только для фигур с заливкой) -->
+        <section v-if="hasFill" class="group">
             <h3 class="groupTitle">Фигура</h3>
 
             <div class="grid2Blocks">
@@ -143,10 +169,10 @@
                 </div>
 
                 <div class="fieldBlock">
-                    <div class="fieldLabel">Непрозрачность</div>
-                    <div class="opacityControl">
+                    <div class="fieldLabel">Прозрачность</div>
+                    <div class="grid1">
                         <input
-                            class="opacitySlider"
+                            class="fieldInput"
                             type="range"
                             aria-label="Fill opacity"
                             min="0"
@@ -156,17 +182,6 @@
                             :disabled="!selectedShape"
                             @input="onOpacityChange('fillOpacity', $event)"
                         />
-                        <button
-                            class="smallToggleBtn"
-                            type="button"
-                            :class="{
-                                isActive: isNoColorActive('fillOpacity'),
-                            }"
-                            :disabled="!selectedShape"
-                            @click="setNoColor('fillOpacity')"
-                        >
-                            нет цвета
-                        </button>
                     </div>
                 </div>
             </div>
@@ -194,10 +209,10 @@
                 </div>
 
                 <div class="fieldBlock">
-                    <div class="fieldLabel">Непрозрачность</div>
-                    <div class="opacityControl">
+                    <div class="fieldLabel">Прозрачность</div>
+                    <div class="grid1">
                         <input
-                            class="opacitySlider"
+                            class="fieldInput"
                             type="range"
                             aria-label="Stroke opacity"
                             min="0"
@@ -207,17 +222,6 @@
                             :disabled="!selectedShape"
                             @input="onOpacityChange('strokeOpacity', $event)"
                         />
-                        <button
-                            class="smallToggleBtn"
-                            type="button"
-                            :class="{
-                                isActive: isNoColorActive('strokeOpacity'),
-                            }"
-                            :disabled="!selectedShape"
-                            @click="setNoColor('strokeOpacity')"
-                        >
-                            нет цвета
-                        </button>
                     </div>
                 </div>
             </div>
@@ -373,17 +377,6 @@
                         >
                             {{ (shape as any).name || shapeLabel(shape.type) }}
                         </span>
-
-                        <!--Кнопка удаления-->
-                        <button
-                            class="deleteLayerBtn"
-                            type="button"
-                            title="Удалить слой"
-                            aria-label="Удалить слой"
-                            @click.stop="deleteLayer(shape.id)"
-                        >
-                            ×
-                        </button>
                     </div>
                 </li>
             </ul>
@@ -392,7 +385,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, nextTick, onMounted, onUnmounted } from 'vue';
+import { computed, ref, nextTick, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useCanvasStore } from '@/stores/canvas';
 import type { Shape } from '@/canvas/types';
@@ -401,16 +394,28 @@ import type { CurveShape } from '@/canvas/types/curve/curve'; // Добавле�
 const canvasStore = useCanvasStore();
 const { selectedShape, shapes } = storeToRefs(canvasStore);
 
-// Состояние редактирования слоя
 const editingLayerId = ref<string | null>(null);
 const inputRefs = ref<Record<string, HTMLInputElement>>({});
 
-// Метод для установки ref
 const setInputRef = (el: HTMLInputElement | null, shapeId: string) => {
     if (el) {
         inputRefs.value[shapeId] = el;
     }
 };
+
+watch(
+    () => shapes.value.length,
+    (newLength, oldLength) => {
+        if (newLength > oldLength) {
+            const newShape = shapes.value[shapes.value.length - 1];
+            if (newShape) {
+                setTimeout(() => {
+                    startEditing(newShape.id);
+                }, 100);
+            }
+        }
+    }
+);
 
 function getShapeNumberProp(key: string, fallback: number | '') {
     if (!selectedShape.value) return fallback;
@@ -427,6 +432,20 @@ function getShapeStringProp(key: string, fallback: string) {
     ];
     return typeof value === 'string' ? value : fallback;
 }
+
+const hasFill = computed(() => {
+    if (!selectedShape.value) return false;
+    const type = selectedShape.value.type;
+    return [
+        'rect',
+        'circle',
+        'triangle',
+        'polygon',
+        'star',
+        'hexagon',
+        'arrow',
+    ].includes(type);
+});
 
 const shapeWidth = computed(() => getShapeNumberProp('width', ''));
 const shapeHeight = computed(() => getShapeNumberProp('height', ''));
@@ -552,18 +571,10 @@ function onColorChange(key: ColorFieldKey, event: Event) {
 
 type OpacityFieldKey = 'fillOpacity' | 'strokeOpacity';
 
-const OPACITY_EPSILON = 0.0001;
-
-function normalizeOpacity(value: number) {
-    if (value <= OPACITY_EPSILON) return 0;
-    if (value >= 1 - OPACITY_EPSILON) return 1;
-    return Math.min(1, Math.max(0, value));
-}
-
 function onOpacityChange(key: OpacityFieldKey, event: Event) {
     if (!selectedShape.value) return;
     const target = event.target as HTMLInputElement;
-    const value = normalizeOpacity(Number(target.value));
+    const value = Number(target.value);
     if (Number.isNaN(value)) return;
 
     canvasStore.updateShape(selectedShape.value.id, {
@@ -571,106 +582,17 @@ function onOpacityChange(key: OpacityFieldKey, event: Event) {
     } as Partial<Shape>);
 }
 
-// ============ МИНИАТЮРЫ СЛОЁВ (SVG) ============
-
-function thumbFill(shape: Shape): string {
-    const fill = (shape as unknown as Record<string, unknown>).fill as
-        | string
-        | undefined;
-    if (!fill || fill === 'transparent') return '#e5e7eb';
-    return fill;
-}
-
-function thumbFillOpacity(shape: Shape): number {
-    const fill = (shape as unknown as Record<string, unknown>).fill as
-        | string
-        | undefined;
-    if (!fill || fill === 'transparent') return 0.4;
-    const opacity = (shape as unknown as Record<string, unknown>)
-        .fillOpacity as number | undefined;
-    return typeof opacity === 'number' ? Math.max(0.15, opacity) : 1;
-}
-
-function thumbStroke(shape: Shape): string {
-    const stroke = (shape as unknown as Record<string, unknown>).stroke as
-        | string
-        | undefined;
-    if (!stroke || stroke === 'transparent') return '#6b7280';
-    return stroke;
-}
-
-function generatePolygonPoints(
-    sides: number,
-    cx: number,
-    cy: number,
-    r: number
-): string {
-    const pts: string[] = [];
-    for (let i = 0; i < sides; i++) {
-        const a = (i * 2 * Math.PI) / sides - Math.PI / 2;
-        const x = Math.round((cx + r * Math.cos(a)) * 10) / 10;
-        const y = Math.round((cy + r * Math.sin(a)) * 10) / 10;
-        pts.push(`${x},${y}`);
-    }
-    return pts.join(' ');
-}
-
-function generateStarPoints(
-    numPoints: number,
-    cx: number,
-    cy: number,
-    outerR: number,
-    innerR: number
-): string {
-    const pts: string[] = [];
-    for (let i = 0; i < numPoints * 2; i++) {
-        const r = i % 2 === 0 ? outerR : innerR;
-        const a = (i * Math.PI) / numPoints - Math.PI / 2;
-        const x = Math.round((cx + r * Math.cos(a)) * 10) / 10;
-        const y = Math.round((cy + r * Math.sin(a)) * 10) / 10;
-        pts.push(`${x},${y}`);
-    }
-    return pts.join(' ');
-}
-
-function getThumbPoints(shape: Shape): string {
-    const type = shape.type;
-    switch (type) {
-        case 'triangle':
-            return '10,3 2,17 18,17';
-        case 'polygon': {
-            const sides =
-                ((shape as unknown as Record<string, unknown>)
-                    .sides as number) || 5;
-            return generatePolygonPoints(sides, 10, 10, 8);
-        }
-        case 'star': {
-            const numPoints =
-                ((shape as unknown as Record<string, unknown>)
-                    .numPoints as number) || 5;
-            return generateStarPoints(numPoints, 10, 10, 8, 4);
-        }
-        case 'hexagon':
-            return generatePolygonPoints(6, 10, 10, 8);
-        case 'arrow':
-            return '1,8 12,8 12,3 19,10 12,17 12,12 1,12';
-        default:
-            return generatePolygonPoints(5, 10, 10, 8);
-    }
-}
-
-function isNoColorActive(key: OpacityFieldKey) {
-    const opacity =
-        key === 'fillOpacity' ? fillOpacity.value : strokeOpacity.value;
-    return typeof opacity === 'number' && normalizeOpacity(opacity) === 0;
-}
-
-function setNoColor(key: OpacityFieldKey) {
-    if (!selectedShape.value) return;
-
-    canvasStore.updateShape(selectedShape.value.id, {
-        [key]: 0,
-    } as Partial<Shape>);
+function shapeThumb(type: string) {
+    if (type === 'rect') return '▭';
+    if (type === 'circle') return '◯';
+    if (type === 'line') return '/';
+    if (type === 'triangle') return '△';
+    if (type === 'polygon') return '⬔';
+    if (type === 'star') return '☆';
+    if (type === 'hexagon') return '⬡';
+    if (type === 'arrow') return '→';
+    if (type === 'curve') return '〰️';
+    return '?';
 }
 
 function shapeLabel(type: string) {
@@ -713,44 +635,32 @@ function onLayerDrop(targetIndex: number, event: DragEvent) {
     const to = targetIndex;
     draggedLayerIndex.value = null;
     if (from === to) return;
-    const fromShapeIndex = layerIndexToShapeIndex(from);
-    const toShapeIndex = layerIndexToShapeIndex(to);
-    canvasStore.moveShape(fromShapeIndex, toShapeIndex);
+    canvasStore.moveShape(from, to);
 }
 
-const selectedLayerIndex = computed(() => {
+const selectedIndex = computed(() => {
     if (!selectedShape.value) return -1;
-    return layers.value.findIndex((s) => s.id === selectedShape.value?.id);
+    return shapes.value.findIndex((s) => s.id === selectedShape.value?.id);
 });
 
 const canMoveUp = computed(() => {
     if (!selectedShape.value) return false;
-    return selectedLayerIndex.value > 0;
+    return selectedIndex.value > 0;
 });
 
 const canMoveDown = computed(() => {
     if (!selectedShape.value) return false;
-    return selectedLayerIndex.value < layers.value.length - 1;
+    return selectedIndex.value < shapes.value.length - 1;
 });
 
 function moveLayerUp() {
     if (!canMoveUp.value) return;
-    const fromLayerIndex = selectedLayerIndex.value;
-    const toLayerIndex = fromLayerIndex - 1;
-    canvasStore.moveShape(
-        layerIndexToShapeIndex(fromLayerIndex),
-        layerIndexToShapeIndex(toLayerIndex)
-    );
+    canvasStore.moveShape(selectedIndex.value, selectedIndex.value - 1);
 }
 
 function moveLayerDown() {
     if (!canMoveDown.value) return;
-    const fromLayerIndex = selectedLayerIndex.value;
-    const toLayerIndex = fromLayerIndex + 1;
-    canvasStore.moveShape(
-        layerIndexToShapeIndex(fromLayerIndex),
-        layerIndexToShapeIndex(toLayerIndex)
-    );
+    canvasStore.moveShape(selectedIndex.value, selectedIndex.value + 1);
 }
 
 // ============ МЕТОДЫ РЕДАКТИРОВАНИЯ ============
@@ -835,14 +745,9 @@ onUnmounted(() => {
     border: 1px solid #e5e7eb;
     border-radius: 14px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
-
     padding: 12px;
-
     max-height: 55vh;
     overflow: auto;
-}
-
-.panel {
     scrollbar-gutter: stable;
 }
 
@@ -891,13 +796,6 @@ onUnmounted(() => {
     gap: 14px;
 }
 
-.fieldStub {
-    height: 16px;
-    border-radius: 8px;
-    background: #f3f4f6;
-    border: 1px solid #e5e7eb;
-}
-
 .fieldInput {
     width: 100%;
     height: 24px;
@@ -914,24 +812,6 @@ onUnmounted(() => {
     color: #9ca3af;
 }
 
-.opacityControl {
-    display: grid;
-    gap: 6px;
-}
-
-.opacitySlider {
-    width: 100%;
-    height: 24px;
-    margin: 0;
-    padding: 0;
-    accent-color: #2563eb;
-    cursor: pointer;
-}
-
-.opacitySlider:disabled {
-    cursor: default;
-}
-
 .colorInput {
     width: 100%;
     height: 24px;
@@ -941,34 +821,41 @@ onUnmounted(() => {
     background: #ffffff;
 }
 
-.layersRow {
-    display: flex;
-    gap: 10px;
-    margin-top: 4px;
-}
-
-.iconBtn {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    background: #ffffff;
+.iconBtnSmall {
+    width: 100%;
+    height: 24px;
+    border-radius: 8px;
     border: 1px solid #e5e7eb;
+    background: #ffffff;
     cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 14px;
+    color: #374151;
+    transition: all 0.2s;
 }
 
-.iconBtn:hover {
+.iconBtnSmall:hover:not(:disabled) {
     background: #f3f4f6;
+    border-color: #d1d5db;
 }
 
-.spacer {
-    height: 20px;
+.iconBtnSmall:active:not(:disabled) {
+    background: #e5e7eb;
+    transform: translateY(1px);
+}
+
+.iconBtnSmall:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f9fafb;
 }
 
 .layersList {
     list-style: none;
     padding: 0;
     margin: 0;
-
     display: grid;
     gap: 6px;
 }
@@ -976,17 +863,15 @@ onUnmounted(() => {
 .layerItem {
     width: 100%;
     display: grid;
-    grid-template-columns: 20px 1fr 20px;
+    grid-template-columns: 20px 1fr;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
 
     padding: 6px 8px;
     border-radius: 10px;
-
     background: #ffffff;
     border: 1px solid transparent;
     cursor: pointer;
-
     text-align: left;
     color: #111827;
 }
@@ -995,47 +880,29 @@ onUnmounted(() => {
     background: #f3f4f6;
 }
 
-.layerItem:focus {
-    outline: none;
-}
-
-.layerItem:focus-visible {
-    outline: 2px solid rgba(37, 99, 235, 0.55);
-    outline-offset: 2px;
-    border-radius: 10px;
-}
-
 .layerItem.isActive {
     background: rgba(37, 99, 235, 0.12);
     border-color: rgba(37, 99, 235, 0.3);
 }
 
 .thumb {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     border-radius: 6px;
-
     display: grid;
     place-items: center;
-
     background: #ffffff;
     border: 1px solid #e5e7eb;
-
+    font-size: 12px;
+    font-weight: 700;
+    color: #374151;
     user-select: none;
-    flex-shrink: 0;
-}
-
-.thumbSvg {
-    width: 18px;
-    height: 18px;
-    display: block;
 }
 
 .layerName {
     font-size: 12px;
     font-weight: 500;
     color: #111827;
-
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1101,6 +968,61 @@ onUnmounted(() => {
     background: #f9fafb;
 }
 
+.layersList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 6px;
+}
+
+.layerItem {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 20px 1fr;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px;
+    border-radius: 10px;
+    background: #ffffff;
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-align: left;
+    color: #111827;
+}
+
+.layerItem:hover {
+    background: #f3f4f6;
+}
+
+.layerItem.isActive {
+    background: rgba(37, 99, 235, 0.12);
+    border-color: rgba(37, 99, 235, 0.3);
+}
+
+.thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    display: grid;
+    place-items: center;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    font-size: 12px;
+    font-weight: 700;
+    color: #374151;
+    user-select: none;
+}
+
+.layerName {
+    font-size: 12px;
+    font-weight: 500;
+    color: #111827;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .layersHeader {
     display: flex;
     align-items: center;
@@ -1114,7 +1036,6 @@ onUnmounted(() => {
     gap: 4px;
 }
 
-/* Стили для инпута редактирования имени */
 .layerNameInput {
     font-size: 12px;
     font-weight: 500;
@@ -1132,41 +1053,5 @@ onUnmounted(() => {
 .layerNameInput:focus {
     border-color: #2563eb;
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-}
-
-/*Стиль для крестика для удаления слоев */
-.deleteLayerBtn {
-    width: 20px;
-    height: 20px;
-    border: 0;
-    background: transparent;
-    color: #9ca3af;
-    border-radius: 6px;
-    cursor: pointer;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    font-size: 14px;
-    line-height: 1;
-
-    opacity: 0;
-    pointer-events: none;
-    transition:
-        opacity 0.15s ease,
-        background 0.15s ease,
-        color 0.15s ease;
-}
-
-.layerItem:hover .deleteLayerBtn,
-.layerItem:focus-within .deleteLayerBtn {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.deleteLayerBtn:hover {
-    background: #fee2e2;
-    color: #dc2626;
 }
 </style>

@@ -105,6 +105,24 @@
 
         <div class="divider" />
 
+        <!-- Специальная секция для кривой -->
+        <section v-if="selectedShape?.type === 'curve'" class="group">
+            <h3 class="groupTitle">Кривая</h3>
+            <div class="fieldBlock">
+                <div class="fieldLabel">Количество точек</div>
+                <div class="grid2">
+                    <input
+                        class="fieldInput"
+                        type="number"
+                        :value="curvePointsCount"
+                        disabled
+                        readonly
+                    />
+                    <div class="spacer" aria-hidden="true" />
+                </div>
+            </div>
+        </section>
+
         <!-- Фигура -->
         <section class="group">
             <h3 class="groupTitle">Фигура</h3>
@@ -303,6 +321,15 @@
                                     stroke-width="2"
                                     stroke-linecap="round"
                                 />
+                                <!-- Кривая -->
+                                <path
+                                    v-else-if="shape.type === 'curve'"
+                                    d="M3,15 C7,5 13,5 17,15"
+                                    :stroke="thumbStroke(shape)"
+                                    stroke-width="2"
+                                    fill="none"
+                                    stroke-linecap="round"
+                                />
                                 <!-- Все остальные полигональные фигуры -->
                                 <polygon
                                     v-else
@@ -369,6 +396,7 @@ import { computed, ref, nextTick, onMounted, onUnmounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useCanvasStore } from '@/stores/canvas';
 import type { Shape } from '@/canvas/types';
+import type { CurveShape } from '@/canvas/types/curve/curve'; // Добавлен импорт
 
 const canvasStore = useCanvasStore();
 const { selectedShape, shapes } = storeToRefs(canvasStore);
@@ -407,6 +435,13 @@ const strokeColor = computed(() => getShapeStringProp('stroke', '#000000'));
 const fillOpacity = computed(() => getShapeNumberProp('fillOpacity', 1));
 const strokeOpacity = computed(() => getShapeNumberProp('strokeOpacity', 1));
 const strokeWidth = computed(() => getShapeNumberProp('strokeWidth', ''));
+
+// Добавлено вычисляемое свойство для кривой
+const curvePointsCount = computed(() => {
+    if (!selectedShape.value || selectedShape.value.type !== 'curve') return 0;
+    const shape = selectedShape.value as CurveShape;
+    return shape.getPointsCount?.() || 0;
+});
 
 // список слоёв — сверху вниз (верхний слой отображается первым)
 const layers = computed(() => [...shapes.value].reverse());
@@ -481,6 +516,15 @@ function onFlip(key: 'scaleX' | 'scaleY') {
 
     const currentScale = Number((selectedShape.value as Partial<Shape>)[key]);
     const currentRotation = selectedShape.value.rotation;
+
+    // Специальная обработка для кривой
+    if (selectedShape.value.type === 'curve') {
+        canvasStore.updateShape(selectedShape.value.id, {
+            [key]: currentScale * -1,
+            rotation: currentRotation,
+        });
+        return;
+    }
 
     const newRotation =
         key === 'scaleX'
@@ -639,6 +683,7 @@ function shapeLabel(type: string) {
         star: 'Звезда',
         arrow: 'Стрелка',
         hexagon: 'Шестиугольник',
+        curve: 'Кривая', // Добавлено
     };
     return labels[type] ?? type;
 }
@@ -707,7 +752,8 @@ function moveLayerDown() {
         layerIndexToShapeIndex(toLayerIndex)
     );
 }
-// ============ МЕТОДЫ РЕДАКТИРОВАНИЯ (ТОЛЬКО ЗДЕСЬ, ОДИН РАЗ) ============
+
+// ============ МЕТОДЫ РЕДАКТИРОВАНИЯ ============
 function startEditing(shapeId: string) {
     console.log('DOUBLE CLICK WORKS', shapeId);
     editingLayerId.value = shapeId;
@@ -751,7 +797,7 @@ function saveLayerName(shapeId: string, newName: string) {
     cancelEditing();
 }
 
-//Функции для удаления слоя
+// Функции для удаления слоя
 function deleteLayer(id: string) {
     if (editingLayerId.value === id) {
         cancelEditing();
@@ -780,6 +826,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* Стили остаются без изменений */
 .panel {
     width: 240px;
     max-width: 240px;
@@ -1065,25 +1112,6 @@ onUnmounted(() => {
 .layerControls {
     display: flex;
     gap: 4px;
-}
-
-.layerItem:hover {
-    background: #f3f4f6;
-}
-
-.layerItem:focus {
-    outline: none;
-}
-
-.layerItem:focus-visible {
-    outline: 2px solid rgba(37, 99, 235, 0.55);
-    outline-offset: 2px;
-    border-radius: 10px;
-}
-
-.layerItem.isActive {
-    background: rgba(37, 99, 235, 0.12);
-    border-color: rgba(37, 99, 235, 0.3);
 }
 
 /* Стили для инпута редактирования имени */

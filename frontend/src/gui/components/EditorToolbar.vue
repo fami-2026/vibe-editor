@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { useToolsStore, type ToolType } from '@/stores/tools';
+import { useCanvasStore } from '@/stores/canvas';  // Добавлен импорт
 import { storeToRefs } from 'pinia';
 import { ref } from 'vue';
 
 const toolsStore = useToolsStore();
+const canvasStore = useCanvasStore();  // Добавлен стор канваса
 const { activeTool } = storeToRefs(toolsStore);
 
 // Состояние для диалога многоугольника
@@ -73,6 +75,16 @@ const tools: ToolConfig[] = [
         icon: '→',
         title: 'Стрелка',
         action: () => toolsStore.setActiveTool('arrow'),
+    },
+    // Добавлена кнопка для кривой
+    {
+        id: 'curve',
+        icon: '〰️',
+        title: 'Кривая',
+        action: () => {
+            toolsStore.setActiveTool('curve');
+            canvasStore.startCurveDrawing();
+        },
     },
 ];
 

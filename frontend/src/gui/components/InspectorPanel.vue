@@ -441,7 +441,7 @@ const wheelStepConfig: Record<NumberFieldKey, number> = {
     rotation: 5,
     strokeWidth: 0.5,
     scaleX: 0.1,
-    scaleY: 0.1
+    scaleY: 0.1,
 };
 
 type NumberFieldKey =
@@ -468,12 +468,13 @@ function onNumberChange(key: NumberFieldKey, event: Event) {
 // Обработчик колесика мыши
 function onWheelChange(key: NumberFieldKey, event: WheelEvent) {
     if (!selectedShape.value) return;
-    
+
     event.preventDefault();
-    
+
     const step = wheelStepConfig[key];
     const delta = event.deltaY > 0 ? -step : step;
-    const currentValue = (selectedShape.value as unknown as Record<string, number>)[key] || 0;
+    const currentValue =
+        (selectedShape.value as unknown as Record<string, number>)[key] || 0;
     let newValue = currentValue + delta;
 
     if (key === 'width' || key === 'height') {
@@ -485,9 +486,9 @@ function onWheelChange(key: NumberFieldKey, event: WheelEvent) {
     if (key === 'strokeWidth') {
         newValue = Math.max(0, newValue);
     }
-    
+
     canvasStore.updateShape(selectedShape.value.id, {
-        [key]: Math.round(newValue * 100) / 100
+        [key]: Math.round(newValue * 100) / 100,
     } as Partial<Shape>);
 }
 

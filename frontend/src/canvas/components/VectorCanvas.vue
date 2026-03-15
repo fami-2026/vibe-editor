@@ -444,11 +444,23 @@ const handleCanvasMouseMove = (e: MouseEvent) => {
     customDraw();
 };
 
+// В функции handleCanvasMouseUp
 const handleCanvasMouseUp = (e: MouseEvent) => {
     if (isDragging.value && draggedPointIndex.value !== null) {
         e.preventDefault();
         e.stopPropagation();
-        canvasStore.pushHistoryForCurve();
+        
+        // Сохраняем текущее состояние кривой в историю
+        if (isEditingMode.value && editingCurve.value) {
+            // Создаем снапшот текущей кривой
+            const currentPoints = editingCurve.value.getGlobalPoints();
+            
+            // Используем специальный метод для истории кривой
+            canvasStore.pushHistoryForCurve();
+            
+            // Обновляем выбранную точку
+            selectedPointIndex.value = draggedPointIndex.value;
+        }
     }
 
     isDragging.value = false;

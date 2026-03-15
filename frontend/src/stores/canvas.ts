@@ -33,7 +33,9 @@ type SerializedShapeBase = {
     scaleY: number;
 };
 
-type SerializedShape = SerializedShapeBase & Record<string, unknown>;
+type SerializedShape = SerializedShapeBase & Record<string, unknown> & {
+    points?: Point[]; // Добавлено для кривой
+};
 
 type SceneSnapshot = {
     shapes: SerializedShape[];
@@ -66,16 +68,23 @@ export const useCanvasStore = defineStore('canvas', () => {
         () => shapes.value.find((s) => s.id === selectedId.value) ?? null
     );
 
-    function serializeShape(shape: Shape): SerializedShape {
-        const plain = JSON.parse(JSON.stringify(shape)) as SerializedShape;
-        plain.type = (shape as unknown as { type: string }).type;
-        plain.id = shape.id;
-        plain.position = { x: shape.position.x, y: shape.position.y };
-        plain.rotation = shape.rotation;
-        plain.scaleX = shape.scaleX;
-        plain.scaleY = shape.scaleY;
-        return plain;
+function serializeShape(shape: Shape): SerializedShape {
+    const plain = JSON.parse(JSON.stringify(shape)) as SerializedShape;
+    plain.type = (shape as unknown as { type: string }).type;
+    plain.id = shape.id;
+    plain.position = { x: shape.position.x, y: shape.position.y };
+    plain.rotation = shape.rotation;
+    plain.scaleX = shape.scaleX;
+    plain.scaleY = shape.scaleY;
+    
+    // Сохраняем точки для кривой
+    if (shape.type === 'curve') {
+        const curve = shape as CurveShapeWrapper;
+        plain.points = curve.getGlobalPoints();
     }
+    
+    return plain;
+}
 
     function createSnapshot(): SceneSnapshot {
         return {
@@ -84,17 +93,28 @@ export const useCanvasStore = defineStore('canvas', () => {
         };
     }
 
-    function restoreSnapshot(snapshot: SceneSnapshot) {
-        const restored: Shape[] = snapshot.shapes.map((plain) => {
-            const { type, id, position, ...rest } = plain;
-            const shape = shapeRegistry.create(type, id, position);
-            Object.assign(shape, rest);
-            return shape as Shape;
-        });
+// Добавьте этот метод в класс store
+function restoreSnapshot(snapshot: SceneSnapshot) {
+    const restored: Shape[] = snapshot.shapes.map((plain) => {
+        const { type, id, position, ...rest } = plain;
+        const shape = shapeRegistry.create(type, id, position);
+        
+        // Специальная обработка для кривой
+        if (type === 'curve') {
+            // Восстанавливаем точки кривой
+            const curve = shape as CurveShapeWrapper;
+            if (rest.points) {
+                curve.setGlobalPoints(rest.points as Point[]);
+            }
+        }
+        
+        Object.assign(shape, rest);
+        return shape as Shape;
+    });
 
-        shapes.value = restored;
-        selectedId.value = snapshot.selectedId;
-    }
+    shapes.value = restored;
+    selectedId.value = snapshot.selectedId;
+}
 
     function pushHistory() {
         const snapshot = createSnapshot();
@@ -324,8 +344,24 @@ export const useCanvasStore = defineStore('canvas', () => {
         selectedId.value = null;
     }
 
+
     function pushHistoryForCurve() {
-        pushHistory();
+        // Создаем снапшот текущего состояния
+        const snapshot = createSnapshot();
+        
+        // Добавляем в историю
+        undoStack.value.push(snapshot);
+        if (undoStack.value.length > HISTORY_LIMIT) {
+            undoStack.value.shift();
+        }
+        
+        // Очищаем redo стек
+        redoStack.value = [];
+        
+        // Сохраняем ссылку на редактируемую кривую
+        if (editingCurve.value) {
+            selectedId.value = editingCurve.value.id;
+        }
     }
 
     function cancelCurveDrawing() {

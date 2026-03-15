@@ -515,7 +515,6 @@ const customAttachListeners = () => {
     const originalMouseMove = canvas.onmousemove;
     const originalMouseUp = canvas.onmouseup;
 
-
     const originalMouseDown = canvas.onmousedown;
 
     canvas.onmousedown = (e) => {

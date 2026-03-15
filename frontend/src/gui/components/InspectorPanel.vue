@@ -321,17 +321,6 @@
                         >
                             {{ (shape as any).name || shapeLabel(shape.type) }}
                         </span>
-
-                        <!--Кнопка удаления-->
-                        <button
-                            class="deleteLayerBtn"
-                            type="button"
-                            title="Удалить слой"
-                            aria-label="Удалить слой"
-                            @click.stop="deleteLayer(shape.id)"
-                        >
-                            ×
-                        </button>
                     </div>
                 </li>
             </ul>
@@ -340,7 +329,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, nextTick, watch, onMounted, onUnmounted } from 'vue';
+import { computed, ref, nextTick, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useCanvasStore } from '@/stores/canvas';
 import type { Shape } from '@/canvas/types';
@@ -409,12 +398,6 @@ const strokeColor = computed(() => getShapeStringProp('stroke', '#000000'));
 const fillOpacity = computed(() => getShapeNumberProp('fillOpacity', 1));
 const strokeOpacity = computed(() => getShapeNumberProp('strokeOpacity', 1));
 const strokeWidth = computed(() => getShapeNumberProp('strokeWidth', ''));
-
-const curvePointsCount = computed(() => {
-    if (!selectedShape.value || selectedShape.value.type !== 'curve') return 0;
-    const shape = selectedShape.value as CurveShape;
-    return shape.getPointsCount?.() || 0;
-});
 
 // список слоёв — сверху вниз (верхний слой отображается первым)
 const layers = computed(() => [...shapes.value].reverse());
@@ -656,33 +639,6 @@ function saveLayerName(shapeId: string, newName: string) {
 
     cancelEditing();
 }
-
-//Функции для удаления слоя
-function deleteLayer(id: string) {
-    if (editingLayerId.value === id) {
-        cancelEditing();
-    }
-
-    canvasStore.deleteShape(id);
-}
-
-function handleKeyDown(event: KeyboardEvent) {
-    if (editingLayerId.value) return;
-
-    if (event.key === 'Delete') {
-        if (!selectedShape.value) return;
-
-        canvasStore.deleteShape(selectedShape.value.id);
-    }
-}
-
-onMounted(() => {
-    window.addEventListener('keydown', handleKeyDown);
-});
-
-onUnmounted(() => {
-    window.removeEventListener('keydown', handleKeyDown);
-});
 </script>
 
 <style scoped>
@@ -770,34 +726,41 @@ onUnmounted(() => {
     background: #ffffff;
 }
 
-.layersRow {
-    display: flex;
-    gap: 10px;
-    margin-top: 4px;
-}
-
-.iconBtn {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    background: #ffffff;
+.iconBtnSmall {
+    width: 100%;
+    height: 24px;
+    border-radius: 8px;
     border: 1px solid #e5e7eb;
+    background: #ffffff;
     cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 14px;
+    color: #374151;
+    transition: all 0.2s;
 }
 
-.iconBtn:hover {
+.iconBtnSmall:hover:not(:disabled) {
     background: #f3f4f6;
+    border-color: #d1d5db;
 }
 
-.spacer {
-    height: 20px;
+.iconBtnSmall:active:not(:disabled) {
+    background: #e5e7eb;
+    transform: translateY(1px);
+}
+
+.iconBtnSmall:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f9fafb;
 }
 
 .layersList {
     list-style: none;
     padding: 0;
     margin: 0;
-
     display: grid;
     gap: 6px;
 }
@@ -811,27 +774,15 @@ onUnmounted(() => {
 
     padding: 6px 8px;
     border-radius: 10px;
-
     background: #ffffff;
     border: 1px solid transparent;
     cursor: pointer;
-
     text-align: left;
     color: #111827;
 }
 
 .layerItem:hover {
     background: #f3f4f6;
-}
-
-.layerItem:focus {
-    outline: none;
-}
-
-.layerItem:focus-visible {
-    outline: 2px solid rgba(37, 99, 235, 0.55);
-    outline-offset: 2px;
-    border-radius: 10px;
 }
 
 .layerItem.isActive {
@@ -843,17 +794,13 @@ onUnmounted(() => {
     width: 20px;
     height: 20px;
     border-radius: 6px;
-
     display: grid;
     place-items: center;
-
     background: #ffffff;
     border: 1px solid #e5e7eb;
-
     font-size: 12px;
     font-weight: 700;
     color: #374151;
-
     user-select: none;
 }
 
@@ -861,7 +808,6 @@ onUnmounted(() => {
     font-size: 12px;
     font-weight: 500;
     color: #111827;
-
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1012,41 +958,5 @@ onUnmounted(() => {
 .layerNameInput:focus {
     border-color: #2563eb;
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-}
-
-/*Стиль для крестика для удаления слоев */
-.deleteLayerBtn {
-    width: 20px;
-    height: 20px;
-    border: 0;
-    background: transparent;
-    color: #9ca3af;
-    border-radius: 6px;
-    cursor: pointer;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    font-size: 14px;
-    line-height: 1;
-
-    opacity: 0;
-    pointer-events: none;
-    transition:
-        opacity 0.15s ease,
-        background 0.15s ease,
-        color 0.15s ease;
-}
-
-.layerItem:hover .deleteLayerBtn,
-.layerItem:focus-within .deleteLayerBtn {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.deleteLayerBtn:hover {
-    background: #fee2e2;
-    color: #dc2626;
 }
 </style>

@@ -95,6 +95,7 @@ const open = ref(false);
 const showExport = ref(false);
 const root = ref<HTMLElement | null>(null);
 const canvasStore = useCanvasStore();
+const { shapes, selectedId } = storeToRefs(canvasStore);
 const { shapes } = storeToRefs(canvasStore);
 
 const form = reactive<{
@@ -159,6 +160,7 @@ async function submitExport() {
             area: form.area,
             shapes: shapes.value,
             sceneSize: getSceneSize(),
+            selectedId: selectedId.value,
             pngScale: form.pngScale,
             pngBackground: form.pngBackground,
         });

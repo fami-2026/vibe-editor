@@ -24,9 +24,6 @@
             <button class="item" role="menuitem" type="button" @click="openExport('png')">
                 PNG
             </button>
-            <!-- <button class="item" role="menuitem" type="button" @click="openExport('svg')">
-                SVG
-            </button> -->
         </div>
     </div>
 
@@ -40,7 +37,6 @@
         <div class="modalCard">
             <div class="modalHead">
                 <h3>Экспорт PNG</h3>
-                <!-- <h3>Экспорт {{ formatLabel }}</h3> -->
             </div>
 
             <label class="field">
@@ -52,19 +48,6 @@
                     @blur="normalizeFileName"
                 />
             </label>
-
-            <!-- <label class="field">
-                <span>Область</span>
-                <select v-model="form.area">
-                    <option value="scene">Вся сцена</option>
-                    <option value="selection" :disabled="!hasSelection">
-                        Только выделение
-                    </option>
-                </select>
-                <small v-if="!hasSelection" class="hint">
-                    Выделите фигуру, чтобы экспортировать только ее.
-                </small>
-            </label> -->
 
             <label class="field">
                 <span>Фон</span>
@@ -90,9 +73,6 @@
                 <button class="btn" type="button" @click="submitExport">
                     Скачать PNG
                 </button>
-                <!-- <button class="btn" type="button" @click="submitExport">
-                    Скачать {{ formatLabel }}
-                </button> -->
             </div>
         </div>
     </div>
@@ -116,10 +96,6 @@ const showExport = ref(false);
 const root = ref<HTMLElement | null>(null);
 const canvasStore = useCanvasStore();
 const { shapes } = storeToRefs(canvasStore);
-// const { shapes, selectedId } = storeToRefs(canvasStore);
-
-// const hasSelection = computed(() => Boolean(selectedId.value));
-// const formatLabel = computed(() => (form.format === 'png' ? 'PNG' : 'SVG'));
 
 const form = reactive<{
     fileName: string;
@@ -145,9 +121,6 @@ function close() {
 
 function openExport(format: ExportFormat) {
     form.format = format;
-    // if (!hasSelection.value && form.area === 'selection') {
-    //     form.area = 'scene';
-    // }
     normalizeFileName();
     showExport.value = true;
     close();
@@ -185,7 +158,6 @@ async function submitExport() {
             fileName: form.fileName,
             area: form.area,
             shapes: shapes.value,
-            // selectedId: selectedId.value,
             sceneSize: getSceneSize(),
             pngScale: form.pngScale,
             pngBackground: form.pngBackground,

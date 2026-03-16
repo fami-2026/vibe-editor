@@ -237,7 +237,10 @@ export function useInteractions(
     function onMouseDown(e: MouseEvent) {
         const canvas = canvasRef.value;
 
-        if (e.button === 1 || (toolsStore.activeTool === 'hand' && e.button === 0)) {
+        if (
+            e.button === 1 ||
+            (toolsStore.activeTool === 'hand' && e.button === 0)
+        ) {
             e.preventDefault();
             isPanning.value = true;
             panStart.value = { x: e.clientX, y: e.clientY };

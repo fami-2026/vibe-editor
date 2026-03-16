@@ -120,7 +120,10 @@ export function useCanvasRender(
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         const zoomFactor = zoom.value / 100;
         ctx.save();
-        ctx.translate(canvas.width / 2 + pan.value.x, canvas.height / 2 + pan.value.y);
+        ctx.translate(
+            canvas.width / 2 + pan.value.x,
+            canvas.height / 2 + pan.value.y
+        );
         ctx.scale(zoomFactor, zoomFactor);
         ctx.translate(-canvas.width / 2, -canvas.height / 2);
 

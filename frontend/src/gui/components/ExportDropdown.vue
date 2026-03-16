@@ -24,9 +24,9 @@
             <button class="item" role="menuitem" type="button" @click="openExport('png')">
                 PNG
             </button>
-            <button class="item" role="menuitem" type="button" @click="openExport('svg')">
+            <!-- <button class="item" role="menuitem" type="button" @click="openExport('svg')">
                 SVG
-            </button>
+            </button> -->
         </div>
     </div>
 
@@ -39,7 +39,8 @@
     >
         <div class="modalCard">
             <div class="modalHead">
-                <h3>Экспорт {{ formatLabel }}</h3>
+                <h3>Экспорт PNG</h3>
+                <!-- <h3>Экспорт {{ formatLabel }}</h3> -->
             </div>
 
             <label class="field">
@@ -52,7 +53,7 @@
                 />
             </label>
 
-            <label class="field">
+            <!-- <label class="field">
                 <span>Область</span>
                 <select v-model="form.area">
                     <option value="scene">Вся сцена</option>
@@ -63,7 +64,7 @@
                 <small v-if="!hasSelection" class="hint">
                     Выделите фигуру, чтобы экспортировать только ее.
                 </small>
-            </label>
+            </label> -->
 
             <label class="field">
                 <span>Фон</span>
@@ -87,15 +88,18 @@
                     Отмена
                 </button>
                 <button class="btn" type="button" @click="submitExport">
-                    Скачать {{ formatLabel }}
+                    Скачать PNG
                 </button>
+                <!-- <button class="btn" type="button" @click="submitExport">
+                    Скачать {{ formatLabel }}
+                </button> -->
             </div>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useCanvasStore } from '@/stores/canvas';
 import {
@@ -111,12 +115,13 @@ const open = ref(false);
 const showExport = ref(false);
 const root = ref<HTMLElement | null>(null);
 const canvasStore = useCanvasStore();
-const { shapes, selectedId } = storeToRefs(canvasStore);
+const { shapes } = storeToRefs(canvasStore);
+// const { shapes, selectedId } = storeToRefs(canvasStore);
 
-const hasSelection = computed(() => Boolean(selectedId.value));
-const formatLabel = computed(() =>
-    form.format === 'png' ? 'PNG' : 'SVG'
-);
+// const hasSelection = computed(() => Boolean(selectedId.value));
+// const formatLabel = computed(() =>
+//     form.format === 'png' ? 'PNG' : 'SVG'
+// );
 
 const form = reactive<{
     fileName: string;
@@ -142,9 +147,9 @@ function close() {
 
 function openExport(format: ExportFormat) {
     form.format = format;
-    if (!hasSelection.value && form.area === 'selection') {
-        form.area = 'scene';
-    }
+    // if (!hasSelection.value && form.area === 'selection') {
+    //     form.area = 'scene';
+    // }
     normalizeFileName();
     showExport.value = true;
     close();
@@ -182,7 +187,7 @@ async function submitExport() {
             fileName: form.fileName,
             area: form.area,
             shapes: shapes.value,
-            selectedId: selectedId.value,
+            // selectedId: selectedId.value,
             sceneSize: getSceneSize(),
             pngScale: form.pngScale,
             pngBackground: form.pngBackground,
@@ -215,7 +220,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-    document.removeEventListener('pointerdown', onDocPointerDown);
+    document.removeEventListener('pointerdown', onDocKeyDown);
     document.removeEventListener('keydown', onDocKeyDown);
 });
 </script>

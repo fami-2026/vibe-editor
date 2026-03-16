@@ -77,25 +77,27 @@ export async function exportScene(options: ExportOptions): Promise<void> {
 
     const fileName = ensureExtension(options.fileName, options.format);
 
-    if (options.format === 'png') {
-        await exportPng(target, fileName, options);
-        return;
-    }
+    // if (options.format === 'png') {
+    //     await exportPng(target, fileName, options);
+    //     return;
+    // }
+    //
+    // exportSvg(target, fileName, options);
 
-    exportSvg(target, fileName, options);
+    await exportPng(target, fileName, options);
 }
 
 function resolveExportTarget(options: ExportOptions): ExportTarget | null {
-    if (options.area === 'selection') {
-        const shape = options.shapes.find((item) => item.id === options.selectedId);
-        if (!shape) return null;
+    // if (options.area === 'selection') {
+    //     const shape = options.shapes.find((item) => item.id === options.selectedId);
+    //     if (!shape) return null;
 
-        const bounds = shape.getBoundingBox();
-        return {
-            shapes: [shape],
-            bounds: normalizeBounds(bounds.minX, bounds.minY, bounds.maxX, bounds.maxY),
-        };
-    }
+    //     const bounds = shape.getBoundingBox();
+    //     return {
+    //         shapes: [shape],
+    //         bounds: normalizeBounds(bounds.minX, bounds.minY, bounds.maxX, bounds.maxY),
+    //     };
+    // }
 
     if (options.shapes.length === 0) return null;
 
@@ -144,142 +146,142 @@ async function exportPng(
     triggerDownload(blob, fileName);
 }
 
-function exportSvg(
-    target: ExportTarget,
-    fileName: string,
-    options: ExportOptions
-): void {
-    const width = round2(target.bounds.width);
-    const height = round2(target.bounds.height);
-    const offsetX = target.bounds.x;
-    const offsetY = target.bounds.y;
+// function exportSvg(
+//     target: ExportTarget,
+//     fileName: string,
+//     options: ExportOptions
+// ): void {
+//     const width = round2(target.bounds.width);
+//     const height = round2(target.bounds.height);
+//     const offsetX = target.bounds.x;
+//     const offsetY = target.bounds.y;
 
-    const parts: string[] = [];
-    parts.push(
-        `<?xml version="1.0" encoding="UTF-8"?>`,
-        `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`
-    );
+//     const parts: string[] = [];
+//     parts.push(
+//         `<?xml version="1.0" encoding="UTF-8"?>`,
+//         `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`
+//     );
 
-    if ((options.pngBackground ?? 'transparent') === 'white') {
-        parts.push(`<rect x="0" y="0" width="${width}" height="${height}" fill="#ffffff" />`);
-    }
+//     if ((options.pngBackground ?? 'transparent') === 'white') {
+//         parts.push(`<rect x="0" y="0" width="${width}" height="${height}" fill="#ffffff" />`);
+//     }
 
-    for (const shape of target.shapes) {
-        const svgNode = shapeToSvg(shape, offsetX, offsetY);
-        if (svgNode) parts.push(svgNode);
-    }
+//     for (const shape of target.shapes) {
+//         const svgNode = shapeToSvg(shape, offsetX, offsetY);
+//         if (svgNode) parts.push(svgNode);
+//     }
 
-    parts.push(`</svg>`);
+//     parts.push(`</svg>`);
 
-    const blob = new Blob([parts.join('\n')], {
-        type: 'image/svg+xml;charset=utf-8',
-    });
-    triggerDownload(blob, fileName);
-}
+//     const blob = new Blob([parts.join('\n')], {
+//         type: 'image/svg+xml;charset=utf-8',
+//     });
+//     triggerDownload(blob, fileName);
+// }
 
-function shapeToSvg(shape: Shape, offsetX: number, offsetY: number): string | null {
-    switch (shape.type) {
-        case 'rect': {
-            const width = getNum(shape, 'width');
-            const height = getNum(shape, 'height');
-            const fill = getStr(shape, 'fill', '#000000');
-            const stroke = getStr(shape, 'stroke', 'none');
-            const fillOpacity = clampOpacity(getNum(shape, 'fillOpacity', 1));
-            const strokeOpacity = clampOpacity(getNum(shape, 'strokeOpacity', 1));
-            const strokeWidth = getNum(shape, 'strokeWidth', 1);
+// function shapeToSvg(shape: Shape, offsetX: number, offsetY: number): string | null {
+//     switch (shape.type) {
+//         case 'rect': {
+//             const width = getNum(shape, 'width');
+//             const height = getNum(shape, 'height');
+//             const fill = getStr(shape, 'fill', '#000000');
+//             const stroke = getStr(shape, 'stroke', 'none');
+//             const fillOpacity = clampOpacity(getNum(shape, 'fillOpacity', 1));
+//             const strokeOpacity = clampOpacity(getNum(shape, 'strokeOpacity', 1));
+//             const strokeWidth = getNum(shape, 'strokeWidth', 1);
 
-            const x = round2(shape.position.x - width / 2 - offsetX);
-            const y = round2(shape.position.y - height / 2 - offsetY);
+//             const x = round2(shape.position.x - width / 2 - offsetX);
+//             const y = round2(shape.position.y - height / 2 - offsetY);
 
-            return `<rect x="${x}" y="${y}" width="${round2(width)}" height="${round2(height)}" fill="${escapeXml(fill)}" fill-opacity="${fillOpacity}" stroke="${escapeXml(stroke)}" stroke-width="${round2(strokeWidth)}" stroke-opacity="${strokeOpacity}" />`;
-        }
+//             return `<rect x="${x}" y="${y}" width="${round2(width)}" height="${round2(height)}" fill="${escapeXml(fill)}" fill-opacity="${fillOpacity}" stroke="${escapeXml(stroke)}" stroke-width="${round2(strokeWidth)}" stroke-opacity="${strokeOpacity}" />`;
+//         }
 
-        case 'circle': {
-            const radiusX = getNum(shape, 'radiusX', 1);
-            const radiusY = getNum(shape, 'radiusY', 1);
-            const fill = getStr(shape, 'fill', '#000000');
-            const stroke = getStr(shape, 'stroke', 'none');
-            const fillOpacity = clampOpacity(getNum(shape, 'fillOpacity', 1));
-            const strokeOpacity = clampOpacity(getNum(shape, 'strokeOpacity', 1));
-            const strokeWidth = getNum(shape, 'strokeWidth', 1);
+//         case 'circle': {
+//             const radiusX = getNum(shape, 'radiusX', 1);
+//             const radiusY = getNum(shape, 'radiusY', 1);
+//             const fill = getStr(shape, 'fill', '#000000');
+//             const stroke = getStr(shape, 'stroke', 'none');
+//             const fillOpacity = clampOpacity(getNum(shape, 'fillOpacity', 1));
+//             const strokeOpacity = clampOpacity(getNum(shape, 'strokeOpacity', 1));
+//             const strokeWidth = getNum(shape, 'strokeWidth', 1);
 
-            const cx = round2(shape.position.x - offsetX);
-            const cy = round2(shape.position.y - offsetY);
+//             const cx = round2(shape.position.x - offsetX);
+//             const cy = round2(shape.position.y - offsetY);
 
-            return `<ellipse cx="${cx}" cy="${cy}" rx="${round2(radiusX)}" ry="${round2(radiusY)}" fill="${escapeXml(fill)}" fill-opacity="${fillOpacity}" stroke="${escapeXml(stroke)}" stroke-width="${round2(strokeWidth)}" stroke-opacity="${strokeOpacity}" />`;
-        }
+//             return `<ellipse cx="${cx}" cy="${cy}" rx="${round2(radiusX)}" ry="${round2(radiusY)}" fill="${escapeXml(fill)}" fill-opacity="${fillOpacity}" stroke="${escapeXml(stroke)}" stroke-width="${round2(strokeWidth)}" stroke-opacity="${strokeOpacity}" />`;
+//         }
 
-        case 'line': {
-            const x1 = round2(shape.position.x - offsetX);
-            const y1 = round2(shape.position.y - offsetY);
-            const x2 = round2(getNum(shape, 'endPoint.x', shape.position.x) - offsetX);
-            const y2 = round2(getNum(shape, 'endPoint.y', shape.position.y) - offsetY);
-            const stroke = getStr(shape, 'stroke', '#000000');
-            const strokeWidth = getNum(shape, 'strokeWidth', 1);
-            const strokeOpacity = clampOpacity(getNum(shape, 'strokeOpacity', 1));
+//         case 'line': {
+//             const x1 = round2(shape.position.x - offsetX);
+//             const y1 = round2(shape.position.y - offsetY);
+//             const x2 = round2(getNum(shape, 'endPoint.x', shape.position.x) - offsetX);
+//             const y2 = round2(getNum(shape, 'endPoint.y', shape.position.y) - offsetY);
+//             const stroke = getStr(shape, 'stroke', '#000000');
+//             const strokeWidth = getNum(shape, 'strokeWidth', 1);
+//             const strokeOpacity = clampOpacity(getNum(shape, 'strokeOpacity', 1));
 
-            return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${escapeXml(stroke)}" stroke-width="${round2(strokeWidth)}" stroke-opacity="${strokeOpacity}" stroke-linecap="round" />`;
-        }
+//             return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${escapeXml(stroke)}" stroke-width="${round2(strokeWidth)}" stroke-opacity="${strokeOpacity}" stroke-linecap="round" />`;
+//         }
 
-        default:
-            return null;
-    }
-}
+//         default:
+//             return null;
+//     }
+// }
 
-function getNum(shape: Shape, path: string, fallback = 0): number {
-    const value = getPathValue(shape, path);
-    return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
-}
+// function getNum(shape: Shape, path: string, fallback = 0): number {
+//     const value = getPathValue(shape, path);
+//     return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+// }
 
-function getStr(shape: Shape, key: string, fallback = ''): string {
-    const value = (shape as unknown as Record<string, unknown>)[key];
-    return typeof value === 'string' ? value : fallback;
-}
+// function getStr(shape: Shape, key: string, fallback = ''): string {
+//     const value = (shape as unknown as Record<string, unknown>)[key];
+//     return typeof value === 'string' ? value : fallback;
+// }
 
-function getPathValue(source: unknown, path: string): unknown {
-    const segments = path.split('.');
-    let current: unknown = source;
+// function getPathValue(source: unknown, path: string): unknown {
+//     const segments = path.split('.');
+//     let current: unknown = source;
 
-    for (const segment of segments) {
-        if (!current || typeof current !== 'object') return undefined;
-        current = (current as Record<string, unknown>)[segment];
-    }
+//     for (const segment of segments) {
+//         if (!current || typeof current !== 'object') return undefined;
+//         current = (current as Record<string, unknown>)[segment];
+//     }
 
-    return current;
-}
+//     return current;
+// }
 
-function clampOpacity(value: number): number {
-    return round2(Math.min(1, Math.max(0, value)));
-}
+// function clampOpacity(value: number): number {
+//     return round2(Math.min(1, Math.max(0, value)));
+// }
 
-function normalizeBounds(
-    minX: number,
-    minY: number,
-    maxX: number,
-    maxY: number
-): ExportBounds {
-    const width = Math.max(1, maxX - minX);
-    const height = Math.max(1, maxY - minY);
-    return { x: minX, y: minY, width, height };
-}
+// function normalizeBounds(
+//     minX: number,
+//     minY: number,
+//     maxX: number,
+//     maxY: number
+// ): ExportBounds {
+//     const width = Math.max(1, maxX - minX);
+//     const height = Math.max(1, maxY - minY);
+//     return { x: minX, y: minY, width, height };
+// }
 
 function ensureExtension(fileName: string, format: ExportFormat): string {
     const safeBase = sanitizeFileName(fileName);
     return `${safeBase}.${format}`;
 }
 
-function round2(value: number): number {
-    return Math.round(value * 100) / 100;
-}
+// function round2(value: number): number {
+//     return Math.round(value * 100) / 100;
+// }
 
-function escapeXml(value: string): string {
-    return value
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/'/g, '&apos;');
-}
+// function escapeXml(value: string): string {
+//     return value
+//         .replace(/&/g, '&amp;')
+//         .replace(/"/g, '&quot;')
+//         .replace(/</g, '&lt;')
+//         .replace(/>/g, '&gt;')
+//         .replace(/'/g, '&apos;');
+// }
 
 function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string): Promise<Blob> {
     return new Promise((resolve, reject) => {

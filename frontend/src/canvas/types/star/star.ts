@@ -153,7 +153,7 @@ export class StarShape extends BaseShape {
                 p1.y > localPoint.y !== p2.y > localPoint.y &&
                 localPoint.x <
                     ((p2.x - p1.x) * (localPoint.y - p1.y)) / (p2.y - p1.y) +
-                    p1.x;
+                        p1.x;
 
             if (intersect) inside = !inside;
         }

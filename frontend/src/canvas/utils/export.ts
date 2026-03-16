@@ -33,14 +33,14 @@ interface ExportTarget {
     bounds: ExportBounds;
 }
 
-//const ILLEGAL_FILENAME_CHARS = /[<>:"/\\|?*\u0000-\u001F]/g;
-const ILLEGAL_FILENAME_CHARS = /[<>:"/\\|?*\x00-\x1F]/g;
-
+const ILLEGAL_FILENAME_CHARS = /[<>:"/\\|?*]/g;
+const CONTROL_CHARS = new RegExp('[\\x00-\\x1F]', 'g');
 
 export function sanitizeFileName(name: string): string {
     const cleaned = name
         .replace(/\.[a-zA-Z0-9]+$/, '')
         .replace(ILLEGAL_FILENAME_CHARS, '_')
+        .replace(CONTROL_CHARS, '_')
         .trim()
         .replace(/\s+/g, ' ');
 

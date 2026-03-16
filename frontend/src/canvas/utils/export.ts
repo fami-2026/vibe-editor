@@ -1,7 +1,9 @@
 import type { Shape } from '@/canvas/types';
 
-export type ExportFormat = 'png' | 'svg';
-export type ExportArea = 'scene' | 'selection';
+//export type ExportFormat = 'png' | 'svg';
+export type ExportFormat = 'png';
+//export type ExportArea = 'scene' | 'selection';
+export type ExportArea = 'scene';
 export type PngScale = 1 | 2 | 3;
 export type PngBackground = 'transparent' | 'white';
 
@@ -68,11 +70,12 @@ export function buildDefaultFileName(
 export async function exportScene(options: ExportOptions): Promise<void> {
     const target = resolveExportTarget(options);
     if (!target) {
-        throw new Error(
-            options.area === 'selection'
-                ? 'Сначала выделите фигуру для экспорта.'
-                : 'Нет фигур для экспорта.'
-        );
+        // throw new Error(
+        //     options.area === 'selection'
+        //         ? 'Сначала выделите фигуру для экспорта.'
+        //         : 'Нет фигур для экспорта.'
+        // );
+        throw new Error('Нет фигур для экспорта.');
     }
 
     const fileName = ensureExtension(options.fileName, options.format);

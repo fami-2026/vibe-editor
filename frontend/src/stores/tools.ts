@@ -3,6 +3,7 @@ import { ref } from 'vue';
 
 export type ToolType =
     | 'select'
+    | 'hand'
     | 'rect'
     | 'circle'
     | 'line'
@@ -25,7 +26,7 @@ export const useToolsStore = defineStore('tools', () => {
     function setActiveTool(tool: ToolType) {
         activeTool.value = tool;
 
-        if (tool === 'select' || tool === 'eraser') {
+        if (tool === 'select' || tool === 'hand' || tool === 'eraser') {
             creationParams.value = null;
         }
     }

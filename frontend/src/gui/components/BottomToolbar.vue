@@ -88,8 +88,10 @@ watch(showPolygonDialog, async (isOpen) => {
 function handleClick(tool: Tool) {
     switch (tool.id) {
         case 'cursor':
-        case 'hand':
             toolsStore.setActiveTool('select');
+            break;
+        case 'hand':
+            toolsStore.setActiveTool('hand');
             break;
         case 'rect':
             toolsStore.setActiveTool('rect');
@@ -144,6 +146,7 @@ function createPolygon() {
 
 const activeId = computed<ToolId>(() => {
     const active: ToolType = toolsStore.activeTool;
+    if (active === 'hand') return 'hand';
     if (active === 'rect') return 'rect';
     if (active === 'circle') return 'circle';
     if (active === 'line') return 'line';

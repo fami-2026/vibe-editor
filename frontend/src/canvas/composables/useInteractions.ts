@@ -24,7 +24,8 @@ type ResizeHandle =
 export function useInteractions(
     canvasRef: Ref<HTMLCanvasElement | null>,
     shapes: Ref<Shape[]>,
-    zoom: Ref<number>
+    zoom: Ref<number>,
+    pan: Ref<{ x: number; y: number }>
 ) {
     const canvasStore = useCanvasStore();
     const toolsStore = useToolsStore();
@@ -32,8 +33,10 @@ export function useInteractions(
     const isDragging = ref(false);
     const isResizing = ref(false);
     const isCreating = ref(false);
+    const isPanning = ref(false);
 
     const dragStart = ref<Point>({ x: 0, y: 0 });
+    const panStart = ref<Point>({ x: 0, y: 0 });
     const activeShape = ref<Shape | null>(null);
     const resizeHandle = ref<ResizeHandle | null>(null);
 
@@ -88,8 +91,8 @@ export function useInteractions(
         const centerY = rect.height / 2;
 
         return {
-            x: centerX + (screenX - centerX) / zoomFactor,
-            y: centerY + (screenY - centerY) / zoomFactor,
+            x: centerX + (screenX - centerX - pan.value.x) / zoomFactor,
+            y: centerY + (screenY - centerY - pan.value.y) / zoomFactor,
         };
     }
 
@@ -232,6 +235,18 @@ export function useInteractions(
     }
 
     function onMouseDown(e: MouseEvent) {
+        const canvas = canvasRef.value;
+
+        if (e.button === 1 || (toolsStore.activeTool === 'hand' && e.button === 0)) {
+            e.preventDefault();
+            isPanning.value = true;
+            panStart.value = { x: e.clientX, y: e.clientY };
+            if (canvas) {
+                canvas.style.cursor = 'grabbing';
+            }
+            return;
+        }
+
         const point = getLocalPoint(e);
         const topShape = hitTest(point);
 
@@ -295,6 +310,17 @@ export function useInteractions(
         const point = getLocalPoint(e);
         const canvas = canvasRef.value;
         if (!canvas) return;
+
+        if (isPanning.value) {
+            const dx = e.clientX - panStart.value.x;
+            const dy = e.clientY - panStart.value.y;
+            if (dx !== 0 || dy !== 0) {
+                canvasStore.movePan({ x: dx, y: dy });
+                panStart.value = { x: e.clientX, y: e.clientY };
+            }
+            canvas.style.cursor = 'grabbing';
+            return;
+        }
 
         if (isCreating.value && createStart.value) {
             const start = createStart.value;
@@ -575,10 +601,24 @@ export function useInteractions(
         }
 
         const topShape = hitTest(point);
+        if (toolsStore.activeTool === 'hand') {
+            canvas.style.cursor = 'grab';
+            return;
+        }
         canvas.style.cursor = topShape ? 'grab' : 'default';
     }
 
     function onMouseUp(e: MouseEvent) {
+        if (isPanning.value) {
+            isPanning.value = false;
+            const canvas = canvasRef.value;
+            if (canvas) {
+                canvas.style.cursor =
+                    toolsStore.activeTool === 'hand' ? 'grab' : 'default';
+            }
+            return;
+        }
+
         if (isCreating.value) {
             if (activeShape.value) {
                 if (hasRecordedInteraction.value) {
@@ -622,10 +662,17 @@ export function useInteractions(
         onMouseMove(e);
     }
 
+    function onAuxClick(event: MouseEvent) {
+        if (event.button === 1) {
+            event.preventDefault();
+        }
+    }
+
     function attachListeners() {
         const el = canvasRef.value;
         if (!el) return;
         el.addEventListener('mousedown', onMouseDown);
+        el.addEventListener('auxclick', onAuxClick);
         el.addEventListener('wheel', onWheel, { passive: false });
         window.addEventListener('mousemove', onMouseMove);
         window.addEventListener('mouseup', onMouseUp);
@@ -633,6 +680,7 @@ export function useInteractions(
         return () => {
             el.removeEventListener('mousedown', onMouseDown);
             el.removeEventListener('wheel', onWheel);
+            el.removeEventListener('auxclick', onAuxClick);
             window.removeEventListener('mousemove', onMouseMove);
             window.removeEventListener('mouseup', onMouseUp);
         };

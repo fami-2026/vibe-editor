@@ -105,25 +105,36 @@ export class PolygonShape extends BaseShape {
         this.height = height;
     }
 
-    private getPoints(): Point[] {
-        const points: Point[] = [];
+    private getLocalPoints(): Point[] {
+        const tempPoints: Point[] = [];
         const angleStep = (Math.PI * 2) / this.sides;
-        const rotationRad = (this.rotation * Math.PI) / 180;
-        const radiusX = this.width / 2;
-        const radiusY = this.height / 2;
+        const startAngle = -Math.PI / 2;
 
         for (let i = 0; i < this.sides; i++) {
-            const angle = i * angleStep + rotationRad;
-            points.push({
-                x: this.position.x + radiusX * Math.cos(angle),
-                y: this.position.y + radiusY * Math.sin(angle),
+            const angle = i * angleStep + startAngle;
+            tempPoints.push({
+                x: Math.cos(angle),
+                y: Math.sin(angle),
             });
         }
-        return points;
+
+        const minX = Math.min(...tempPoints.map((p) => p.x));
+        const maxX = Math.max(...tempPoints.map((p) => p.x));
+        const minY = Math.min(...tempPoints.map((p) => p.y));
+        const maxY = Math.max(...tempPoints.map((p) => p.y));
+
+        const currentW = maxX - minX;
+        const currentH = maxY - minY;
+
+        return tempPoints.map((p) => ({
+            x: ((p.x - minX) / currentW - 0.5) * this.width,
+            y: ((p.y - minY) / currentH - 0.5) * this.height,
+        }));
     }
 
-    hitTest(point: Point): boolean {
-        const points = this.getPoints();
+    hitTest(globalPoint: Point): boolean {
+        const localPoint = this.toVLocalPoint(globalPoint);
+        const points = this.getLocalPoints();
         const padding = this.strokeWidth / 2 + 3;
 
         if (points.length < 3) return false;
@@ -136,9 +147,10 @@ export class PolygonShape extends BaseShape {
             if (!pi || !pj) continue;
 
             const intersect =
-                pi.y > point.y !== pj.y > point.y &&
-                point.x <
-                    ((pj.x - pi.x) * (point.y - pi.y)) / (pj.y - pi.y) + pi.x;
+                pi.y > localPoint.y !== pj.y > localPoint.y &&
+                localPoint.x <
+                    ((pj.x - pi.x) * (localPoint.y - pi.y)) / (pj.y - pi.y) +
+                        pi.x;
 
             if (intersect) inside = !inside;
         }
@@ -151,7 +163,7 @@ export class PolygonShape extends BaseShape {
             const pj = points[j];
 
             if (pi && pj) {
-                const distance = this.distanceToSegment(point, pi, pj);
+                const distance = this.distanceToSegment(localPoint, pi, pj);
                 if (distance <= padding) return true;
             }
         }
@@ -182,63 +194,51 @@ export class PolygonShape extends BaseShape {
     }
 
     getBoundingBox(): BoundingBox {
-        const points = this.getPoints();
+        const localBox = this.getLocalBox();
+        const corners = [
+            this.toGlobalPoint({ x: localBox.minX, y: localBox.minY }),
+            this.toGlobalPoint({ x: localBox.maxX, y: localBox.minY }),
+            this.toGlobalPoint({ x: localBox.maxX, y: localBox.maxY }),
+            this.toGlobalPoint({ x: localBox.minX, y: localBox.maxY }),
+        ];
 
-        let minX = Infinity,
-            minY = Infinity,
-            maxX = -Infinity,
-            maxY = -Infinity;
+        const padding = this.strokeWidth / 2;
 
-        for (const p of points) {
-            minX = Math.min(minX, p.x);
-            minY = Math.min(minY, p.y);
-            maxX = Math.max(maxX, p.x);
-            maxY = Math.max(maxY, p.y);
-        }
-
-        const padding = this.strokeWidth / 2 + 5;
         return {
-            minX: minX - padding,
-            minY: minY - padding,
-            maxX: maxX + padding,
-            maxY: maxY + padding,
+            minX: Math.min(...corners.map((p) => p.x)) - padding,
+            minY: Math.min(...corners.map((p) => p.y)) - padding,
+            maxX: Math.max(...corners.map((p) => p.x)) + padding,
+            maxY: Math.max(...corners.map((p) => p.y)) + padding,
         };
     }
 
     getLocalBox(): BoundingBox {
-        const halfW = this.width / 2;
-        const halfH = this.height / 2;
         return {
-            minX: -halfW,
-            minY: -halfH,
-            maxX: halfW,
-            maxY: halfH,
+            minX: -this.width / 2,
+            minY: -this.height / 2,
+            maxX: this.width / 2,
+            maxY: this.height / 2,
         };
     }
 
     render(ctx: CanvasRenderingContext2D): void {
-        const points = this.getPoints();
+        const points = this.getLocalPoints();
 
-        const validPoints: Point[] = [];
-        for (let i = 0; i < points.length; i++) {
-            const point = points[i];
-            if (point) {
-                validPoints.push(point);
-            }
-        }
+        if (points.length < 3 || !points[0]) return;
 
-        if (validPoints.length < 3) return;
+        ctx.save();
+
+        const m = this.getVMatrix();
+        ctx.transform(m.a, m.b, m.c, m.d, m.e, m.f);
 
         ctx.beginPath();
+        const startPoint = points[0];
+        ctx.moveTo(startPoint.x, startPoint.y);
 
-        const firstPoint = validPoints[0];
-        if (!firstPoint) return;
-        ctx.moveTo(firstPoint.x, firstPoint.y);
-
-        for (let i = 1; i < validPoints.length; i++) {
-            const point = validPoints[i];
-            if (point) {
-                ctx.lineTo(point.x, point.y);
+        for (let i = 1; i < points.length; i++) {
+            const p = points[i];
+            if (p) {
+                ctx.lineTo(p.x, p.y);
             }
         }
 
@@ -253,7 +253,7 @@ export class PolygonShape extends BaseShape {
         ctx.lineWidth = this.strokeWidth;
         ctx.stroke();
 
-        ctx.globalAlpha = 1;
+        ctx.restore();
     }
 
     move(delta: Point): void {

@@ -107,7 +107,7 @@ export class StarShape extends BaseShape {
         this.height = height;
     }
 
-    private getPoints(): Point[] {
+    private getLocalPoints(): Point[] {
         const step = Math.PI / this.numPoints;
         const startAngle = -Math.PI / 2;
         const tempPoints: Point[] = [];
@@ -135,20 +135,12 @@ export class StarShape extends BaseShape {
         }));
     }
 
-    hitTest(point: Point): boolean {
-        const points = this.getPoints();
+    hitTest(globalPoint: Point): boolean {
+        const localPoint = this.toVLocalPoint(globalPoint);
+        const points = this.getLocalPoints();
         const padding = this.strokeWidth / 2 + 3;
 
         if (points.length < 3) return false;
-
-        const dx = point.x - this.position.x;
-        const dy = point.y - this.position.y;
-        const angle = -(this.rotation * Math.PI) / 180;
-
-        const localPoint: Point = {
-            x: dx * Math.cos(angle) - dy * Math.sin(angle),
-            y: dx * Math.sin(angle) + dy * Math.cos(angle),
-        };
 
         let inside = false;
         for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
@@ -161,7 +153,7 @@ export class StarShape extends BaseShape {
                 p1.y > localPoint.y !== p2.y > localPoint.y &&
                 localPoint.x <
                     ((p2.x - p1.x) * (localPoint.y - p1.y)) / (p2.y - p1.y) +
-                        p1.x;
+                    p1.x;
 
             if (intersect) inside = !inside;
         }
@@ -205,32 +197,20 @@ export class StarShape extends BaseShape {
     }
 
     getBoundingBox(): BoundingBox {
-        const points = this.getPoints();
-        const rad = (this.rotation * Math.PI) / 180;
-        const cos = Math.cos(rad);
-        const sin = Math.sin(rad);
-
-        let minX = Infinity,
-            minY = Infinity,
-            maxX = -Infinity,
-            maxY = -Infinity;
-
-        for (const p of points) {
-            const worldX = this.position.x + (p.x * cos - p.y * sin);
-            const worldY = this.position.y + (p.x * sin + p.y * cos);
-
-            minX = Math.min(minX, worldX);
-            minY = Math.min(minY, worldY);
-            maxX = Math.max(maxX, worldX);
-            maxY = Math.max(maxY, worldY);
-        }
+        const localBox = this.getLocalBox();
+        const corners = [
+            this.toGlobalPoint({ x: localBox.minX, y: localBox.minY }),
+            this.toGlobalPoint({ x: localBox.maxX, y: localBox.minY }),
+            this.toGlobalPoint({ x: localBox.maxX, y: localBox.maxY }),
+            this.toGlobalPoint({ x: localBox.minX, y: localBox.maxY }),
+        ];
 
         const padding = this.strokeWidth / 2 + 5;
         return {
-            minX: minX - padding,
-            minY: minY - padding,
-            maxX: maxX + padding,
-            maxY: maxY + padding,
+            minX: Math.min(...corners.map((p) => p.x)) - padding,
+            minY: Math.min(...corners.map((p) => p.y)) - padding,
+            maxX: Math.max(...corners.map((p) => p.x)) + padding,
+            maxY: Math.max(...corners.map((p) => p.y)) + padding,
         };
     }
 
@@ -246,7 +226,7 @@ export class StarShape extends BaseShape {
     }
 
     render(ctx: CanvasRenderingContext2D): void {
-        const points = this.getPoints();
+        const points = this.getLocalPoints();
 
         if (points.length < 3) return;
 
@@ -255,8 +235,8 @@ export class StarShape extends BaseShape {
 
         ctx.save();
 
-        ctx.translate(this.position.x, this.position.y);
-        ctx.rotate((this.rotation * Math.PI) / 180);
+        const m = this.getVMatrix();
+        ctx.transform(m.a, m.b, m.c, m.d, m.e, m.f);
 
         ctx.beginPath();
         ctx.moveTo(firstPoint.x, firstPoint.y);

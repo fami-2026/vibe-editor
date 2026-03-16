@@ -119,9 +119,7 @@ const { shapes } = storeToRefs(canvasStore);
 // const { shapes, selectedId } = storeToRefs(canvasStore);
 
 // const hasSelection = computed(() => Boolean(selectedId.value));
-// const formatLabel = computed(() =>
-//     form.format === 'png' ? 'PNG' : 'SVG'
-// );
+// const formatLabel = computed(() => (form.format === 'png' ? 'PNG' : 'SVG'));
 
 const form = reactive<{
     fileName: string;
@@ -220,7 +218,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-    document.removeEventListener('pointerdown', onDocKeyDown);
+    document.removeEventListener('pointerdown', onDocPointerDown);
     document.removeEventListener('keydown', onDocKeyDown);
 });
 </script>

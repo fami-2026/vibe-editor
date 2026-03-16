@@ -96,7 +96,6 @@ const showExport = ref(false);
 const root = ref<HTMLElement | null>(null);
 const canvasStore = useCanvasStore();
 const { shapes, selectedId } = storeToRefs(canvasStore);
-const { shapes } = storeToRefs(canvasStore);
 
 const form = reactive<{
     fileName: string;

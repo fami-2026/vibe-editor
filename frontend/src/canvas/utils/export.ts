@@ -34,7 +34,7 @@ interface ExportTarget {
 }
 
 const ILLEGAL_FILENAME_CHARS = /[<>:"/\\|?*]/g;
-const CONTROL_CHARS = new RegExp('[\\x00-\\x1F]', 'g');
+const CONTROL_CHARS = /\p{Cc}/gu;
 
 export function sanitizeFileName(name: string): string {
     const cleaned = name

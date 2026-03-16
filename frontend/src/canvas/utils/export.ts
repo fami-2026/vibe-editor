@@ -33,7 +33,9 @@ interface ExportTarget {
     bounds: ExportBounds;
 }
 
-const ILLEGAL_FILENAME_CHARS = /[<>:"/\\|?*\u0000-\u001F]/g;
+//const ILLEGAL_FILENAME_CHARS = /[<>:"/\\|?*\u0000-\u001F]/g;
+const ILLEGAL_FILENAME_CHARS = /[<>:"/\\|?*\x00-\x1F]/g;
+
 
 export function sanitizeFileName(name: string): string {
     const cleaned = name

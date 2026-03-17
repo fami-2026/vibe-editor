@@ -319,7 +319,13 @@
                         <!-- Режим редактирования -->
                         <input
                             v-if="editingLayerId === shape.id"
-                            :ref="(el) => setInputRef(el as HTMLInputElement | null, shape.id)"
+                            :ref="
+                                (el) =>
+                                    setInputRef(
+                                        el as HTMLInputElement | null,
+                                        shape.id
+                                    )
+                            "
                             class="layerNameInput"
                             type="text"
                             v-model="editingLayerName"
@@ -356,13 +362,9 @@
 
         <div style="display: none">{{ forceUpdate }}</div>
     </aside>
-    
 </template>
 
-
-
 <script setup lang="ts">
-
 import { computed, ref, nextTick, onMounted, onUnmounted, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useCanvasStore } from '@/stores/canvas';
@@ -718,12 +720,14 @@ const editingLayerName = ref('');
 
 function startEditing(shapeId: string) {
     console.log('DOUBLE CLICK WORKS', shapeId);
-    
-    const shape = shapes.value.find((s) => s.id === shapeId) as ShapeWithName | undefined;
+
+    const shape = shapes.value.find((s) => s.id === shapeId) as
+        | ShapeWithName
+        | undefined;
     if (shape) {
         editingLayerName.value = shape.name || shapeLabel(shape.type);
     }
-    
+
     editingLayerId.value = shapeId;
 
     nextTick(() => {
@@ -750,10 +754,10 @@ function onLayerNameBlur(shapeId: string) {
         console.log('onLayerNameBlur ignored - already saving');
         return;
     }
-    
+
     console.log('onLayerNameBlur called for shape:', shapeId);
     console.log('editingLayerName value:', editingLayerName.value);
-    
+
     const currentName = editingLayerName.value;
     saveLayerName(shapeId, currentName);
 }
@@ -761,47 +765,52 @@ function onLayerNameBlur(shapeId: string) {
 function onLayerNameEnter(shapeId: string) {
     console.log('onLayerNameEnter called for shape:', shapeId);
     console.log('editingLayerName value:', editingLayerName.value);
-    
+
     isSaving.value = true;
-    
+
     const currentName = editingLayerName.value;
     saveLayerName(shapeId, currentName);
-    
+
     editingLayerId.value = null;
     editingLayerName.value = '';
-    
+
     setTimeout(() => {
         isSaving.value = false;
     }, 200);
 }
 
-watch(shapes, (newShapes: Shape[]) => {
-    console.log('shapes store changed:', newShapes.map((s: Shape) => {
-        const shapeWithName = s as { name?: string };
-        return { 
-            id: s.id, 
-            name: shapeWithName.name 
-        };
-    }));
-    
-    forceUpdate.value++;
-}, { deep: true });
+watch(
+    shapes,
+    (newShapes: Shape[]) => {
+        console.log(
+            'shapes store changed:',
+            newShapes.map((s: Shape) => {
+                const shapeWithName = s as { name?: string };
+                return {
+                    id: s.id,
+                    name: shapeWithName.name,
+                };
+            })
+        );
+
+        forceUpdate.value++;
+    },
+    { deep: true }
+);
 
 const forceUpdate = ref(0);
 
 function getShapeDisplayName(shape: Shape) {
     console.log('getShapeDisplayName called for shape:', shape.id, shape);
-    
+
     let shapeName: string | undefined;
     const shapeWithName = shape as ShapeWithName;
-    
+
     if (shapeWithName.name !== undefined) {
         shapeName = shapeWithName.name;
-    } 
-    else if (shapeWithName._name !== undefined) {
+    } else if (shapeWithName._name !== undefined) {
         shapeName = shapeWithName._name;
-    }
-    else {
+    } else {
         try {
             // Пробуем получить name через JSON.stringify для Proxy объектов
             const raw = JSON.parse(JSON.stringify(shape));
@@ -810,14 +819,14 @@ function getShapeDisplayName(shape: Shape) {
             shapeName = undefined;
         }
     }
-    
+
     console.log('shapeName value:', shapeName, 'type:', typeof shapeName);
-    
+
     if (shapeName && typeof shapeName === 'string' && shapeName.trim()) {
         console.log('Returning custom name:', shapeName);
         return shapeName;
     }
-    
+
     const defaultName = shapeLabel(shape.type);
     console.log('Returning default name:', defaultName);
     return defaultName;
@@ -827,45 +836,56 @@ function saveLayerName(shapeId: string, newName: string) {
     console.log('========== SAVE LAYER NAME ==========');
     console.log('1. Shape ID:', shapeId);
     console.log('2. New name from input:', newName);
-    
-    const shape = shapes.value.find((s) => s.id === shapeId) as ShapeWithName | undefined;
+
+    const shape = shapes.value.find((s) => s.id === shapeId) as
+        | ShapeWithName
+        | undefined;
     console.log('3. Found shape:', shape);
-    
+
     if (shape) {
         const nameToSave = newName.trim() || shapeLabel(shape.type);
         console.log('4. Name to save (trimmed):', nameToSave);
-        
+
         const updateData: Partial<Shape> = {
-            name: nameToSave
+            name: nameToSave,
         };
-        
+
         console.log('5. Update data:', updateData);
-        
+
         canvasStore.updateShape(shapeId, updateData);
         forceUpdate.value++;
-        
+
         setTimeout(() => {
-            const updatedShape = shapes.value.find((s) => s.id === shapeId) as ShapeWithName | undefined;
+            const updatedShape = shapes.value.find((s) => s.id === shapeId) as
+                | ShapeWithName
+                | undefined;
             console.log('6. Shape after update:', updatedShape);
             console.log('7. Name after update:', updatedShape?.name);
             forceUpdate.value++;
         }, 100);
     }
-    
+
     console.log('=====================================');
 }
 
-watch(shapes, (newShapes: Shape[]) => {
-    console.log('shapes store changed:', newShapes.map((s: Shape) => { 
-        const shapeWithName = s as { name?: string };
-        return { 
-            id: s.id, 
-            name: shapeWithName.name 
-        };
-    }));
-    
-    forceUpdate.value++;
-}, { deep: true });
+watch(
+    shapes,
+    (newShapes: Shape[]) => {
+        console.log(
+            'shapes store changed:',
+            newShapes.map((s: Shape) => {
+                const shapeWithName = s as { name?: string };
+                return {
+                    id: s.id,
+                    name: shapeWithName.name,
+                };
+            })
+        );
+
+        forceUpdate.value++;
+    },
+    { deep: true }
+);
 
 //Функции для удаления слоя
 function deleteLayer(id: string) {

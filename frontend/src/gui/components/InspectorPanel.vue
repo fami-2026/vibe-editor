@@ -319,22 +319,14 @@
                         <!-- Режим редактирования -->
                         <input
                             v-if="editingLayerId === shape.id"
-                            :ref="
-                                (el) =>
-                                    setInputRef(
-                                        el as HTMLInputElement | null,
-                                        shape.id
-                                    )
-                            "
+                            :ref="(el) => setInputRef(el as HTMLInputElement | null, shape.id)"
                             class="layerNameInput"
                             type="text"
-                            :value="
-                                (shape as any).name || shapeLabel(shape.type)
-                            "
+                            v-model="editingLayerName"
                             @click.stop
                             @dblclick.stop
-                            @blur="onLayerNameBlur(shape.id, $event)"
-                            @keyup.enter="onLayerNameEnter(shape.id, $event)"
+                            @blur="onLayerNameBlur(shape.id)"
+                            @keyup.enter="onLayerNameEnter(shape.id)"
                             @keyup.escape="cancelEditing"
                         />
 
@@ -344,7 +336,7 @@
                             class="layerName"
                             @dblclick.stop="startEditing(shape.id)"
                         >
-                            {{ (shape as any).name || shapeLabel(shape.type) }}
+                            {{ getShapeDisplayName(shape) }}
                         </span>
 
                         <!--Кнопка удаления-->
@@ -361,11 +353,15 @@
                 </li>
             </ul>
         </section>
+
+        <div style="display: none">{{ forceUpdate }}</div>
     </aside>
+    
 </template>
 
 <script setup lang="ts">
-import { computed, ref, nextTick, onMounted, onUnmounted } from 'vue';
+
+import { computed, ref, nextTick, onMounted, onUnmounted, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useCanvasStore } from '@/stores/canvas';
 import type { Shape } from '@/canvas/types';
@@ -708,8 +704,14 @@ function moveLayerDown() {
     );
 }
 // ============ МЕТОДЫ РЕДАКТИРОВАНИЯ (ТОЛЬКО ЗДЕСЬ, ОДИН РАЗ) ============
+const editingLayerName = ref('');
+
 function startEditing(shapeId: string) {
-    console.log('DOUBLE CLICK WORKS', shapeId);
+    const shape = shapes.value.find((s) => s.id === shapeId);
+    if (shape) {
+        editingLayerName.value = (shape as any).name || shapeLabel(shape.type);
+    }
+    
     editingLayerId.value = shapeId;
 
     nextTick(() => {
@@ -723,33 +725,76 @@ function startEditing(shapeId: string) {
 
 function cancelEditing() {
     editingLayerId.value = null;
+    editingLayerName.value = '';
 }
 
-function onLayerNameBlur(shapeId: string, event: Event) {
-    const target = event.target as HTMLInputElement;
-    saveLayerName(shapeId, target.value);
+function onLayerNameBlur(shapeId: string) {
+    saveLayerName(shapeId, editingLayerName.value);
 }
 
-function onLayerNameEnter(shapeId: string, event: Event) {
-    const target = event.target as HTMLInputElement;
-    saveLayerName(shapeId, target.value);
+function onLayerNameEnter(shapeId: string) {
+    saveLayerName(shapeId, editingLayerName.value);
+    const input = inputRefs.value[shapeId];
+    if (input) {
+        input.blur();
+    }
+}
+
+const forceUpdate = ref(0);
+
+function getShapeDisplayName(shape: Shape) {
+    forceUpdate.value;
+    
+    let shapeName;
+    
+    if (shape && typeof shape === 'object') {
+        if (shape.name !== undefined) {
+            shapeName = shape.name;
+        } 
+        else if ((shape as any)._name !== undefined) {
+            shapeName = (shape as any)._name;
+        }
+        else {
+            const shapeAny = shape as any;
+            if (shapeAny.__v_skip || shapeAny.__v_reactive) {
+                try {
+                    const raw = JSON.parse(JSON.stringify(shape));
+                    shapeName = raw.name;
+                } catch (e) {
+                    shapeName = undefined;
+                }
+            }
+        }
+    }
+    
+    if (shapeName && typeof shapeName === 'string' && shapeName.trim()) {
+        return shapeName;
+    }
+    
+    return shapeLabel(shape.type);
 }
 
 function saveLayerName(shapeId: string, newName: string) {
-    if (!newName.trim()) {
-        cancelEditing();
-        return;
-    }
-
     const shape = shapes.value.find((s) => s.id === shapeId);
+    
     if (shape) {
-        canvasStore.updateShape(shapeId, {
-            name: newName.trim(),
-        } as Partial<Shape>);
+        const nameToSave = newName.trim();
+        
+        const updateData: Partial<Shape> = {
+            name: nameToSave
+        };
+        
+        canvasStore.updateShape(shapeId, updateData);
+        forceUpdate.value++;
     }
 
     cancelEditing();
 }
+
+watch(shapes, () => {
+    forceUpdate.value++;
+}, { deep: true });
+
 
 //Функции для удаления слоя
 function deleteLayer(id: string) {

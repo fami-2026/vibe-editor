@@ -114,15 +114,19 @@
                     <div class="fieldLabel">Цвет заливки</div>
                     <div class="grid1">
                         <div class="colorInputWrapper">
-                            <div 
-                                class="colorPreview" 
-                                :style="{ backgroundColor: fillColor }" 
+                            <div
+                                class="colorPreview"
+                                :style="{ backgroundColor: fillColor }"
                                 :class="{ disabled: !selectedShape }"
                                 @click="showColorPicker('fill')"
                             />
-                            
+
                             <Teleport to="body">
-                                <div v-if="activePicker === 'fill'" class="floatingColorPicker" :style="pickerPosition">
+                                <div
+                                    v-if="activePicker === 'fill'"
+                                    class="floatingColorPicker"
+                                    :style="pickerPosition"
+                                >
                                     <input
                                         ref="fillColorInputRef"
                                         type="color"
@@ -177,15 +181,19 @@
                     <div class="fieldLabel">Цвет</div>
                     <div class="grid1">
                         <div class="colorInputWrapper">
-                            <div 
-                                class="colorPreview" 
-                                :style="{ backgroundColor: strokeColor }" 
+                            <div
+                                class="colorPreview"
+                                :style="{ backgroundColor: strokeColor }"
                                 :class="{ disabled: !selectedShape }"
                                 @click="showColorPicker('stroke')"
                             />
-                            
+
                             <Teleport to="body">
-                                <div v-if="activePicker === 'stroke'" class="floatingColorPicker" :style="pickerPosition">
+                                <div
+                                    v-if="activePicker === 'stroke'"
+                                    class="floatingColorPicker"
+                                    :style="pickerPosition"
+                                >
                                     <input
                                         ref="strokeColorInputRef"
                                         type="color"
@@ -400,34 +408,35 @@ const pickerPosition = ref<{
     left: string;
     position: 'absolute' | 'fixed' | 'relative';
     zIndex?: number;
-}>({ 
-    top: '0px', 
-    left: '0px', 
+}>({
+    top: '0px',
+    left: '0px',
     position: 'absolute',
-    zIndex: 9999 
+    zIndex: 9999,
 });
 const fillColorInputRef = ref<HTMLInputElement | null>(null);
 const strokeColorInputRef = ref<HTMLInputElement | null>(null);
 
 function showColorPicker(type: 'fill' | 'stroke') {
     if (!selectedShape.value) return;
-    
+
     const previewElement = event?.currentTarget as HTMLElement;
-    
+
     if (previewElement) {
         const rect = previewElement.getBoundingClientRect();
-        
+
         pickerPosition.value = {
             position: 'absolute',
-            top: (rect.bottom + window.scrollY - 35) + 'px',
-            left: (rect.left + window.scrollX - 250) + 'px',
-            zIndex: 9999
+            top: rect.bottom + window.scrollY - 35 + 'px',
+            left: rect.left + window.scrollX - 250 + 'px',
+            zIndex: 9999,
         };
-        
+
         activePicker.value = type;
-        
+
         nextTick(() => {
-            const inputRef = type === 'fill' ? fillColorInputRef : strokeColorInputRef;
+            const inputRef =
+                type === 'fill' ? fillColorInputRef : strokeColorInputRef;
             if (inputRef.value) {
                 inputRef.value.focus();
                 inputRef.value.click();
@@ -438,11 +447,11 @@ function showColorPicker(type: 'fill' | 'stroke') {
 
 function handleClickOutside(event: MouseEvent) {
     if (!activePicker.value) return;
-    
+
     const target = event.target as HTMLElement;
     const isClickOnPreview = target.classList.contains('colorPreview');
     const isClickInPicker = target.closest('.floatingColorPicker');
-    
+
     if (!isClickInPicker && !isClickOnPreview) {
         activePicker.value = null;
     }
@@ -455,7 +464,7 @@ onMounted(() => {
 onUnmounted(() => {
     window.removeEventListener('keydown', handleKeyDown);
     document.removeEventListener('click', handleClickOutside); // Добавьте эту строку
-}); 
+});
 
 const canvasStore = useCanvasStore();
 const { selectedShape, shapes } = storeToRefs(canvasStore);
@@ -1260,7 +1269,7 @@ onUnmounted(() => {
     animation: fadeIn 0.2s ease;
 }
 
-.floatingColorPicker input[type="color"] {
+.floatingColorPicker input[type='color'] {
     width: 1px;
     height: 1px;
     border: none;
@@ -1271,11 +1280,11 @@ onUnmounted(() => {
     background: white;
 }
 
-.floatingColorPicker input[type="color"]::-webkit-color-swatch-wrapper {
+.floatingColorPicker input[type='color']::-webkit-color-swatch-wrapper {
     padding: 8px;
 }
 
-.floatingColorPicker input[type="color"]::-webkit-color-swatch {
+.floatingColorPicker input[type='color']::-webkit-color-swatch {
     border: 2px solid #e5e7eb;
     border-radius: 8px;
 }
@@ -1290,5 +1299,4 @@ onUnmounted(() => {
         transform: translateY(0);
     }
 }
-
 </style>

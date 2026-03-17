@@ -113,14 +113,26 @@
                 <div class="fieldBlock">
                     <div class="fieldLabel">Цвет заливки</div>
                     <div class="grid1">
-                        <input
-                            class="colorInput"
-                            type="color"
-                            aria-label="Fill color"
-                            :value="fillColor"
-                            :disabled="!selectedShape"
-                            @input="onColorChange('fill', $event)"
-                        />
+                        <div class="colorInputWrapper">
+                            <div 
+                                class="colorPreview" 
+                                :style="{ backgroundColor: fillColor }" 
+                                :class="{ disabled: !selectedShape }"
+                                @click="showColorPicker('fill')"
+                            />
+                            
+                            <Teleport to="body">
+                                <div v-if="activePicker === 'fill'" class="floatingColorPicker" :style="pickerPosition">
+                                    <input
+                                        ref="fillColorInputRef"
+                                        type="color"
+                                        :value="fillColor"
+                                        @input="onColorChange('fill', $event)"
+                                        @blur="activePicker = null"
+                                    />
+                                </div>
+                            </Teleport>
+                        </div>
                     </div>
                 </div>
 
@@ -164,14 +176,26 @@
                 <div class="fieldBlock">
                     <div class="fieldLabel">Цвет</div>
                     <div class="grid1">
-                        <input
-                            class="colorInput"
-                            type="color"
-                            aria-label="Stroke color"
-                            :value="strokeColor"
-                            :disabled="!selectedShape"
-                            @input="onColorChange('stroke', $event)"
-                        />
+                        <div class="colorInputWrapper">
+                            <div 
+                                class="colorPreview" 
+                                :style="{ backgroundColor: strokeColor }" 
+                                :class="{ disabled: !selectedShape }"
+                                @click="showColorPicker('stroke')"
+                            />
+                            
+                            <Teleport to="body">
+                                <div v-if="activePicker === 'stroke'" class="floatingColorPicker" :style="pickerPosition">
+                                    <input
+                                        ref="strokeColorInputRef"
+                                        type="color"
+                                        :value="strokeColor"
+                                        @input="onColorChange('stroke', $event)"
+                                        @blur="activePicker = null"
+                                    />
+                                </div>
+                            </Teleport>
+                        </div>
                     </div>
                 </div>
 
@@ -370,14 +394,75 @@ import { storeToRefs } from 'pinia';
 import { useCanvasStore } from '@/stores/canvas';
 import type { Shape } from '@/canvas/types';
 
+const activePicker = ref<'fill' | 'stroke' | null>(null);
+const pickerPosition = ref<{
+    top: string;
+    left: string;
+    position: 'absolute' | 'fixed' | 'relative';
+    zIndex?: number;
+}>({ 
+    top: '0px', 
+    left: '0px', 
+    position: 'absolute',
+    zIndex: 9999 
+});
+const fillColorInputRef = ref<HTMLInputElement | null>(null);
+const strokeColorInputRef = ref<HTMLInputElement | null>(null);
+
+function showColorPicker(type: 'fill' | 'stroke') {
+    if (!selectedShape.value) return;
+    
+    const previewElement = event?.currentTarget as HTMLElement;
+    
+    if (previewElement) {
+        const rect = previewElement.getBoundingClientRect();
+        
+        pickerPosition.value = {
+            position: 'absolute',
+            top: (rect.bottom + window.scrollY - 35) + 'px',
+            left: (rect.left + window.scrollX - 250) + 'px',
+            zIndex: 9999
+        };
+        
+        activePicker.value = type;
+        
+        nextTick(() => {
+            const inputRef = type === 'fill' ? fillColorInputRef : strokeColorInputRef;
+            if (inputRef.value) {
+                inputRef.value.focus();
+                inputRef.value.click();
+            }
+        });
+    }
+}
+
+function handleClickOutside(event: MouseEvent) {
+    if (!activePicker.value) return;
+    
+    const target = event.target as HTMLElement;
+    const isClickOnPreview = target.classList.contains('colorPreview');
+    const isClickInPicker = target.closest('.floatingColorPicker');
+    
+    if (!isClickInPicker && !isClickOnPreview) {
+        activePicker.value = null;
+    }
+}
+onMounted(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('click', handleClickOutside); // Добавьте эту строку
+});
+
+onUnmounted(() => {
+    window.removeEventListener('keydown', handleKeyDown);
+    document.removeEventListener('click', handleClickOutside); // Добавьте эту строку
+}); 
+
 const canvasStore = useCanvasStore();
 const { selectedShape, shapes } = storeToRefs(canvasStore);
 
-// Состояние редактирования слоя
 const editingLayerId = ref<string | null>(null);
 const inputRefs = ref<Record<string, HTMLInputElement>>({});
 
-// Метод для установки ref
 const setInputRef = (el: HTMLInputElement | null, shapeId: string) => {
     if (el) {
         inputRefs.value[shapeId] = el;
@@ -408,7 +493,6 @@ const fillOpacity = computed(() => getShapeNumberProp('fillOpacity', 1));
 const strokeOpacity = computed(() => getShapeNumberProp('strokeOpacity', 1));
 const strokeWidth = computed(() => getShapeNumberProp('strokeWidth', ''));
 
-// список слоёв — сверху вниз (верхний слой отображается первым)
 const layers = computed(() => [...shapes.value].reverse());
 
 function layerIndexToShapeIndex(layerIndex: number) {
@@ -449,7 +533,6 @@ function onNumberChange(key: NumberFieldKey, event: Event) {
     } as Partial<Shape>);
 }
 
-// Обработчик колесика мыши
 function onWheelChange(key: NumberFieldKey, event: WheelEvent) {
     if (!selectedShape.value) return;
 
@@ -707,7 +790,7 @@ function moveLayerDown() {
         layerIndexToShapeIndex(toLayerIndex)
     );
 }
-// ============ МЕТОДЫ РЕДАКТИРОВАНИЯ (ТОЛЬКО ЗДЕСЬ, ОДИН РАЗ) ============
+
 function startEditing(shapeId: string) {
     console.log('DOUBLE CLICK WORKS', shapeId);
     editingLayerId.value = shapeId;
@@ -1141,4 +1224,71 @@ onUnmounted(() => {
     background: #fee2e2;
     color: #dc2626;
 }
+
+/* Добавьте в конец style scoped */
+.colorInputWrapper {
+    width: 100%;
+    position: relative;
+}
+
+.colorPreview {
+    width: 100%;
+    height: 32px;
+    border-radius: 8px;
+    border: 2px solid #e5e7eb;
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-sizing: border-box;
+}
+
+.colorPreview:not(.disabled):hover {
+    border-color: #2563eb;
+    transform: scale(1.02);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+}
+
+.colorPreview.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f3f4f6;
+}
+
+.floatingColorPicker {
+    position: absolute;
+    z-index: 9999;
+    animation: fadeIn 0.2s ease;
+}
+
+.floatingColorPicker input[type="color"] {
+    width: 1px;
+    height: 1px;
+    border: none;
+    border-radius: 0px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    padding: 0;
+    background: white;
+}
+
+.floatingColorPicker input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 8px;
+}
+
+.floatingColorPicker input[type="color"]::-webkit-color-swatch {
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 </style>

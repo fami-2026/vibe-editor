@@ -855,19 +855,17 @@ function saveLayerName(shapeId: string, newName: string) {
     console.log('=====================================');
 }
 
-// Добавьте watch для отслеживания изменений
-watch(shapes, (newShapes) => {
-    console.log('shapes store changed:', newShapes.map(s => ({ 
-        id: s.id, 
-        name: (s as any)?.name 
-    })));
+watch(shapes, (newShapes: Shape[]) => {
+    console.log('shapes store changed:', newShapes.map((s: Shape) => { 
+        const shapeWithName = s as { name?: string };
+        return { 
+            id: s.id, 
+            name: shapeWithName.name 
+        };
+    }));
     
-    // Принудительно обновляем при изменении store
     forceUpdate.value++;
 }, { deep: true });
-
-// Добавьте в шаблон где-нибудь скрытый элемент, который зависит от forceUpdate
-// Например, в самый конец шаблона добавьте:
 
 //Функции для удаления слоя
 function deleteLayer(id: string) {

@@ -773,7 +773,6 @@ function onLayerNameEnter(shapeId: string) {
     }, 200);
 }
 
-// Добавьте это после объявления shapes
 watch(shapes, (newShapes) => {
     console.log('shapes store changed:', newShapes.map(s => ({ 
         id: s.id, 
@@ -781,36 +780,26 @@ watch(shapes, (newShapes) => {
     })));
 }, { deep: true });
 
-
-
-// Добавьте реактивную переменную для принудительного обновления
 const forceUpdate = ref(0);
 
-// Измените функцию getShapeDisplayName
 function getShapeDisplayName(shape: Shape) {
-    // Используем forceUpdate для принудительного пересчета
-    forceUpdate.value; // Добавьте эту строку
+    
+    if (forceUpdate.value) {}
     
     console.log('getShapeDisplayName called for shape:', shape.id, shape);
     
-    // Проверяем name напрямую из объекта
     let shapeName;
     
-    // Пытаемся получить name разными способами
     if (shape && typeof shape === 'object') {
-        // Для Proxy объектов
         if (shape.name !== undefined) {
             shapeName = shape.name;
         } 
-        // Проверяем, есть ли поле _name
         else if ((shape as any)._name !== undefined) {
             shapeName = (shape as any)._name;
         }
-        // Проверяем, есть ли name в приватных полях
         else {
             const shapeAny = shape as any;
             if (shapeAny.__v_skip || shapeAny.__v_reactive) {
-                // Это Proxy, пробуем получить raw объект
                 try {
                     const raw = JSON.parse(JSON.stringify(shape));
                     shapeName = raw.name;

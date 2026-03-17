@@ -775,11 +775,14 @@ function onLayerNameEnter(shapeId: string) {
     }, 200);
 }
 
-watch(shapes, (newShapes) => {
-    console.log('shapes store changed:', newShapes.map((s: ShapeWithName) => ({ 
-        id: s.id, 
-        name: s.name 
-    })));
+watch(shapes, (newShapes: Shape[]) => {
+    console.log('shapes store changed:', newShapes.map((s: Shape) => {
+        const shapeWithName = s as { name?: string };
+        return { 
+            id: s.id, 
+            name: shapeWithName.name 
+        };
+    }));
     
     forceUpdate.value++;
 }, { deep: true });

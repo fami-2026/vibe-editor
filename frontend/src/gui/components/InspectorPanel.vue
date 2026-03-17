@@ -359,6 +359,8 @@
     
 </template>
 
+
+
 <script setup lang="ts">
 
 import { computed, ref, nextTick, onMounted, onUnmounted, watch } from 'vue';
@@ -704,9 +706,13 @@ function moveLayerDown() {
     );
 }
 // ============ МЕТОДЫ РЕДАКТИРОВАНИЯ (ТОЛЬКО ЗДЕСЬ, ОДИН РАЗ) ============
+
 const editingLayerName = ref('');
 
+// Измените startEditing
 function startEditing(shapeId: string) {
+    console.log('DOUBLE CLICK WORKS', shapeId);
+    
     const shape = shapes.value.find((s) => s.id === shapeId);
     if (shape) {
         editingLayerName.value = (shape as any).name || shapeLabel(shape.type);
@@ -723,40 +729,89 @@ function startEditing(shapeId: string) {
     });
 }
 
+// В cancelEditing тоже добавьте сброс флага
 function cancelEditing() {
+    console.log('cancelEditing called');
     editingLayerId.value = null;
     editingLayerName.value = '';
+    isSaving.value = false;
 }
 
+// Добавьте флаг для предотвращения двойного сохранения
+const isSaving = ref(false);
+
 function onLayerNameBlur(shapeId: string) {
-    saveLayerName(shapeId, editingLayerName.value);
+    // Если уже идет сохранение - игнорируем
+    if (isSaving.value) {
+        console.log('onLayerNameBlur ignored - already saving');
+        return;
+    }
+    
+    console.log('onLayerNameBlur called for shape:', shapeId);
+    console.log('editingLayerName value:', editingLayerName.value);
+    
+    const currentName = editingLayerName.value;
+    saveLayerName(shapeId, currentName);
 }
 
 function onLayerNameEnter(shapeId: string) {
-    saveLayerName(shapeId, editingLayerName.value);
-    const input = inputRefs.value[shapeId];
-    if (input) {
-        input.blur();
-    }
+    console.log('onLayerNameEnter called for shape:', shapeId);
+    console.log('editingLayerName value:', editingLayerName.value);
+    
+    // Устанавливаем флаг сохранения
+    isSaving.value = true;
+    
+    const currentName = editingLayerName.value;
+    saveLayerName(shapeId, currentName);
+    
+    // Закрываем режим редактирования
+    editingLayerId.value = null;
+    editingLayerName.value = '';
+    
+    // Сбрасываем флаг через небольшую задержку
+    setTimeout(() => {
+        isSaving.value = false;
+    }, 200);
 }
 
+// Добавьте это после объявления shapes
+watch(shapes, (newShapes) => {
+    console.log('shapes store changed:', newShapes.map(s => ({ 
+        id: s.id, 
+        name: (s as any).name 
+    })));
+}, { deep: true });
+
+
+
+// Добавьте реактивную переменную для принудительного обновления
 const forceUpdate = ref(0);
 
+// Измените функцию getShapeDisplayName
 function getShapeDisplayName(shape: Shape) {
-    forceUpdate.value;
+    // Используем forceUpdate для принудительного пересчета
+    forceUpdate.value; // Добавьте эту строку
     
+    console.log('getShapeDisplayName called for shape:', shape.id, shape);
+    
+    // Проверяем name напрямую из объекта
     let shapeName;
     
+    // Пытаемся получить name разными способами
     if (shape && typeof shape === 'object') {
+        // Для Proxy объектов
         if (shape.name !== undefined) {
             shapeName = shape.name;
         } 
+        // Проверяем, есть ли поле _name
         else if ((shape as any)._name !== undefined) {
             shapeName = (shape as any)._name;
         }
+        // Проверяем, есть ли name в приватных полях
         else {
             const shapeAny = shape as any;
             if (shapeAny.__v_skip || shapeAny.__v_reactive) {
+                // Это Proxy, пробуем получить raw объект
                 try {
                     const raw = JSON.parse(JSON.stringify(shape));
                     shapeName = raw.name;
@@ -767,34 +822,63 @@ function getShapeDisplayName(shape: Shape) {
         }
     }
     
+    console.log('shapeName value:', shapeName, 'type:', typeof shapeName);
+    
     if (shapeName && typeof shapeName === 'string' && shapeName.trim()) {
+        console.log('Returning custom name:', shapeName);
         return shapeName;
     }
     
-    return shapeLabel(shape.type);
+    const defaultName = shapeLabel(shape.type);
+    console.log('Returning default name:', defaultName);
+    return defaultName;
 }
 
 function saveLayerName(shapeId: string, newName: string) {
+    console.log('========== SAVE LAYER NAME ==========');
+    console.log('1. Shape ID:', shapeId);
+    console.log('2. New name from input:', newName);
+    
     const shape = shapes.value.find((s) => s.id === shapeId);
+    console.log('3. Found shape:', shape);
     
     if (shape) {
-        const nameToSave = newName.trim();
+        const nameToSave = newName.trim() || shapeLabel(shape.type);
+        console.log('4. Name to save (trimmed):', nameToSave);
         
         const updateData: Partial<Shape> = {
             name: nameToSave
         };
         
+        console.log('5. Update data:', updateData);
+        
         canvasStore.updateShape(shapeId, updateData);
         forceUpdate.value++;
+        
+        setTimeout(() => {
+            const updatedShape = shapes.value.find((s) => s.id === shapeId);
+            console.log('6. Shape after update:', updatedShape);
+            console.log('7. Name after update:', (updatedShape as any)?.name);
+            forceUpdate.value++;
+        }, 100);
     }
-
-    cancelEditing();
+    
+    console.log('=====================================');
 }
 
-watch(shapes, () => {
+// Добавьте watch для отслеживания изменений
+watch(shapes, (newShapes) => {
+    console.log('shapes store changed:', newShapes.map(s => ({ 
+        id: s.id, 
+        name: (s as any)?.name 
+    })));
+    
+    // Принудительно обновляем при изменении store
     forceUpdate.value++;
 }, { deep: true });
 
+// Добавьте в шаблон где-нибудь скрытый элемент, который зависит от forceUpdate
+// Например, в самый конец шаблона добавьте:
 
 //Функции для удаления слоя
 function deleteLayer(id: string) {

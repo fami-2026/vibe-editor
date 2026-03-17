@@ -368,6 +368,13 @@ import { storeToRefs } from 'pinia';
 import { useCanvasStore } from '@/stores/canvas';
 import type { Shape } from '@/canvas/types';
 
+interface ShapeWithName extends Shape {
+    name?: string;
+    _name?: string;
+    __v_skip?: boolean;
+    __v_reactive?: boolean;
+}
+
 const canvasStore = useCanvasStore();
 const { selectedShape, shapes } = storeToRefs(canvasStore);
 
@@ -709,13 +716,12 @@ function moveLayerDown() {
 
 const editingLayerName = ref('');
 
-// Измените startEditing
 function startEditing(shapeId: string) {
     console.log('DOUBLE CLICK WORKS', shapeId);
     
-    const shape = shapes.value.find((s) => s.id === shapeId);
+    const shape = shapes.value.find((s) => s.id === shapeId) as ShapeWithName | undefined;
     if (shape) {
-        editingLayerName.value = (shape as any).name || shapeLabel(shape.type);
+        editingLayerName.value = shape.name || shapeLabel(shape.type);
     }
     
     editingLayerId.value = shapeId;
@@ -740,7 +746,6 @@ function cancelEditing() {
 const isSaving = ref(false);
 
 function onLayerNameBlur(shapeId: string) {
-    // Если уже идет сохранение - игнорируем
     if (isSaving.value) {
         console.log('onLayerNameBlur ignored - already saving');
         return;
@@ -757,56 +762,49 @@ function onLayerNameEnter(shapeId: string) {
     console.log('onLayerNameEnter called for shape:', shapeId);
     console.log('editingLayerName value:', editingLayerName.value);
     
-    // Устанавливаем флаг сохранения
     isSaving.value = true;
     
     const currentName = editingLayerName.value;
     saveLayerName(shapeId, currentName);
     
-    // Закрываем режим редактирования
     editingLayerId.value = null;
     editingLayerName.value = '';
     
-    // Сбрасываем флаг через небольшую задержку
     setTimeout(() => {
         isSaving.value = false;
     }, 200);
 }
 
 watch(shapes, (newShapes) => {
-    console.log('shapes store changed:', newShapes.map(s => ({ 
+    console.log('shapes store changed:', newShapes.map((s: ShapeWithName) => ({ 
         id: s.id, 
-        name: (s as any).name 
+        name: s.name 
     })));
+    
+    forceUpdate.value++;
 }, { deep: true });
 
 const forceUpdate = ref(0);
 
 function getShapeDisplayName(shape: Shape) {
-    
-    if (forceUpdate.value) {}
-    
     console.log('getShapeDisplayName called for shape:', shape.id, shape);
     
-    let shapeName;
+    let shapeName: string | undefined;
+    const shapeWithName = shape as ShapeWithName;
     
-    if (shape && typeof shape === 'object') {
-        if (shape.name !== undefined) {
-            shapeName = shape.name;
-        } 
-        else if ((shape as any)._name !== undefined) {
-            shapeName = (shape as any)._name;
-        }
-        else {
-            const shapeAny = shape as any;
-            if (shapeAny.__v_skip || shapeAny.__v_reactive) {
-                try {
-                    const raw = JSON.parse(JSON.stringify(shape));
-                    shapeName = raw.name;
-                } catch (e) {
-                    shapeName = undefined;
-                }
-            }
+    if (shapeWithName.name !== undefined) {
+        shapeName = shapeWithName.name;
+    } 
+    else if (shapeWithName._name !== undefined) {
+        shapeName = shapeWithName._name;
+    }
+    else {
+        try {
+            // Пробуем получить name через JSON.stringify для Proxy объектов
+            const raw = JSON.parse(JSON.stringify(shape));
+            shapeName = raw.name;
+        } catch {
+            shapeName = undefined;
         }
     }
     
@@ -827,7 +825,7 @@ function saveLayerName(shapeId: string, newName: string) {
     console.log('1. Shape ID:', shapeId);
     console.log('2. New name from input:', newName);
     
-    const shape = shapes.value.find((s) => s.id === shapeId);
+    const shape = shapes.value.find((s) => s.id === shapeId) as ShapeWithName | undefined;
     console.log('3. Found shape:', shape);
     
     if (shape) {
@@ -844,9 +842,9 @@ function saveLayerName(shapeId: string, newName: string) {
         forceUpdate.value++;
         
         setTimeout(() => {
-            const updatedShape = shapes.value.find((s) => s.id === shapeId);
+            const updatedShape = shapes.value.find((s) => s.id === shapeId) as ShapeWithName | undefined;
             console.log('6. Shape after update:', updatedShape);
-            console.log('7. Name after update:', (updatedShape as any)?.name);
+            console.log('7. Name after update:', updatedShape?.name);
             forceUpdate.value++;
         }, 100);
     }

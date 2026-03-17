@@ -729,7 +729,6 @@ function startEditing(shapeId: string) {
     });
 }
 
-// В cancelEditing тоже добавьте сброс флага
 function cancelEditing() {
     console.log('cancelEditing called');
     editingLayerId.value = null;

@@ -19,9 +19,9 @@ public class CanvasMapper {
     public CanvasDto mapToCanvasDto(Canvas canvas) {
         return CanvasDto.builder()
                 .id(canvas.getId())
+                .content(canvas.getContent())
                 .createdAt(canvas.getCreatedAt())
                 .updatedAt(canvas.getUpdatedAt())
-                .content(canvas.getContent())
                 .build();
     }
 }

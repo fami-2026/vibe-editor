@@ -25,7 +25,7 @@ paths:
                 data:
                   - id: "102303"
                     createdAt: "2026-02-23T10:30:00"
-                    updatedAt: "2026-02-23T10:30:00"
+                    updatedAt: "2026-02-23T13:45:00"
         '500':
           description: Internal server error
           content:
@@ -57,9 +57,9 @@ paths:
               example:
                 code: 201
                 data:
-                  id: "102304"
-                  createdAt: "2026-02-23T11:30:00"
-                  updatedAt: "2026-02-23T11:30:00"
+                  id: "102303"
+                  content: "{}"
+                  createdAt: "2026-02-23T10:30:00"
         '400':
           description: Validation error
           content:
@@ -103,7 +103,7 @@ paths:
                   id: "102303"
                   content: "{}"
                   createdAt: "2026-02-23T10:30:00"
-                  updatedAt: "2026-02-23T10:30:00"
+                  updatedAt: "2026-02-23T13:32:00"
         '404':
           description: Canvas not exist
           content:
@@ -152,8 +152,9 @@ paths:
                 code: 200
                 data:
                   id: "102303"
+                  content: "{\"elements\":[{\"type\":\"rectangle\"}]}"
                   createdAt: "2026-02-23T10:30:00"
-                  updatedAt: "2026-02-23T12:45:00"
+                  updatedAt: "2026-02-23T10:45:00"
         '404':
           description: Canvas not exist
           content:
@@ -227,19 +228,6 @@ components:
       type: object
       description: Canvas data transfer object for create/update operations
       properties:
-        content:
-          type: string
-          description: Canvas content in JSON format
-          example: "{}"
-      required:
-        - content
-      example:
-        content: "{}"
-
-    Canvas:
-      type: object
-      description: Complete canvas object with content
-      properties:
         id:
           type: string
           description: Unique canvas identifier
@@ -257,12 +245,9 @@ components:
           type: string
           format: date-time
           description: Last update timestamp
-          example: "2026-02-23T10:30:00"
+          example: "2026-02-23T10:45:00"
       required:
-        - id
         - content
-        - createdAt
-        - updatedAt
 
     CanvasMeta:
       type: object
@@ -281,7 +266,7 @@ components:
           type: string
           format: date-time
           description: Last update timestamp
-          example: "2026-02-23T10:30:00"
+          example: "2026-02-23T10:45:00"
       required:
         - id
         - createdAt
@@ -305,7 +290,7 @@ components:
             - type: array
               items:
                 $ref: '#/components/schemas/CanvasMeta'
-            - $ref: '#/components/schemas/Canvas'
+            - $ref: '#/components/schemas/CanvasDto'
             - $ref: '#/components/schemas/CanvasMeta'
           nullable: true
           description: Response payload
@@ -316,4 +301,4 @@ components:
         data:
           - id: "102303"
             createdAt: "2026-02-23T10:30:00"
-            updatedAt: "2026-02-23T10:30:00"
+            updatedAt: "2026-02-23T10:345:00"

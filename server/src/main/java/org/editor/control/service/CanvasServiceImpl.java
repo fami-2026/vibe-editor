@@ -5,6 +5,7 @@ import static java.util.Objects.*;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Random;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.editor.control.dao.CanvasRepository;
@@ -37,17 +38,16 @@ public class CanvasServiceImpl implements CanvasService {
     }
 
     @Override
-    public CanvasMeta create(String content) {
+    public Canvas create(String content) {
         if (isNull(content) || content.isBlank()) {
             throw new EditorValidationException("Not all required fields are represented");
         }
 
-        Canvas canvas = canvasRepository.save(canvasMapper.mapToCanvas(generateCanvasId(), content));
-        return canvasMapper.mapToMeta(canvas);
+        return canvasRepository.save(canvasMapper.mapToCanvas(generateCanvasId(), content));
     }
 
     @Override
-    public CanvasMeta update(String id, String content) {
+    public Canvas update(String id, String content) {
         Canvas canvas = get(id);
 
         if (nonNull(canvas.getContent())) {
@@ -55,8 +55,7 @@ public class CanvasServiceImpl implements CanvasService {
             canvas.setUpdatedAt(LocalDateTime.now());
         }
 
-        canvas = canvasRepository.save(canvas);
-        return canvasMapper.mapToMeta(canvas);
+        return canvasRepository.save(canvas);
     }
 
     @Override

@@ -5,7 +5,6 @@ import static java.util.Objects.*;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Random;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.editor.control.dao.CanvasRepository;

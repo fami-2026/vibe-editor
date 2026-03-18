@@ -12,8 +12,6 @@ public class CanvasMeta {
 
     private String id;
 
-    private String title;
-
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

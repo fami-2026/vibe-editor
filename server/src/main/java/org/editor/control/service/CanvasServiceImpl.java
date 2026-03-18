@@ -2,7 +2,9 @@ package org.editor.control.service;
 
 import static java.util.Objects.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Random;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.editor.control.dao.CanvasRepository;
@@ -22,6 +24,8 @@ public class CanvasServiceImpl implements CanvasService {
 
     private final CanvasMapper canvasMapper;
 
+    private static final Random RANDOM = new Random();
+
     @Override
     public List<CanvasMeta> getAllMeta() {
         return canvasRepository.findAll().stream().map(canvasMapper::mapToMeta).toList();
@@ -33,33 +37,49 @@ public class CanvasServiceImpl implements CanvasService {
     }
 
     @Override
-    public CanvasMeta create(String title, String state) {
-        if (isNull(title) || isNull(state) || title.isBlank() || state.isBlank()) {
+    public Canvas create(String content) {
+        if (isNull(content) || content.isBlank()) {
             throw new EditorValidationException("Not all required fields are represented");
         }
 
-        Canvas canvas = canvasRepository.save(canvasMapper.mapToCanvas(title, state));
-        return canvasMapper.mapToMeta(canvas);
+        return canvasRepository.save(canvasMapper.mapToCanvas(generateCanvasId(), content));
     }
 
     @Override
-    public CanvasMeta update(String id, String title, String state) {
+    public Canvas update(String id, String content) {
         Canvas canvas = get(id);
 
-        if (nonNull(title)) {
-            canvas.setTitle(title);
+        if (nonNull(canvas.getContent())) {
+            canvas.setContent(content);
+            canvas.setUpdatedAt(LocalDateTime.now());
         }
 
-        if (nonNull(canvas.getState())) {
-            canvas.setState(canvas.getState());
-        }
-
-        canvas = canvasRepository.save(canvas);
-        return canvasMapper.mapToMeta(canvas);
+        return canvasRepository.save(canvas);
     }
 
     @Override
     public void delete(String id) {
         canvasRepository.delete(get(id));
+    }
+
+    private String generateId() {
+        StringBuilder id = new StringBuilder();
+        id.append(RANDOM.nextInt(9) + 1);
+
+        for (int i = 0; i < 5; i++) {
+            id.append(RANDOM.nextInt(10));
+        }
+
+        return id.toString();
+    }
+
+    private String generateCanvasId() {
+        String id = generateId();
+
+        while (canvasRepository.existsById(id)) {
+            id = generateId();
+        }
+
+        return id;
     }
 }

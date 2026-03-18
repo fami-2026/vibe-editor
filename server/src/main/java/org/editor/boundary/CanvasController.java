@@ -33,18 +33,20 @@ public class CanvasController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Response createCanvas(@RequestBody CanvasDto canvasDto) {
-        return new Response(HttpStatus.CREATED.value(), canvasService.create(canvasDto.title(), canvasDto.state()));
+        return new Response(
+                HttpStatus.CREATED.value(), canvasMapper.mapToCanvasDto(canvasService.create(canvasDto.content())));
     }
 
     @PutMapping("/{id}")
     public Response updateCanvas(@PathVariable String id, @RequestBody CanvasDto canvasDto) {
-        return new Response(HttpStatus.OK.value(), canvasService.update(id, canvasDto.title(), canvasDto.state()));
+        return new Response(
+                HttpStatus.OK.value(), canvasMapper.mapToCanvasDto(canvasService.update(id, canvasDto.content())));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public Response deleteCanvas(@PathVariable String id) {
         canvasService.delete(id);
-        return new Response(HttpStatus.NO_CONTENT.value());
+        return new Response(HttpStatus.NO_CONTENT.value(), "Deleted successfully", null);
     }
 }

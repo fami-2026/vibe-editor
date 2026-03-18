@@ -200,7 +200,6 @@ OpenAPI спецификация: `server/docs/openapi.yml`
 
 ```json
 {
-  "title": "My Canvas",
   "state": "{}"
 }
 ```

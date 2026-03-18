@@ -23,10 +23,18 @@ paths:
               example:
                 code: 200
                 data:
-                  - id: "507f1f77bcf86cd799439011"
-                    title: "My First Canvas"
+                  - id: "102303"
                     createdAt: "2026-02-23T10:30:00"
                     updatedAt: "2026-02-23T10:30:00"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+              example:
+                code: 500
+                message: "Internal server error: Database connection failed"
 
     post:
       summary: Create a new canvas
@@ -37,6 +45,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CanvasDto'
+            example:
+              content: "{}"
       responses:
         '201':
           description: Canvas created successfully
@@ -44,12 +54,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Response'
+              example:
+                code: 201
+                data:
+                  id: "102304"
+                  createdAt: "2026-02-23T11:30:00"
+                  updatedAt: "2026-02-23T11:30:00"
         '400':
           description: Validation error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Response'
+              example:
+                code: 400
+                message: "Not all required fields are represented"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+              example:
+                code: 500
+                message: "Internal server error: Database connection failed"
 
   /canvas/{id}:
     get:
@@ -61,6 +89,7 @@ paths:
           required: true
           schema:
             type: string
+          example: "102303"
       responses:
         '200':
           description: Successful operation
@@ -68,12 +97,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Response'
-        '400':
+              example:
+                code: 200
+                data:
+                  id: "102303"
+                  content: "{}"
+                  createdAt: "2026-02-23T10:30:00"
+                  updatedAt: "2026-02-23T10:30:00"
+        '404':
           description: Canvas not exist
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Response'
+              example:
+                code: 404
+                message: "Canvas not exist"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+              example:
+                code: 500
+                message: "Internal server error: Database connection failed"
 
     put:
       summary: Update an existing canvas
@@ -84,12 +132,15 @@ paths:
           required: true
           schema:
             type: string
+          example: "102303"
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/CanvasDto'
+            example:
+              content: "{\"elements\":[{\"type\":\"rectangle\"}]}"
       responses:
         '200':
           description: Canvas updated successfully
@@ -97,12 +148,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Response'
-        '400':
-          description: Canvas not exist or validation error
+              example:
+                code: 200
+                data:
+                  id: "102303"
+                  createdAt: "2026-02-23T10:30:00"
+                  updatedAt: "2026-02-23T12:45:00"
+        '404':
+          description: Canvas not exist
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Response'
+              example:
+                code: 404
+                message: "Canvas not exist"
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+              example:
+                code: 400
+                message: "Invalid content format"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+              example:
+                code: 500
+                message: "Internal server error: Database connection failed"
 
     delete:
       summary: Delete a canvas
@@ -113,6 +191,7 @@ paths:
           required: true
           schema:
             type: string
+          example: "102304"
       responses:
         '204':
           description: Canvas deleted successfully
@@ -120,78 +199,107 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Response'
-        '400':
+              example:
+                code: 204
+                message: Deleted successfully
+        '404':
           description: Canvas not exist
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Response'
+              example:
+                code: 404
+                message: "Canvas not exist"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+              example:
+                code: 500
+                message: "Internal server error: Database connection failed"
 
 components:
   schemas:
     CanvasDto:
       type: object
+      description: Canvas data transfer object for create/update operations
       properties:
-        title:
+        content:
           type: string
-        state:
-          type: string
+          description: Canvas content in JSON format
+          example: "{}"
       required:
-        - title
-        - state
+        - content
       example:
-        title: "My Canvas"
-        state: "{}"
+        content: "{}"
 
     Canvas:
       type: object
+      description: Complete canvas object with content
       properties:
         id:
           type: string
-        title:
+          description: Unique canvas identifier
+          example: "102303"
+        content:
           type: string
+          description: Canvas content in JSON format
+          example: "{}"
         createdAt:
           type: string
           format: date-time
+          description: Creation timestamp
+          example: "2026-02-23T10:30:00"
         updatedAt:
           type: string
           format: date-time
-        state:
-          type: string
-      example:
-        id: "507f1f77bcf86cd799439011"
-        title: "My Canvas"
-        createdAt: "2026-02-23T10:30:00"
-        updatedAt: "2026-02-23T10:30:00"
-        state: "{}"
+          description: Last update timestamp
+          example: "2026-02-23T10:30:00"
+      required:
+        - id
+        - content
+        - createdAt
+        - updatedAt
 
     CanvasMeta:
       type: object
+      description: Canvas metadata without content
       properties:
         id:
           type: string
-        title:
-          type: string
+          description: Unique canvas identifier
+          example: "102303"
         createdAt:
           type: string
           format: date-time
+          description: Creation timestamp
+          example: "2026-02-23T10:30:00"
         updatedAt:
           type: string
           format: date-time
-      example:
-        id: "507f1f77bcf86cd799439011"
-        title: "My Canvas"
-        createdAt: "2026-02-23T10:30:00"
-        updatedAt: "2026-02-23T10:30:00"
+          description: Last update timestamp
+          example: "2026-02-23T10:30:00"
+      required:
+        - id
+        - createdAt
+        - updatedAt
 
     Response:
       type: object
+      description: Standard API response wrapper
       properties:
         code:
           type: integer
+          description: HTTP status code
+          example: 200
         message:
           type: string
           nullable: true
+          description: Error message or null for successful operations
+          example: null
         data:
           oneOf:
             - type: array
@@ -200,12 +308,12 @@ components:
             - $ref: '#/components/schemas/Canvas'
             - $ref: '#/components/schemas/CanvasMeta'
           nullable: true
+          description: Response payload
       required:
         - code
       example:
         code: 200
         data:
-          - id: "507f1f77bcf86cd799439011"
-            title: "My Canvas"
+          - id: "102303"
             createdAt: "2026-02-23T10:30:00"
             updatedAt: "2026-02-23T10:30:00"

@@ -10,9 +10,9 @@ public interface CanvasService {
 
     Canvas get(String id);
 
-    CanvasMeta create(String title, String state);
+    CanvasMeta create(String content);
 
-    CanvasMeta update(String id, String title, String state);
+    CanvasMeta update(String id, String content);
 
     void delete(String id);
 }

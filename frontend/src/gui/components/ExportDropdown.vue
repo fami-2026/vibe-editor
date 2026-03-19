@@ -96,7 +96,7 @@ import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useCanvasStore } from '@/stores/canvas';
 import {
-    buildDefaultFileName,
+    buildDefaultFileName,
     exportScene,
     sanitizeFileName,
     type ExportArea,

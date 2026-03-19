@@ -351,7 +351,13 @@
                         <!-- Режим редактирования -->
                         <input
                             v-if="editingLayerId === shape.id"
-                            :ref="(el) => setInputRef(el as HTMLInputElement | null, shape.id)"
+                            :ref="
+                                (el) =>
+                                    setInputRef(
+                                        el as HTMLInputElement | null,
+                                        shape.id
+                                    )
+                            "
                             class="layerNameInput"
                             type="text"
                             v-model="editingLayerName"
@@ -407,7 +413,7 @@ function getShapeDisplayName(shape: Shape) {
     if (shapeWithName.name && shapeWithName.name.trim()) {
         return shapeWithName.name;
     }
-    
+
     return shapeLabel(shape.type);
 }
 
@@ -456,15 +462,15 @@ function showColorPicker(type: 'fill' | 'stroke') {
 
 function onLayerNameBlur(shapeId: string) {
     if (isSaving.value) return;
-    
+
     saveLayerName(shapeId, editingLayerName.value);
 }
 
 function onLayerNameEnter(shapeId: string) {
     isSaving.value = true;
-    
+
     saveLayerName(shapeId, editingLayerName.value);
-    
+
     setTimeout(() => {
         isSaving.value = false;
     }, 200);
@@ -864,8 +870,6 @@ function saveLayerName(shapeId: string, newName: string) {
     cancelEditing();
 }
 
-
-
 //Функции для удаления слоя
 function deleteLayer(id: string) {
     if (editingLayerId.value === id) {
@@ -896,10 +900,6 @@ onMounted(() => {
 onUnmounted(() => {
     window.removeEventListener('keydown', handleKeyDown);
 });
-
-
-
-
 </script>
 
 <style scoped>

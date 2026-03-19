@@ -73,20 +73,23 @@ export async function exportScene(options: ExportOptions): Promise<void> {
         throw new Error('Нет фигур для экспорта.');
     }
 
+    const totalBounds = getTotalBounds(options.shapes);
     const fileName = ensureExtension(options.fileName, options.format);
 
-    await exportPng(target, fileName, options);
+    await exportPng({
+        shapes: options.shapes,
+        bounds: totalBounds  
+    }, fileName, options);
 }
 
 function resolveExportTarget(options: ExportOptions): ExportTarget | null {
     if (options.shapes.length === 0) return null;
 
-    const width = Math.max(1, Math.round(options.sceneSize.width));
-    const height = Math.max(1, Math.round(options.sceneSize.height));
+    const bounds = getTotalBounds(options.shapes);
 
     return {
         shapes: options.shapes,
-        bounds: { x: 0, y: 0, width, height },
+        bounds: bounds,
     };
 }
 
@@ -104,9 +107,7 @@ async function exportPng(
 
     const ctx = canvas.getContext('2d');
     if (!ctx) {
-        throw new Error(
-            'Не удалось получить контекст canvas для PNG-экспорта.'
-        );
+        throw new Error('Не удалось получить контекст canvas для PNG-экспорта.');
     }
 
     ctx.scale(scale, scale);
@@ -133,10 +134,7 @@ function ensureExtension(fileName: string, format: ExportFormat): string {
     return `${safeBase}.${format}`;
 }
 
-function canvasToBlob(
-    canvas: HTMLCanvasElement,
-    mimeType: string
-): Promise<Blob> {
+function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string): Promise<Blob> {
     return new Promise((resolve, reject) => {
         canvas.toBlob((blob) => {
             if (!blob) {
@@ -155,4 +153,22 @@ function triggerDownload(blob: Blob, fileName: string): void {
     link.download = fileName;
     link.click();
     URL.revokeObjectURL(url);
+}
+
+function getTotalBounds(shapes: Shape[]): ExportBounds {
+    if (shapes.length === 0) {
+        return { x: 0, y: 0, width: 1, height: 1 };
+    }
+
+    const bounds = shapes.map(shape => shape.getBoundingBox());
+    
+    const minX = Math.min(...bounds.map(b => b.minX));
+    const minY = Math.min(...bounds.map(b => b.minY));
+    const maxX = Math.max(...bounds.map(b => b.maxX));
+    const maxY = Math.max(...bounds.map(b => b.maxY));
+    
+    const width = Math.max(1, maxX - minX);
+    const height = Math.max(1, maxY - minY);
+    
+    return { x: minX, y: minY, width, height };
 }

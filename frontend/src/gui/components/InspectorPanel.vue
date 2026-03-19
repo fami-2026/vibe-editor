@@ -360,13 +360,11 @@
                             "
                             class="layerNameInput"
                             type="text"
-                            :value="
-                                (shape as any).name || shapeLabel(shape.type)
-                            "
+                            v-model="editingLayerName"
                             @click.stop
                             @dblclick.stop
-                            @blur="onLayerNameBlur(shape.id, $event)"
-                            @keyup.enter="onLayerNameEnter(shape.id, $event)"
+                            @blur="onLayerNameBlur(shape.id)"
+                            @keyup.enter="onLayerNameEnter(shape.id)"
                             @keyup.escape="cancelEditing"
                         />
 
@@ -376,7 +374,7 @@
                             class="layerName"
                             @dblclick.stop="startEditing(shape.id)"
                         >
-                            {{ (shape as any).name || shapeLabel(shape.type) }}
+                            {{ getShapeDisplayName(shape) }}
                         </span>
 
                         <!--Кнопка удаления-->
@@ -397,10 +395,27 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, nextTick, onMounted, onUnmounted } from 'vue';
+import { computed, ref, nextTick, onMounted, onUnmounted, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useCanvasStore } from '@/stores/canvas';
 import type { Shape } from '@/canvas/types';
+
+interface ShapeWithName extends Shape {
+    name?: string;
+}
+
+const editingLayerName = ref('');
+const isSaving = ref(false);
+const forceUpdate = ref(0);
+
+function getShapeDisplayName(shape: Shape) {
+    const shapeWithName = shape as ShapeWithName;
+    if (shapeWithName.name && shapeWithName.name.trim()) {
+        return shapeWithName.name;
+    }
+
+    return shapeLabel(shape.type);
+}
 
 const activePicker = ref<'fill' | 'stroke' | null>(null);
 const pickerPosition = ref<{
@@ -443,6 +458,22 @@ function showColorPicker(type: 'fill' | 'stroke') {
             }
         });
     }
+}
+
+function onLayerNameBlur(shapeId: string) {
+    if (isSaving.value) return;
+
+    saveLayerName(shapeId, editingLayerName.value);
+}
+
+function onLayerNameEnter(shapeId: string) {
+    isSaving.value = true;
+
+    saveLayerName(shapeId, editingLayerName.value);
+
+    setTimeout(() => {
+        isSaving.value = false;
+    }, 200);
 }
 
 function handleClickOutside(event: MouseEvent) {
@@ -804,6 +835,11 @@ function startEditing(shapeId: string) {
     console.log('DOUBLE CLICK WORKS', shapeId);
     editingLayerId.value = shapeId;
 
+    const shape = shapes.value.find((s) => s.id === shapeId) as ShapeWithName;
+    if (shape) {
+        editingLayerName.value = shape.name || shapeLabel(shape.type);
+    }
+
     nextTick(() => {
         const input = inputRefs.value[shapeId];
         if (input) {
@@ -817,16 +853,6 @@ function cancelEditing() {
     editingLayerId.value = null;
 }
 
-function onLayerNameBlur(shapeId: string, event: Event) {
-    const target = event.target as HTMLInputElement;
-    saveLayerName(shapeId, target.value);
-}
-
-function onLayerNameEnter(shapeId: string, event: Event) {
-    const target = event.target as HTMLInputElement;
-    saveLayerName(shapeId, target.value);
-}
-
 function saveLayerName(shapeId: string, newName: string) {
     if (!newName.trim()) {
         cancelEditing();
@@ -838,6 +864,7 @@ function saveLayerName(shapeId: string, newName: string) {
         canvasStore.updateShape(shapeId, {
             name: newName.trim(),
         } as Partial<Shape>);
+        forceUpdate.value++;
     }
 
     cancelEditing();
@@ -861,6 +888,10 @@ function handleKeyDown(event: KeyboardEvent) {
         canvasStore.deleteShape(selectedShape.value.id);
     }
 }
+
+watch([selectedShape, shapes], () => {
+    forceUpdate.value++;
+});
 
 onMounted(() => {
     window.addEventListener('keydown', handleKeyDown);

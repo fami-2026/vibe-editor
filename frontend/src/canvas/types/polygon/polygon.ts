@@ -82,9 +82,9 @@ export class PolygonShape extends BaseShape {
         width: number = 100,
         height: number = 100,
         rotation: number = 0,
-        fill: string = 'transparent',
-        fillOpacity: number = 1,
-        stroke: string = '#000000',
+        fill: string = '#3498db',
+        fillOpacity: number = 0,
+        stroke: string = '#2c3e50',
         strokeOpacity: number = 1,
         strokeWidth: number = 2
     ) {

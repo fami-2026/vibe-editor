@@ -189,9 +189,9 @@ export const useCanvasStore = defineStore('canvas', () => {
                 100,
                 100,
                 0,
-                'transparent',
-                1,
-                '#000000',
+                '#3498db',
+                0,
+                '#2c3e50',
                 1,
                 2
             );

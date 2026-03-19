@@ -889,6 +889,11 @@ function handleKeyDown(event: KeyboardEvent) {
     }
 }
 
+import { watch } from 'vue';
+watch([selectedShape, shapes], () => {
+    forceUpdate.value++;
+});
+
 onMounted(() => {
     window.addEventListener('keydown', handleKeyDown);
 });
@@ -897,10 +902,7 @@ onUnmounted(() => {
     window.removeEventListener('keydown', handleKeyDown);
 });
 
-import { watch } from 'vue';
-watch([selectedShape, shapes], () => {
-    forceUpdate.value++;
-});
+
 
 
 </script>

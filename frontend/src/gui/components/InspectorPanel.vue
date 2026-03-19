@@ -403,10 +403,6 @@ const isSaving = ref(false);
 const forceUpdate = ref(0);
 
 function getShapeDisplayName(shape: Shape) {
-    if (forceUpdate.value) {
-        // пустое тело - просто чтобы обратиться к значению
-    }
-    
     const shapeWithName = shape as ShapeWithName;
     if (shapeWithName.name && shapeWithName.name.trim()) {
         return shapeWithName.name;
@@ -424,8 +420,6 @@ onUnmounted(() => {
     window.removeEventListener('keydown', handleKeyDown);
     document.removeEventListener('click', handleClickOutside);
 });
-
-
 
 const activePicker = ref<'fill' | 'stroke' | null>(null);
 const pickerPosition = ref<{
@@ -900,6 +894,14 @@ onMounted(() => {
 onUnmounted(() => {
     window.removeEventListener('keydown', handleKeyDown);
 });
+
+import { watch } from 'vue';
+
+// Добавьте где-нибудь в коде (например, после объявления forceUpdate)
+watch([selectedShape, shapes], () => {
+    forceUpdate.value++;
+});
+
 </script>
 
 <style scoped>

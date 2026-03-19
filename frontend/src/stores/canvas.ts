@@ -34,6 +34,13 @@ type SceneSnapshot = {
     selectedId: string | null;
 };
 
+type VectorEditorExport = {
+    format: 'vector-editor';
+    version: 1;
+    exportedAt: string;
+    scene: SceneSnapshot;
+};
+
 export const useCanvasStore = defineStore('canvas', () => {
     const shapes = ref<Shape[]>([]);
     const selectedId = ref<string | null>(null);
@@ -309,6 +316,59 @@ export const useCanvasStore = defineStore('canvas', () => {
         }
     }
 
+    function exportToJson(): string {
+        const payload: VectorEditorExport = {
+            format: 'vector-editor',
+            version: 1,
+            exportedAt: new Date().toISOString(),
+            scene: createSnapshot(),
+        };
+
+        return JSON.stringify(payload, null, 2);
+    }
+
+    function importFromJson(json: string): {
+        success: boolean;
+        message: string;
+    } {
+        try {
+            const parsed = JSON.parse(json) as Partial<VectorEditorExport>;
+
+            if (parsed.format !== 'vector-editor' || parsed.version !== 1) {
+                return {
+                    success: false,
+                    message:
+                        'Неподдерживаемый формат файла. Ожидается vector-editor.',
+                };
+            }
+
+            if (!parsed.scene || !Array.isArray(parsed.scene.shapes)) {
+                return {
+                    success: false,
+                    message: 'Файл повреждён: отсутствует описание сцены.',
+                };
+            }
+
+            restoreSnapshot(parsed.scene);
+            undoStack.value = [];
+            redoStack.value = [];
+            isInteractionActive.value = false;
+            isContinuousChangeActive = false;
+            if (continuousChangeTimer !== null) {
+                window.clearTimeout(continuousChangeTimer);
+                continuousChangeTimer = null;
+            }
+
+            return { success: true, message: 'Проект успешно импортирован.' };
+        } catch (error) {
+            console.error('Ошибка импорта:', error);
+            return {
+                success: false,
+                message: 'Не удалось прочитать JSON-файл.',
+            };
+        }
+    }
+
     loadFromLocalStorage();
 
     watch(
@@ -341,5 +401,7 @@ export const useCanvasStore = defineStore('canvas', () => {
         movePan,
         startInteraction,
         endInteraction,
+        exportToJson,
+        importFromJson,
     };
 });

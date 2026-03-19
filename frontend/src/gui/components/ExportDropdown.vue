@@ -25,29 +25,96 @@
                 class="item"
                 role="menuitem"
                 type="button"
-                @click="pick('png')"
+                @click="openExport('png')"
             >
                 PNG
             </button>
-            <button
-                class="item"
-                role="menuitem"
-                type="button"
-                @click="pick('svg')"
-            >
-                SVG
-            </button>
+        </div>
+    </div>
+
+    <div
+        v-if="showExport"
+        class="modalOverlay"
+        role="dialog"
+        aria-modal="true"
+        @click.self="closeExport"
+    >
+        <div class="modalCard">
+            <div class="modalHead">
+                <h3>Экспорт PNG</h3>
+            </div>
+
+            <label class="field">
+                <span>Имя файла</span>
+                <input
+                    v-model="form.fileName"
+                    type="text"
+                    placeholder="vector-export"
+                    @blur="normalizeFileName"
+                />
+            </label>
+
+            <label class="field">
+                <span>Фон</span>
+                <select v-model="form.pngBackground">
+                    <option value="transparent">Прозрачный</option>
+                    <option value="white">Белый</option>
+                </select>
+            </label>
+
+            <label v-if="form.format === 'png'" class="field">
+                <span>Качество PNG</span>
+                <select v-model.number="form.pngScale">
+                    <option :value="1">1x (обычное)</option>
+                    <option :value="2">2x (четче)</option>
+                    <option :value="3">3x (максимум)</option>
+                </select>
+            </label>
+
+            <div class="actions">
+                <button class="btn ghost" type="button" @click="closeExport">
+                    Отмена
+                </button>
+                <button class="btn" type="button" @click="submitExport">
+                    Скачать PNG
+                </button>
+            </div>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue';
-
-type ExportFormat = 'png' | 'svg';
+import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { storeToRefs } from 'pinia';
+import { useCanvasStore } from '@/stores/canvas';
+import {
+    exportScene,
+    sanitizeFileName,
+    type ExportArea,
+    type ExportFormat,
+    type PngBackground,
+    type PngScale,
+} from '@/canvas/utils/export';
 
 const open = ref(false);
+const showExport = ref(false);
 const root = ref<HTMLElement | null>(null);
+const canvasStore = useCanvasStore();
+const { shapes, selectedId } = storeToRefs(canvasStore);
+
+const form = reactive<{
+    fileName: string;
+    format: ExportFormat;
+    area: ExportArea;
+    pngScale: PngScale;
+    pngBackground: PngBackground;
+}>({
+    fileName: 'vector-export',
+    format: 'png',
+    area: 'scene',
+    pngScale: 1,
+    pngBackground: 'transparent',
+});
 
 function toggle() {
     open.value = !open.value;
@@ -57,9 +124,59 @@ function close() {
     open.value = false;
 }
 
-function pick(format: ExportFormat) {
-    console.log('export:', format);
+function openExport(format: ExportFormat) {
+    form.format = format;
+    normalizeFileName();
+    showExport.value = true;
     close();
+}
+
+function closeExport() {
+    showExport.value = false;
+}
+
+function getSceneSize() {
+    const canvas = document.querySelector(
+        '.main-canvas'
+    ) as HTMLCanvasElement | null;
+
+    if (canvas?.width && canvas?.height) {
+        return {
+            width: canvas.width,
+            height: canvas.height,
+        };
+    }
+
+    return { width: 1, height: 1 };
+}
+
+function normalizeFileName() {
+    form.fileName = sanitizeFileName(form.fileName);
+}
+
+async function submitExport() {
+    normalizeFileName();
+
+    try {
+        await exportScene({
+            format: form.format,
+            fileName: form.fileName,
+            area: form.area,
+            shapes: shapes.value,
+            sceneSize: getSceneSize(),
+            selectedId: selectedId.value,
+            pngScale: form.pngScale,
+            pngBackground: form.pngBackground,
+        });
+
+        closeExport();
+    } catch (error) {
+        const message =
+            error instanceof Error
+                ? error.message
+                : 'Не удалось выполнить экспорт.';
+        window.alert(message);
+    }
 }
 
 function onDocPointerDown(e: PointerEvent) {
@@ -70,6 +187,7 @@ function onDocPointerDown(e: PointerEvent) {
 
 function onDocKeyDown(e: KeyboardEvent) {
     if (e.key === 'Escape') close();
+    if (e.key === 'Escape' && showExport.value) closeExport();
 }
 
 onMounted(() => {
@@ -107,6 +225,16 @@ onBeforeUnmount(() => {
     background: #1d4ed8;
 }
 
+.btn.ghost {
+    background: #f3f4f6;
+    color: #111827;
+    box-shadow: none;
+}
+
+.btn.ghost:hover {
+    background: #e5e7eb;
+}
+
 .chevron {
     opacity: 0.95;
 }
@@ -139,5 +267,71 @@ onBeforeUnmount(() => {
 
 .item:hover {
     background: #f3f4f6;
+}
+
+.modalOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(17, 24, 39, 0.45);
+    display: grid;
+    place-items: center;
+    z-index: 60;
+}
+
+.modalCard {
+    width: min(90vw, 420px);
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.22);
+    padding: 16px;
+    display: grid;
+    gap: 12px;
+}
+
+.modalHead h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #111827;
+}
+
+.field {
+    display: grid;
+    gap: 6px;
+}
+
+.field span {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.field input,
+.field select {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font: inherit;
+    color: #111827;
+    background: #fff;
+}
+
+.field input:focus,
+.field select:focus {
+    outline: 2px solid #93c5fd;
+    border-color: #2563eb;
+}
+
+.hint {
+    color: #6b7280;
+    font-size: 12px;
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 6px;
 }
 </style>

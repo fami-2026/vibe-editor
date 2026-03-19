@@ -868,12 +868,7 @@ function saveLayerName(shapeId: string, newName: string) {
     cancelEditing();
 }
 
-import { watch } from 'vue';
 
-// Добавьте где-нибудь в коде (например, после объявления forceUpdate)
-watch([selectedShape, shapes], () => {
-    forceUpdate.value++;
-});
 
 //Функции для удаления слоя
 function deleteLayer(id: string) {
@@ -901,6 +896,13 @@ onMounted(() => {
 onUnmounted(() => {
     window.removeEventListener('keydown', handleKeyDown);
 });
+
+import { watch } from 'vue';
+watch([selectedShape, shapes], () => {
+    forceUpdate.value++;
+});
+
+
 </script>
 
 <style scoped>

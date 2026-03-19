@@ -312,19 +312,20 @@ export function useInteractions(
             if (!activeShape.value) {
                 if (!createToolType.value) return;
 
-                const newShape = canvasStore.addShape(
-                    createToolType.value,
-                    { x: start.x, y: start.y },
-                    createParams.value ?? undefined
-                );
-
-                canvasStore.selectShape(newShape.id);
-                activeShape.value = newShape;
-
                 if (!hasRecordedInteraction.value) {
                     canvasStore.startInteraction();
                     hasRecordedInteraction.value = true;
                 }
+
+                const newShape = canvasStore.addShape(
+                    createToolType.value,
+                    { x: start.x, y: start.y },
+                    createParams.value ?? undefined,
+                    false
+                );
+
+                canvasStore.selectShape(newShape.id);
+                activeShape.value = newShape;
             }
 
             if (!activeShape.value) return;

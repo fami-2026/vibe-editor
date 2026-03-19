@@ -147,9 +147,12 @@ export const useCanvasStore = defineStore('canvas', () => {
     function addShape(
         type: string,
         pos: { x: number; y: number },
-        params?: ShapeParams
+        params?: ShapeParams,
+        recordHistory: boolean = true
     ) {
-        pushHistory();
+        if (recordHistory) {
+            pushHistory();
+        }
 
         const existingShapesOfType = shapes.value.filter(
             (s) => s.type === type

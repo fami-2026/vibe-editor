@@ -46,6 +46,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     const MAX_ZOOM = 500;
     const ZOOM_STEP = 10;
     const zoom = ref(100);
+    const pan = ref({ x: 0, y: 0 });
 
     let isContinuousChangeActive = false;
     let continuousChangeTimer: number | null = null;
@@ -257,6 +258,17 @@ export const useCanvasStore = defineStore('canvas', () => {
         setZoom(zoom.value - ZOOM_STEP);
     }
 
+    function setPan(value: { x: number; y: number }) {
+        pan.value = { x: value.x, y: value.y };
+    }
+
+    function movePan(delta: { x: number; y: number }) {
+        pan.value = {
+            x: pan.value.x + delta.x,
+            y: pan.value.y + delta.y,
+        };
+    }
+
     const STORAGE_KEY = 'vector-editor-canvas';
 
     function saveToLocalStorage() {
@@ -324,6 +336,9 @@ export const useCanvasStore = defineStore('canvas', () => {
         setZoom,
         zoomIn,
         zoomOut,
+        pan,
+        setPan,
+        movePan,
         startInteraction,
         endInteraction,
     };

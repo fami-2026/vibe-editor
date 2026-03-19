@@ -16,7 +16,8 @@ export function useCanvasRender(
     canvasRef: Ref<HTMLCanvasElement | null>,
     shapes: Ref<Shape[]>,
     selectedId: Ref<string | null>,
-    zoom: Ref<number>
+    zoom: Ref<number>,
+    pan: Ref<{ x: number; y: number }>
 ) {
     /**
      * Рисует рамку выделения вокруг фигуры с учетом её поворота и масштаба.
@@ -119,7 +120,10 @@ export function useCanvasRender(
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         const zoomFactor = zoom.value / 100;
         ctx.save();
-        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.translate(
+            canvas.width / 2 + pan.value.x,
+            canvas.height / 2 + pan.value.y
+        );
         ctx.scale(zoomFactor, zoomFactor);
         ctx.translate(-canvas.width / 2, -canvas.height / 2);
 

@@ -1,104 +1,51 @@
-# Vector Graphic Editor
+# Vector (Vibe) Graphic Editor
 
-Образовательный проект векторного графического редактора с разделением на:
+Образовательный проект по разработке векторного графического редактора frontend (Vue 3 + TypeScript + Canvas 2D) и backend (Spring Boot + MongoDB).
 
-- `frontend` (Vue 3 + TypeScript + Canvas 2D)
-- `server` (Spring Boot + MongoDB)
+## Что есть в проекте
 
-Проект включает локальную разработку, контейнерный запуск и CI/CD (линт/формат, сборка образов, деплой).
-
-## Содержание
-
-1. [Что реализовано](#что-реализовано)
-2. [Технологический стек](#технологический-стек)
-3. [Структура репозитория](#структура-репозитория)
-4. [Быстрый старт](#быстрый-старт)
-5. [Локальный запуск без Docker](#локальный-запуск-без-docker)
-6. [Запуск через Docker Compose](#запуск-через-docker-compose)
-7. [Taskfile команды](#taskfile-команды)
-8. [Backend API](#backend-api)
-9. [Документация по frontend](#документация-по-frontend)
-10. [Процесс разработки](#процесс-разработки)
-
-## Что реализовано
-
-Текущее состояние проекта:
-
-- Редактор фигур `rect`, `circle`, `line`
-- Выделение и перетаскивание фигур мышью
-- Редактирование базовых свойств через панель свойств
-- Базовый UI инструментов (включая заготовки для экспорта, zoom, undo/redo)
-- REST API для хранения/получения состояния холстов
-- MongoDB-персистентность на backend
-
-Важно: часть UI-функций присутствует как заготовка (например, undo/redo и экспорт в `frontend` пока без полноценной реализации).
-
-## Технологический стек
-
-### Frontend
-
-- Vue 3 (Composition API)
-- TypeScript
-- Pinia
-- Vite
-- Canvas 2D API
-- ESLint + Oxlint + Prettier
-
-### Backend
-
-- Java 21
-- Spring Boot 4
-- Spring Data MongoDB
-- Gradle
-- Spotless (Palantir Java Format)
-
-### Инфраструктура
-
-- Docker / Docker Compose
-- Task (`go-task`)
-- GitHub Actions (CI + deploy)
+- Набор фигур: прямоугольник, круг, линия, треугольник, многоугольник, звезда, шестиугольник, стрелка
+- Рисование фигур на холсте и интерактивное создание многоугольника с выбором количества углов
+- Выделение фигур, перемещение, изменение размеров и вращение
+- Панорамирование сцены (инструмент «рука») и масштабирование
+- Undo/redo с горячими клавишами (Ctrl + Z, Ctrl + Y)
+- Экспорт сцены в PNG (настройка фона и качества) и экспорт/импорт проектов в JSON
+- Автосохранение состояния в `localStorage`
+- REST API для хранения/получения состояния холстов в MongoDB
 
 ## Структура репозитория
 
 ```text
 .
 ├── frontend/                # клиентская часть
-│   ├── src/
-│   ├── README.md
-│   ├── Taskfile.yaml
-│   └── compose.yaml
 ├── server/                  # backend API
-│   ├── src/
-│   ├── docs/openapi.yml
-│   ├── Taskfile.yaml
-│   └── compose.yaml
 ├── compose.yaml             # объединяет frontend/server compose
 ├── Taskfile.yaml            # агрегирующие команды
 ├── CONTRIBUTING.md          # правила участия
 └── README.md
 ```
 
-## Быстрый старт
+## Быстрый старт (Docker Compose)
 
 Требования:
 
 - Docker + Docker Compose
-- `task` (опционально, но удобно)
+- `task` (опционально)
 
-1. Подготовить переменные для MongoDB:
+1) Подготовить переменные для MongoDB:
 
 ```bash
 export MONGO_USER=admin
 export MONGO_PASS=admin
 ```
 
-2. Создать сеть (если ещё не создана):
+2) Создать сеть (если ещё не создана):
 
 ```bash
 docker network create vge || true
 ```
 
-3. Поднять проект:
+3) Поднять проект:
 
 ```bash
 docker compose up -d
@@ -110,59 +57,7 @@ docker compose up -d
 - Backend API: `http://localhost:8080/api`
 - MongoDB: `localhost:27017`
 
-## Локальный запуск без Docker
-
-### 1) Backend (`server`)
-
-В директории `server` есть только шаблон `application.example.yml`. Для локального запуска:
-
-1. Скопируйте его в `application.yml` и подставьте реальные значения, либо используйте переменные окружения Spring Boot.
-2. Запустите MongoDB локально.
-3. Запустите backend:
-
-```bash
-cd server
-./gradlew bootRun
-```
-
-Примечание: если не задавать `SERVER_SERVLET_CONTEXT_PATH=/api`, backend будет доступен без префикса `/api`.
-
-### 2) Frontend (`frontend`)
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-По умолчанию Vite поднимается на `http://localhost:5173`.
-
-## Запуск через Docker Compose
-
-### Полный стек (из корня)
-
-```bash
-docker network create vge || true
-MONGO_USER=admin MONGO_PASS=admin docker compose up -d
-```
-
-### Только backend (из `server/`)
-
-```bash
-cd server
-docker network create vge || true
-MONGO_USER=admin MONGO_PASS=admin docker compose up -d
-```
-
-### Только frontend (из `frontend/`)
-
-```bash
-cd frontend
-docker network create vge || true
-docker compose up -d
-```
-
-## Taskfile команды
+## Запуск через Taskfile
 
 Из корня:
 
@@ -177,10 +72,71 @@ task publish
 task deploy
 ```
 
-Подзадачи:
+Полезные подзадачи:
 
 - `task server:image|publish|deploy|format`
-- `task client:ci|build|lint|format|image|publish|deploy`
+- `task client:ci|ci:build|lint|format|image|publish|deploy|dev:run`
+
+`task client:dev:run` запускает Vite с портом `5000` и прокидывает `VITE_SERVER_ADDR=localhost:8080`.
+
+## Локальный запуск без Docker
+
+### Backend (`server`)
+
+1) Подготовить конфигурацию. В репозитории есть `server/src/main/resources/application.example.yml` — скопируйте его в `application.yml` и подставьте реальные значения, либо задайте эквивалентные переменные окружения Spring Boot.
+2) Запустить MongoDB локально.
+3) Запустить backend:
+
+```bash
+cd server
+./gradlew bootRun
+```
+
+Примечание: в docker-окружении используется `SERVER_SERVLET_CONTEXT_PATH=/api`, поэтому итоговые URL будут вида `/api/canvas`. При локальном запуске без этого параметра префикса `/api` может не быть.
+
+### Frontend (`frontend`)
+
+Проект находится в поддиректории `frontend/`. Все команды нужно выполнять из этой папки.
+
+```bash
+# 1. Перейти в директорию проекта
+cd frontend
+
+# 2. Установить зависимости
+npm install
+
+# 3. Запустить в режиме разработки
+npm run dev
+```
+
+По умолчанию Vite поднимается на `http://localhost:5173` (или другой порт, указанный в терминале).
+
+### Другие полезные команды фронтенда
+
+```bash
+# Сборка production-версии
+npm run build
+
+# Предпросмотр собранной версии локально
+npm run preview
+
+# Запуск линтера
+npm run lint
+```
+
+## Конфигурация клиента
+
+Адрес сервера встраивается в клиента на этапе сборки и доступен через `import.meta.env.VITE_SERVER_ADDR`.
+
+Пример:
+
+```js
+const server = import.meta.env.VITE_SERVER_ADDR;
+
+fetch(`http://${server}/api/canvas`, { mode: 'cors' })
+    .then((response) => response.json())
+    .then((response) => console.log(response));
+```
 
 ## Backend API
 
@@ -188,21 +144,11 @@ OpenAPI спецификация: `server/docs/openapi.yml`
 
 Базовые эндпоинты:
 
-- `GET /canvas` - получить список метаданных холстов
-- `GET /canvas/{id}` - получить конкретный холст
-- `POST /canvas` - создать холст
-- `PUT /canvas/{id}` - обновить холст
-- `DELETE /canvas/{id}` - удалить холст
-
-В docker-конфигурации backend запускается с `SERVER_SERVLET_CONTEXT_PATH=/api`, поэтому итоговые URL будут вида `/api/canvas`.
-
-Пример `POST /api/canvas`:
-
-```json
-{
-  "state": "{}"
-}
-```
+- `GET /canvas` — список метаданных холстов
+- `GET /canvas/{id}` — конкретный холст
+- `POST /canvas` — создать холст
+- `PUT /canvas/{id}` — обновить холст
+- `DELETE /canvas/{id}` — удалить холст
 
 Формат ответа:
 
@@ -214,20 +160,14 @@ OpenAPI спецификация: `server/docs/openapi.yml`
 }
 ```
 
-## Документация по frontend
+Пример тела запроса `POST /canvas`:
 
-Подробное описание frontend (архитектура, команды, roadmap) уже оформлено отдельно:
-
-- [`frontend/README.md`](./frontend/README.md)
+```json
+{
+  "content": "{}"
+}
+```
 
 ## Процесс разработки
 
-Правила ветвления, PR, rebase и ревью:
-
-- [`CONTRIBUTING.md`](./CONTRIBUTING.md)
-
-CI/CD:
-
-- Линт/формат в PR: `.github/workflows/ci.yaml`
-- Сборка и публикация образов: `.github/workflows/deploy.yaml`
-- Сборка devcontainer-образа: `.github/workflows/dev.yaml`
+Правила ветвления, PR, rebase и ревью описаны в `CONTRIBUTING.md`.

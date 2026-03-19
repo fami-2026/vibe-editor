@@ -1,10 +1,6 @@
 <template>
     <div class="topLeftActions">
-        <button
-            class="primaryBtn"
-            type="button"
-            @click="openImportDialog"
-        >
+        <button class="primaryBtn" type="button" @click="openImportDialog">
             Импорт JSON
         </button>
         <input

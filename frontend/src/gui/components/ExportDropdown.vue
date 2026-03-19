@@ -35,7 +35,7 @@
                 type="button"
                 @click="exportJson"
             >
-                JSON 
+                JSON
             </button>
         </div>
     </div>
@@ -136,8 +136,8 @@ function close() {
 function openExport(format: ExportFormat) {
     form.format = format;
     form.fileName = buildDefaultFileName(format, 'vector-export').replace(
-         /\.[^.]$/,
-         ''
+        /\.[^.]$/,
+        ''
     );
     normalizeFileName();
     showExport.value = true;
@@ -173,13 +173,13 @@ function exportJson() {
     const fileName = `vector-editor-${timestamp}.json`;
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    
+
     const link = document.createElement('a');
     link.href = url;
     link.download = fileName;
     link.click();
     URL.revokeObjectURL(url);
-    
+
     close();
 }
 

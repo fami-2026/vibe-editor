@@ -389,7 +389,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, nextTick, onMounted, onUnmounted } from 'vue';
+import { computed, ref, nextTick, onMounted, onUnmounted, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useCanvasStore } from '@/stores/canvas';
 import type { Shape } from '@/canvas/types';
@@ -410,16 +410,6 @@ function getShapeDisplayName(shape: Shape) {
     
     return shapeLabel(shape.type);
 }
-
-onMounted(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('click', handleClickOutside);
-});
-
-onUnmounted(() => {
-    window.removeEventListener('keydown', handleKeyDown);
-    document.removeEventListener('click', handleClickOutside);
-});
 
 const activePicker = ref<'fill' | 'stroke' | null>(null);
 const pickerPosition = ref<{
@@ -839,6 +829,11 @@ function startEditing(shapeId: string) {
     console.log('DOUBLE CLICK WORKS', shapeId);
     editingLayerId.value = shapeId;
 
+    const shape = shapes.value.find((s) => s.id === shapeId) as ShapeWithName;
+    if (shape) {
+        editingLayerName.value = shape.name || shapeLabel(shape.type);
+    }
+
     nextTick(() => {
         const input = inputRefs.value[shapeId];
         if (input) {
@@ -863,6 +858,7 @@ function saveLayerName(shapeId: string, newName: string) {
         canvasStore.updateShape(shapeId, {
             name: newName.trim(),
         } as Partial<Shape>);
+        forceUpdate.value++;
     }
 
     cancelEditing();
@@ -889,7 +885,6 @@ function handleKeyDown(event: KeyboardEvent) {
     }
 }
 
-import { watch } from 'vue';
 watch([selectedShape, shapes], () => {
     forceUpdate.value++;
 });

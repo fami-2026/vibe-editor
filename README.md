@@ -2,7 +2,7 @@
 
 Образовательный проект по разработке векторного графического редактора frontend (Vue 3 + TypeScript + Canvas 2D) и backend (Spring Boot + MongoDB).
 
-Сам редактор [тут]([url](https://fami-2026.github.io/vector-graphic-editor/)).
+Сам редактор [тут](https://fami-2026.github.io/vector-graphic-editor/).
 
 ## Что есть в проекте
 

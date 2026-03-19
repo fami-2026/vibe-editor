@@ -403,7 +403,9 @@ const isSaving = ref(false);
 const forceUpdate = ref(0);
 
 function getShapeDisplayName(shape: Shape) {
-    forceUpdate.value;
+    if (forceUpdate.value) {
+        // пустое тело - просто чтобы обратиться к значению
+    }
     
     const shapeWithName = shape as ShapeWithName;
     if (shapeWithName.name && shapeWithName.name.trim()) {

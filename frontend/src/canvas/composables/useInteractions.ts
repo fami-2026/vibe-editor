@@ -109,14 +109,10 @@ export function useInteractions(
         const centerX = rect.width / 2;
         const centerY = rect.height / 2;
         const oldZoom = zoom.value;
-        const oldZoomFactor = oldZoom / 100;
-        const oldPanX = pan.value.x;
-        const oldPanY = pan.value.y;
 
         const worldX = getLocalPoint(e).x;
         const worldY = getLocalPoint(e).y;
 
-        // Используем константы из store
         const delta = e.deltaY > 0 ? -canvasStore.ZOOM_STEP : canvasStore.ZOOM_STEP;
         const newZoom = Math.max(
             canvasStore.MIN_ZOOM, 
@@ -124,7 +120,6 @@ export function useInteractions(
         );
         const newZoomFactor = newZoom / 100;
         
-        // Вычисляем новый pan для сохранения позиции под курсором
         const newPanX = screenX - centerX - (worldX - centerX) * newZoomFactor;
         const newPanY = screenY - centerY - (worldY - centerY) * newZoomFactor;
 

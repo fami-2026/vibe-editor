@@ -1,4 +1,3 @@
-git
 <template>
     <div class="wrap" aria-label="Zoom and history">
         <div class="zoomPill" role="group" aria-label="Zoom controls">
@@ -11,7 +10,23 @@ git
                 <Minus :size="16" aria-hidden="true" />
             </button>
 
-            <div class="zoomValue" aria-label="Zoom value">{{ zoom }}%</div>
+            <div class="zoomValue" v-if="!isEditing" @dblclick="startEditing">
+                {{ zoom }}%
+            </div>
+            
+            <input
+                v-else
+                ref="inputRef"
+                v-model="inputValue"
+                type="text"
+                class="zoomInput"
+                @keydown.enter="saveZoom"
+                @keydown.esc="cancelEditing"
+                @blur="saveZoom"
+                @keydown="validateInput"
+                inputmode="numeric"
+                pattern="[0-9]*"
+            >
 
             <button
                 class="iconBtn"
@@ -47,12 +62,17 @@ git
 </template>
 
 <script setup lang="ts">
+import { ref, nextTick } from 'vue';
 import { storeToRefs } from 'pinia';
 import { Minus, Plus, Undo2, Redo2 } from 'lucide-vue-next';
 import { useCanvasStore } from '@/stores/canvas';
 
 const canvasStore = useCanvasStore();
 const { canUndo, canRedo, zoom } = storeToRefs(canvasStore);
+
+const isEditing = ref(false);
+const inputValue = ref('');
+const inputRef = ref<HTMLInputElement | null>(null);
 
 function zoomIn() {
     canvasStore.zoomIn();
@@ -72,6 +92,51 @@ function onRedo() {
     if (canRedo.value) {
         canvasStore.redo();
     }
+}
+
+function startEditing() {
+    inputValue.value = String(zoom.value);
+    isEditing.value = true;
+    
+    nextTick(() => {
+        inputRef.value?.focus();
+        inputRef.value?.select();
+    });
+}
+
+function validateInput(e: KeyboardEvent) {
+    // Разрешаем только цифры, backspace, delete, tab, стрелки
+    const allowedKeys = [
+        'Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 
+        'ArrowUp', 'ArrowDown', 'Home', 'End'
+    ];
+    
+    if (allowedKeys.includes(e.key)) return;
+    
+    // Запрещаем все, кроме цифр
+    if (!/^\d+$/.test(e.key)) {
+        e.preventDefault();
+    }
+}
+
+function saveZoom() {
+    if (!isEditing.value) return;
+    
+    const value = parseInt(inputValue.value, 10);
+    
+    // Проверка: только положительные числа
+    if (!isNaN(value) && value > 0) {
+        // Ограничиваем макс 500%
+        const clampedValue = Math.min(value, 500);
+        canvasStore.setZoom(clampedValue);
+    }
+    
+    cancelEditing();
+}
+
+function cancelEditing() {
+    isEditing.value = false;
+    inputValue.value = '';
 }
 </script>
 
@@ -101,6 +166,27 @@ function onRedo() {
     font-size: 12px;
     font-weight: 600;
     color: #374151;
+    cursor: pointer;
+    user-select: none;
+}
+
+.zoomValue:hover {
+    background: #f3f4f6;
+    border-radius: 4px;
+}
+
+.zoomInput {
+    min-width: 44px;
+    width: 50px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    border: 1px solid #2196F3;
+    border-radius: 4px;
+    padding: 2px 4px;
+    outline: none;
+    background: #ffffff;
 }
 
 .iconBtn {
@@ -129,6 +215,12 @@ function onRedo() {
 .iconBtn.square {
     border-radius: 10px;
     border-color: #e5e7eb;
+}
+
+.iconBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
 }
 
 .history {

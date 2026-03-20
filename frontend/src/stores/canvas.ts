@@ -118,7 +118,7 @@ export const useCanvasStore = defineStore('canvas', () => {
             selectedId: snapshot.selectedId,
         };
     }
-    
+
     function pushHistory() {
         const snapshot = createSnapshot();
         undoStack.value.push(snapshot);
@@ -343,7 +343,7 @@ export const useCanvasStore = defineStore('canvas', () => {
         }
     }
 
-        async function initDocument() {
+    async function initDocument() {
         const localScene = createSnapshot();
 
         if (isOfflineMode.value) {
@@ -356,11 +356,14 @@ export const useCanvasStore = defineStore('canvas', () => {
                 if (localScene.shapes.length === 0) {
                     restoreSnapshot({
                         shapes:
-                            (remote.content.shapes as SerializedShape[] | undefined) ??
-                            [],
+                            (remote.content.shapes as
+                                | SerializedShape[]
+                                | undefined) ?? [],
                         selectedId:
-                            (remote.content.selectedId as string | null | undefined) ??
-                            null,
+                            (remote.content.selectedId as
+                                | string
+                                | null
+                                | undefined) ?? null,
                     });
                 } else {
                     await updateCanvas(
@@ -372,7 +375,9 @@ export const useCanvasStore = defineStore('canvas', () => {
                 return;
             }
 
-            const created = await createCanvas(snapshotToServerContent(localScene));
+            const created = await createCanvas(
+                snapshotToServerContent(localScene)
+            );
             documentId.value = created.id;
             serverError.value = null;
         } catch (error) {
@@ -399,16 +404,21 @@ export const useCanvasStore = defineStore('canvas', () => {
             const remote = await getCanvasById(id);
             restoreSnapshot({
                 shapes:
-                    (remote.content.shapes as SerializedShape[] | undefined) ?? [],
+                    (remote.content.shapes as SerializedShape[] | undefined) ??
+                    [],
                 selectedId:
-                    (remote.content.selectedId as string | null | undefined) ?? null,
+                    (remote.content.selectedId as string | null | undefined) ??
+                    null,
             });
             documentId.value = remote.id;
             serverError.value = null;
             return { success: true, message: 'Документ успешно открыт.' };
         } catch (error) {
             if (error instanceof CanvasNotFoundError) {
-                return { success: false, message: 'Документ с таким номером не найден.' };
+                return {
+                    success: false,
+                    message: 'Документ с таким номером не найден.',
+                };
             }
 
             if (error instanceof CanvasApiError) {
@@ -432,7 +442,10 @@ export const useCanvasStore = defineStore('canvas', () => {
         }
 
         try {
-            await updateCanvas(documentId.value, snapshotToServerContent(createSnapshot()));
+            await updateCanvas(
+                documentId.value,
+                snapshotToServerContent(createSnapshot())
+            );
             serverError.value = null;
         } catch (error) {
             isOfflineMode.value = true;

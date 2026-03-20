@@ -1,10 +1,12 @@
 <template>
     <div class="topLeftActions">
-               <div class="docCard">
+        <div class="docCard">
             <p class="label">Документ</p>
             <p class="docId">ID: {{ documentId }}</p>
             <p class="status" :class="isOfflineMode ? 'offline' : 'online'">
-                {{ isOfflineMode ? 'Офлайн-режим' : 'Синхронизация с сервером' }}
+                {{
+                    isOfflineMode ? 'Офлайн-режим' : 'Синхронизация с сервером'
+                }}
             </p>
             <p v-if="serverError" class="errorText">{{ serverError }}</p>
         </div>

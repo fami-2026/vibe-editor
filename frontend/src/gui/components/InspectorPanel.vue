@@ -746,8 +746,11 @@ function isNoColorActive(key: OpacityFieldKey) {
 
 function setNoColor(key: OpacityFieldKey) {
     if (!selectedShape.value) return;
-    const currentOpacity = key === 'fillOpacity' ? fillOpacity.value : strokeOpacity.value;
-    const isCurrentlyNoColor = typeof currentOpacity === 'number' && normalizeOpacity(currentOpacity) === 0;
+    const currentOpacity =
+        key === 'fillOpacity' ? fillOpacity.value : strokeOpacity.value;
+    const isCurrentlyNoColor =
+        typeof currentOpacity === 'number' &&
+        normalizeOpacity(currentOpacity) === 0;
 
     if (isCurrentlyNoColor) {
         canvasStore.updateShape(selectedShape.value.id, {

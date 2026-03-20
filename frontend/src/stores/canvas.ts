@@ -36,10 +36,17 @@ type SerializedShapeBase = {
 
 type SerializedShape = SerializedShapeBase & Record<string, unknown>;
 
-type SceneSnapshot = {
+// Для внутреннего использования - с множественным выделением
+type InternalSceneSnapshot = {
     shapes: SerializedShape[];
     selectedIds: string[];
     selectionRect?: { start: Point; end: Point } | null;
+};
+
+// Для API - с одиночным выделением (как ожидает сервер)
+type ApiSceneSnapshot = {
+    shapes: SerializedShape[];
+    selectedId: string | null;
 };
 
 type CanvasStorageData = {
@@ -56,13 +63,15 @@ type VectorEditorExport = {
     format: 'vector-editor';
     version: 1;
     exportedAt: string;
-    scene: SceneSnapshot;
+    scene: InternalSceneSnapshot; // Экспортируем с множественным выделением
 };
 
 export const useCanvasStore = defineStore('canvas', () => {
+    // Внутреннее состояние с множественным выделением
     const shapes = ref<Shape[]>([]);
     const selectedIds = ref<string[]>([]);
 
+    // Для совместимости с компонентами, ожидающими selectedId
     const selectedId = computed({
         get: () => selectedIds.value[0] || null,
         set: (id) => {
@@ -82,8 +91,8 @@ export const useCanvasStore = defineStore('canvas', () => {
     const isSelecting = ref(false);
     const dragStartPositions = ref<Map<string, Point>>(new Map());
 
-    const undoStack = ref<SceneSnapshot[]>([]);
-    const redoStack = ref<SceneSnapshot[]>([]);
+    const undoStack = ref<InternalSceneSnapshot[]>([]);
+    const redoStack = ref<InternalSceneSnapshot[]>([]);
     const isInteractionActive = ref(false);
     const HISTORY_LIMIT = 50;
     const MIN_ZOOM = 10;
@@ -121,7 +130,8 @@ export const useCanvasStore = defineStore('canvas', () => {
         return plain;
     }
 
-    function createSnapshot(): SceneSnapshot {
+    // Внутренний snapshot с множественным выделением
+    function createInternalSnapshot(): InternalSceneSnapshot {
         return {
             shapes: shapes.value.map((s) => serializeShape(s)),
             selectedIds: [...selectedIds.value],
@@ -131,7 +141,24 @@ export const useCanvasStore = defineStore('canvas', () => {
         };
     }
 
-    function restoreSnapshot(snapshot: SceneSnapshot) {
+    // Конвертер для API (из множественного в одиночное)
+    function internalToApiSnapshot(internal: InternalSceneSnapshot): ApiSceneSnapshot {
+        return {
+            shapes: internal.shapes,
+            selectedId: internal.selectedIds[0] || null,
+        };
+    }
+
+    // Конвертер из API (из одиночного в множественное)
+    function apiToInternalSnapshot(api: ApiSceneSnapshot): InternalSceneSnapshot {
+        return {
+            shapes: api.shapes,
+            selectedIds: api.selectedId ? [api.selectedId] : [],
+            selectionRect: null,
+        };
+    }
+
+    function restoreInternalSnapshot(snapshot: InternalSceneSnapshot) {
         const restored: Shape[] = snapshot.shapes.map((plain) => {
             const { type, id, position, ...rest } = plain;
             const shape = shapeRegistry.create(type, id, position);
@@ -149,17 +176,13 @@ export const useCanvasStore = defineStore('canvas', () => {
     }
 
     function snapshotToServerContent(
-        snapshot: SceneSnapshot
+        snapshot: InternalSceneSnapshot
     ): Record<string, unknown> {
-        return {
-            shapes: snapshot.shapes,
-            selectedIds: snapshot.selectedIds,
-            selectionRect: snapshot.selectionRect,
-        };
+        return internalToApiSnapshot(snapshot);
     }
 
     function pushHistory() {
-        const snapshot = createSnapshot();
+        const snapshot = createInternalSnapshot();
         undoStack.value.push(snapshot);
         if (undoStack.value.length > HISTORY_LIMIT) {
             undoStack.value.shift();
@@ -200,23 +223,24 @@ export const useCanvasStore = defineStore('canvas', () => {
         const snapshot = undoStack.value.pop();
         if (!snapshot) return;
 
-        const current = createSnapshot();
+        const current = createInternalSnapshot();
         redoStack.value.push(current);
-        restoreSnapshot(snapshot);
+        restoreInternalSnapshot(snapshot);
     }
 
     function redo() {
         const snapshot = redoStack.value.pop();
         if (!snapshot) return;
 
-        const current = createSnapshot();
+        const current = createInternalSnapshot();
         undoStack.value.push(current);
-        restoreSnapshot(snapshot);
+        restoreInternalSnapshot(snapshot);
     }
 
     const canUndo = computed(() => undoStack.value.length > 0);
     const canRedo = computed(() => redoStack.value.length > 0);
 
+    // Обновленные методы для работы с множественным выделением
     function selectShape(id: string | null, addToSelection: boolean = false) {
         if (!id) {
             if (!addToSelection) {
@@ -473,11 +497,9 @@ export const useCanvasStore = defineStore('canvas', () => {
         );
         if (newZoom === zoom.value) return;
 
-        // Сохраняем мировую точку, которая сейчас в центре экрана
         const worldCenterX = -pan.value.x / (zoom.value / 100);
         const worldCenterY = -pan.value.y / (zoom.value / 100);
 
-        // Новый pan для того же центра
         const newZoomFactor = newZoom / 100;
         const newPanX = -worldCenterX * newZoomFactor;
         const newPanY = -worldCenterY * newZoomFactor;
@@ -487,47 +509,11 @@ export const useCanvasStore = defineStore('canvas', () => {
     }
 
     function zoomIn() {
-        zoomAtCenter(ZOOM_STEP);
+        setZoom(zoom.value + ZOOM_STEP);
     }
 
     function zoomOut() {
-        zoomAtCenter(-ZOOM_STEP);
-    }
-
-    function zoomAtCenter(delta: number) {
-        // Получаем размеры канваса из переданного референса или ищем по классу
-        const canvasEl = document.querySelector(
-            '.main-canvas'
-        ) as HTMLCanvasElement | null;
-        const rect = canvasEl?.getBoundingClientRect();
-
-        if (!rect) {
-            // Если канвас не найден, просто меняем зум без коррекции pan
-            zoom.value = Math.max(
-                MIN_ZOOM,
-                Math.min(MAX_ZOOM, zoom.value + delta)
-            );
-            return;
-        }
-
-        // Какая мировая точка сейчас в центре экрана?
-        const zoomFactor = zoom.value / 100;
-        const worldCenterX = -pan.value.x / zoomFactor;
-        const worldCenterY = -pan.value.y / zoomFactor;
-
-        // Новый зум
-        const newZoom = Math.max(
-            MIN_ZOOM,
-            Math.min(MAX_ZOOM, zoom.value + delta)
-        );
-        const newZoomFactor = newZoom / 100;
-
-        // Новый pan для того же центра
-        const newPanX = -worldCenterX * newZoomFactor;
-        const newPanY = -worldCenterY * newZoomFactor;
-
-        zoom.value = newZoom;
-        pan.value = { x: newPanX, y: newPanY };
+        setZoom(zoom.value - ZOOM_STEP);
     }
 
     function setPan(value: { x: number; y: number }) {
@@ -550,9 +536,7 @@ export const useCanvasStore = defineStore('canvas', () => {
                 isOfflineMode: isOfflineMode.value,
                 shapes: shapes.value.map(serializeShape),
                 selectedIds: selectedIds.value,
-                selectionRect: selectionRect.value
-                    ? { ...selectionRect.value }
-                    : null,
+                selectionRect: selectionRect.value ? { ...selectionRect.value } : null,
                 zoom: zoom.value,
                 pan: pan.value,
             };
@@ -593,36 +577,25 @@ export const useCanvasStore = defineStore('canvas', () => {
     }
 
     async function initDocument() {
-        const localScene = createSnapshot();
-
-        if (isOfflineMode.value) {
-            return;
-        }
+        const localScene = createInternalSnapshot();
 
         try {
             if (documentId.value !== '0') {
                 const remote = await getCanvasById(documentId.value);
                 if (localScene.shapes.length === 0) {
-                    restoreSnapshot({
-                        shapes:
-                            (remote.content.shapes as
-                                | SerializedShape[]
-                                | undefined) ?? [],
-                        selectedIds:
-                            (remote.content.selectedIds as
-                                | string[]
-                                | undefined) ?? [],
-                        selectionRect: remote.content.selectionRect as
-                            | { start: Point; end: Point }
-                            | null
-                            | undefined,
-                    });
+                    const apiSnapshot: ApiSceneSnapshot = {
+                        shapes: (remote.content.shapes as SerializedShape[] | undefined) ?? [],
+                        selectedId: (remote.content.selectedId as string | null | undefined) ?? null,
+                    };
+                    restoreInternalSnapshot(apiToInternalSnapshot(apiSnapshot));
                 } else {
                     await updateCanvas(
                         documentId.value,
                         snapshotToServerContent(localScene)
                     );
                 }
+
+                isOfflineMode.value = false;
                 serverError.value = null;
                 return;
             }
@@ -630,6 +603,8 @@ export const useCanvasStore = defineStore('canvas', () => {
             const created = await createCanvas(
                 snapshotToServerContent(localScene)
             );
+
+            isOfflineMode.value = false;
             documentId.value = created.id;
             serverError.value = null;
         } catch (error) {
@@ -654,17 +629,11 @@ export const useCanvasStore = defineStore('canvas', () => {
 
         try {
             const remote = await getCanvasById(id);
-            restoreSnapshot({
-                shapes:
-                    (remote.content.shapes as SerializedShape[] | undefined) ??
-                    [],
-                selectedIds:
-                    (remote.content.selectedIds as string[] | undefined) ?? [],
-                selectionRect: remote.content.selectionRect as
-                    | { start: Point; end: Point }
-                    | null
-                    | undefined,
-            });
+            const apiSnapshot: ApiSceneSnapshot = {
+                shapes: (remote.content.shapes as SerializedShape[] | undefined) ?? [],
+                selectedId: (remote.content.selectedId as string | null | undefined) ?? null,
+            };
+            restoreInternalSnapshot(apiToInternalSnapshot(apiSnapshot));
             documentId.value = remote.id;
             serverError.value = null;
             return { success: true, message: 'Документ успешно открыт.' };
@@ -699,7 +668,7 @@ export const useCanvasStore = defineStore('canvas', () => {
         try {
             await updateCanvas(
                 documentId.value,
-                snapshotToServerContent(createSnapshot())
+                snapshotToServerContent(createInternalSnapshot())
             );
             serverError.value = null;
         } catch (error) {
@@ -715,7 +684,7 @@ export const useCanvasStore = defineStore('canvas', () => {
             format: 'vector-editor',
             version: 1,
             exportedAt: new Date().toISOString(),
-            scene: createSnapshot(),
+            scene: createInternalSnapshot(),
         };
 
         return JSON.stringify(payload, null, 2);
@@ -743,7 +712,7 @@ export const useCanvasStore = defineStore('canvas', () => {
                 };
             }
 
-            restoreSnapshot(parsed.scene);
+            restoreInternalSnapshot(parsed.scene);
             undoStack.value = [];
             redoStack.value = [];
             isInteractionActive.value = false;
@@ -777,8 +746,8 @@ export const useCanvasStore = defineStore('canvas', () => {
 
     return {
         shapes,
-        selectedId,
-        selectedIds,
+        selectedId, // для совместимости со старыми компонентами
+        selectedIds, // для новой функциональности
         selectedShapes,
         hasSelection,
         selectionCount,
@@ -813,7 +782,6 @@ export const useCanvasStore = defineStore('canvas', () => {
         setZoom,
         zoomIn,
         zoomOut,
-        zoomAtCenter,
         setPan,
         movePan,
         openDocumentById,

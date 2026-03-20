@@ -11,10 +11,6 @@ RUN gradle --no-daemon bootJar
 FROM eclipse-temurin:21-jre-jammy
 
 WORKDIR /workspace
-COPY ./plugins ./plugins
 COPY --from=build /app/build/libs/vge-server.jar vge-server.jar
 
-RUN apt-get update && apt-get install -y python3 python3-pip
-
-ENV PLUGINS_PATH=/workspace/plugins
 CMD ["java", "-jar", "vge-server.jar"]

@@ -346,9 +346,9 @@ export const useCanvasStore = defineStore('canvas', () => {
     async function initDocument() {
         const localScene = createSnapshot();
 
-        if (isOfflineMode.value) {
-            return;
-        }
+        // if (isOfflineMode.value) {
+        //     return;
+        // }
 
         try {
             if (documentId.value !== '0') {
@@ -371,13 +371,18 @@ export const useCanvasStore = defineStore('canvas', () => {
                         snapshotToServerContent(localScene)
                     );
                 }
+
+                isOfflineMode.value = false;
                 serverError.value = null;
+
                 return;
             }
 
             const created = await createCanvas(
                 snapshotToServerContent(localScene)
             );
+
+            isOfflineMode.value = false;
             documentId.value = created.id;
             serverError.value = null;
         } catch (error) {

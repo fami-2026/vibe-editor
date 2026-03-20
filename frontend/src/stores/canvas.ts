@@ -4,6 +4,13 @@ import type { Shape } from '@/canvas/types';
 import { shapeRegistry } from '@/canvas/types';
 import { generateId } from '@/canvas/utils/math';
 import { PolygonShape } from '@/canvas/types/polygon/polygon';
+import {
+    createCanvas,
+    getCanvasById,
+    updateCanvas,
+    CanvasApiError,
+    CanvasNotFoundError,
+} from '@/api/api';
 
 interface ShapeParams extends Record<string, unknown> {
     sides?: number;
@@ -34,6 +41,13 @@ type SceneSnapshot = {
     selectedId: string | null;
 };
 
+type CanvasStorageData = {
+    documentId: string;
+    isOfflineMode: boolean;
+    shapes: SerializedShape[];
+    selectedId: string | null;
+};
+
 type VectorEditorExport = {
     format: 'vector-editor';
     version: 1;
@@ -54,6 +68,9 @@ export const useCanvasStore = defineStore('canvas', () => {
     const ZOOM_STEP = 10;
     const zoom = ref(100);
     const pan = ref({ x: 0, y: 0 });
+    const documentId = ref<string>('0');
+    const isOfflineMode = ref(false);
+    const serverError = ref<string | null>(null);
 
     let isContinuousChangeActive = false;
     let continuousChangeTimer: number | null = null;
@@ -93,6 +110,15 @@ export const useCanvasStore = defineStore('canvas', () => {
         selectedId.value = snapshot.selectedId;
     }
 
+    function snapshotToServerContent(
+        snapshot: SceneSnapshot
+    ): Record<string, unknown> {
+        return {
+            shapes: snapshot.shapes,
+            selectedId: snapshot.selectedId,
+        };
+    }
+    
     function pushHistory() {
         const snapshot = createSnapshot();
         undoStack.value.push(snapshot);
@@ -254,68 +280,15 @@ export const useCanvasStore = defineStore('canvas', () => {
     }
 
     function setZoom(value: number) {
-        const newZoom = Math.max(
-            MIN_ZOOM,
-            Math.min(MAX_ZOOM, Math.round(value))
-        );
-        if (newZoom === zoom.value) return;
-
-        // Сохраняем мировую точку, которая сейчас в центре экрана
-        const worldCenterX = -pan.value.x / (zoom.value / 100);
-        const worldCenterY = -pan.value.y / (zoom.value / 100);
-
-        // Новый pan для того же центра
-        const newZoomFactor = newZoom / 100;
-        const newPanX = -worldCenterX * newZoomFactor;
-        const newPanY = -worldCenterY * newZoomFactor;
-
-        zoom.value = newZoom;
-        pan.value = { x: newPanX, y: newPanY };
+        zoom.value = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Math.round(value)));
     }
 
     function zoomIn() {
-        zoomAtCenter(ZOOM_STEP);
+        setZoom(zoom.value + ZOOM_STEP);
     }
 
     function zoomOut() {
-        zoomAtCenter(-ZOOM_STEP);
-    }
-
-    function zoomAtCenter(delta: number) {
-        // Получаем размеры канваса из переданного референса или ищем по классу
-        const canvasEl = document.querySelector(
-            '.main-canvas'
-        ) as HTMLCanvasElement | null;
-        const rect = canvasEl?.getBoundingClientRect();
-
-        if (!rect) {
-            // Если канвас не найден, просто меняем зум без коррекции pan
-            zoom.value = Math.max(
-                MIN_ZOOM,
-                Math.min(MAX_ZOOM, zoom.value + delta)
-            );
-            return;
-        }
-
-        // Какая мировая точка сейчас в центре экрана?
-        // Используем ту же математику, что и в getLocalPoint
-        const zoomFactor = zoom.value / 100;
-        const worldCenterX = -pan.value.x / zoomFactor;
-        const worldCenterY = -pan.value.y / zoomFactor;
-
-        // Новый зум
-        const newZoom = Math.max(
-            MIN_ZOOM,
-            Math.min(MAX_ZOOM, zoom.value + delta)
-        );
-        const newZoomFactor = newZoom / 100;
-
-        // Новый pan для того же центра
-        const newPanX = -worldCenterX * newZoomFactor;
-        const newPanY = -worldCenterY * newZoomFactor;
-
-        zoom.value = newZoom;
-        pan.value = { x: newPanX, y: newPanY };
+        setZoom(zoom.value - ZOOM_STEP);
     }
 
     function setPan(value: { x: number; y: number }) {
@@ -333,7 +306,9 @@ export const useCanvasStore = defineStore('canvas', () => {
 
     function saveToLocalStorage() {
         try {
-            const data = {
+            const data: CanvasStorageData = {
+                documentId: documentId.value,
+                isOfflineMode: isOfflineMode.value,
                 shapes: shapes.value.map(serializeShape),
                 selectedId: selectedId.value,
             };
@@ -348,12 +323,11 @@ export const useCanvasStore = defineStore('canvas', () => {
             const saved = localStorage.getItem(STORAGE_KEY);
             if (!saved) return;
 
-            const data = JSON.parse(saved) as {
-                shapes: SerializedShape[];
-                selectedId: string | null;
-            };
+            const data = JSON.parse(saved) as Partial<CanvasStorageData>;
+            documentId.value = String(data.documentId ?? '0');
+            isOfflineMode.value = Boolean(data.isOfflineMode ?? false);
 
-            const restored: Shape[] = data.shapes.map(
+            const restored: Shape[] = (data.shapes ?? []).map(
                 (plain: SerializedShape) => {
                     const { type, id, position, ...rest } = plain;
                     const shape = shapeRegistry.create(type, id, position);
@@ -363,9 +337,108 @@ export const useCanvasStore = defineStore('canvas', () => {
             );
 
             shapes.value = restored;
-            selectedId.value = data.selectedId || null;
+            selectedId.value = data.selectedId ?? null;
         } catch (e) {
             console.error('Ошибка загрузки:', e);
+        }
+    }
+
+        async function initDocument() {
+        const localScene = createSnapshot();
+
+        if (isOfflineMode.value) {
+            return;
+        }
+
+        try {
+            if (documentId.value !== '0') {
+                const remote = await getCanvasById(documentId.value);
+                if (localScene.shapes.length === 0) {
+                    restoreSnapshot({
+                        shapes:
+                            (remote.content.shapes as SerializedShape[] | undefined) ??
+                            [],
+                        selectedId:
+                            (remote.content.selectedId as string | null | undefined) ??
+                            null,
+                    });
+                } else {
+                    await updateCanvas(
+                        documentId.value,
+                        snapshotToServerContent(localScene)
+                    );
+                }
+                serverError.value = null;
+                return;
+            }
+
+            const created = await createCanvas(snapshotToServerContent(localScene));
+            documentId.value = created.id;
+            serverError.value = null;
+        } catch (error) {
+            isOfflineMode.value = true;
+            documentId.value = '0';
+            serverError.value =
+                error instanceof Error ? error.message : 'Сервер недоступен';
+        }
+    }
+
+    async function openDocumentById(id: string): Promise<{
+        success: boolean;
+        message: string;
+    }> {
+        if (isOfflineMode.value) {
+            return {
+                success: false,
+                message:
+                    'Сервер недоступен. В офлайн-режиме открытие документа по номеру выключено.',
+            };
+        }
+
+        try {
+            const remote = await getCanvasById(id);
+            restoreSnapshot({
+                shapes:
+                    (remote.content.shapes as SerializedShape[] | undefined) ?? [],
+                selectedId:
+                    (remote.content.selectedId as string | null | undefined) ?? null,
+            });
+            documentId.value = remote.id;
+            serverError.value = null;
+            return { success: true, message: 'Документ успешно открыт.' };
+        } catch (error) {
+            if (error instanceof CanvasNotFoundError) {
+                return { success: false, message: 'Документ с таким номером не найден.' };
+            }
+
+            if (error instanceof CanvasApiError) {
+                isOfflineMode.value = true;
+                documentId.value = '0';
+                serverError.value = error.message;
+                return {
+                    success: false,
+                    message:
+                        'Сервер недоступен. Режим работы переключен на локальный (офлайн).',
+                };
+            }
+
+            return { success: false, message: 'Не удалось открыть документ.' };
+        }
+    }
+
+    async function syncDocument() {
+        if (isOfflineMode.value || documentId.value === '0') {
+            return;
+        }
+
+        try {
+            await updateCanvas(documentId.value, snapshotToServerContent(createSnapshot()));
+            serverError.value = null;
+        } catch (error) {
+            isOfflineMode.value = true;
+            documentId.value = '0';
+            serverError.value =
+                error instanceof Error ? error.message : 'Сервер недоступен';
         }
     }
 
@@ -423,11 +496,13 @@ export const useCanvasStore = defineStore('canvas', () => {
     }
 
     loadFromLocalStorage();
+    void initDocument();
 
     watch(
-        [shapes, selectedId],
+        [shapes, selectedId, documentId, isOfflineMode],
         () => {
             saveToLocalStorage();
+            void syncDocument();
         },
         { deep: true }
     );
@@ -435,6 +510,9 @@ export const useCanvasStore = defineStore('canvas', () => {
     return {
         shapes,
         selectedId,
+        MIN_ZOOM,
+        MAX_ZOOM,
+        ZOOM_STEP,
         selectedShape,
         addShape,
         updateShape,
@@ -449,16 +527,16 @@ export const useCanvasStore = defineStore('canvas', () => {
         setZoom,
         zoomIn,
         zoomOut,
-        zoomAtCenter,
         pan,
         setPan,
         movePan,
+        documentId,
+        isOfflineMode,
+        serverError,
+        openDocumentById,
         startInteraction,
         endInteraction,
         exportToJson,
         importFromJson,
-        MIN_ZOOM,
-        MAX_ZOOM,
-        ZOOM_STEP,
     };
 });

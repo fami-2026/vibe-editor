@@ -4,6 +4,13 @@ import type { Shape, Point } from '@/canvas/types';
 import { shapeRegistry } from '@/canvas/types';
 import { generateId } from '@/canvas/utils/math';
 import { PolygonShape } from '@/canvas/types/polygon/polygon';
+import {
+    createCanvas,
+    getCanvasById,
+    updateCanvas,
+    CanvasApiError,
+    CanvasNotFoundError,
+} from '@/api/api';
 
 interface ShapeParams extends Record<string, unknown> {
     sides?: number;
@@ -33,6 +40,16 @@ type SceneSnapshot = {
     shapes: SerializedShape[];
     selectedIds: string[];
     selectionRect?: { start: Point; end: Point } | null;
+};
+
+type CanvasStorageData = {
+    documentId: string;
+    isOfflineMode: boolean;
+    shapes: SerializedShape[];
+    selectedIds: string[];
+    selectionRect?: { start: Point; end: Point } | null;
+    zoom: number;
+    pan: { x: number; y: number };
 };
 
 type VectorEditorExport = {
@@ -74,6 +91,9 @@ export const useCanvasStore = defineStore('canvas', () => {
     const ZOOM_STEP = 10;
     const zoom = ref(100);
     const pan = ref({ x: 0, y: 0 });
+    const documentId = ref<string>('0');
+    const isOfflineMode = ref(false);
+    const serverError = ref<string | null>(null);
 
     let isContinuousChangeActive = false;
     let continuousChangeTimer: number | null = null;
@@ -126,6 +146,16 @@ export const useCanvasStore = defineStore('canvas', () => {
         } else {
             selectionRect.value = null;
         }
+    }
+
+    function snapshotToServerContent(
+        snapshot: SceneSnapshot
+    ): Record<string, unknown> {
+        return {
+            shapes: snapshot.shapes,
+            selectedIds: snapshot.selectedIds,
+            selectionRect: snapshot.selectionRect,
+        };
     }
 
     function pushHistory() {
@@ -481,7 +511,6 @@ export const useCanvasStore = defineStore('canvas', () => {
         }
 
         // Какая мировая точка сейчас в центре экрана?
-        // Используем ту же математику, что и в getLocalPoint
         const zoomFactor = zoom.value / 100;
         const worldCenterX = -pan.value.x / zoomFactor;
         const worldCenterY = -pan.value.y / zoomFactor;
@@ -516,9 +545,12 @@ export const useCanvasStore = defineStore('canvas', () => {
 
     function saveToLocalStorage() {
         try {
-            const data = {
+            const data: CanvasStorageData = {
+                documentId: documentId.value,
+                isOfflineMode: isOfflineMode.value,
                 shapes: shapes.value.map(serializeShape),
                 selectedIds: selectedIds.value,
+                selectionRect: selectionRect.value ? { ...selectionRect.value } : null,
                 zoom: zoom.value,
                 pan: pan.value,
             };
@@ -533,14 +565,13 @@ export const useCanvasStore = defineStore('canvas', () => {
             const saved = localStorage.getItem(STORAGE_KEY);
             if (!saved) return;
 
-            const data = JSON.parse(saved) as {
-                shapes: SerializedShape[];
-                selectedIds?: string[];
-                zoom?: number;
-                pan?: { x: number; y: number };
-            };
+            const data = JSON.parse(saved) as Partial<CanvasStorageData>;
+            documentId.value = String(data.documentId ?? '0');
+            isOfflineMode.value = Boolean(data.isOfflineMode ?? false);
+            if (data.zoom) zoom.value = data.zoom;
+            if (data.pan) pan.value = data.pan;
 
-            const restored: Shape[] = data.shapes.map(
+            const restored: Shape[] = (data.shapes ?? []).map(
                 (plain: SerializedShape) => {
                     const { type, id, position, ...rest } = plain;
                     const shape = shapeRegistry.create(type, id, position);
@@ -551,10 +582,114 @@ export const useCanvasStore = defineStore('canvas', () => {
 
             shapes.value = restored;
             selectedIds.value = data.selectedIds || [];
-            if (data.zoom) zoom.value = data.zoom;
-            if (data.pan) pan.value = data.pan;
+            if (data.selectionRect) {
+                selectionRect.value = { ...data.selectionRect };
+            }
         } catch (e) {
             console.error('Ошибка загрузки:', e);
+        }
+    }
+
+    async function initDocument() {
+        const localScene = createSnapshot();
+
+        if (isOfflineMode.value) {
+            return;
+        }
+
+        try {
+            if (documentId.value !== '0') {
+                const remote = await getCanvasById(documentId.value);
+                if (localScene.shapes.length === 0) {
+                    restoreSnapshot({
+                        shapes: (remote.content.shapes as SerializedShape[] | undefined) ?? [],
+                        selectedIds: (remote.content.selectedIds as string[] | undefined) ?? [],
+                        selectionRect: remote.content.selectionRect as { start: Point; end: Point } | null | undefined,
+                    });
+                } else {
+                    await updateCanvas(
+                        documentId.value,
+                        snapshotToServerContent(localScene)
+                    );
+                }
+                serverError.value = null;
+                return;
+            }
+
+            const created = await createCanvas(
+                snapshotToServerContent(localScene)
+            );
+            documentId.value = created.id;
+            serverError.value = null;
+        } catch (error) {
+            isOfflineMode.value = true;
+            documentId.value = '0';
+            serverError.value =
+                error instanceof Error ? error.message : 'Сервер недоступен';
+        }
+    }
+
+    async function openDocumentById(id: string): Promise<{
+        success: boolean;
+        message: string;
+    }> {
+        if (isOfflineMode.value) {
+            return {
+                success: false,
+                message:
+                    'Сервер недоступен. В офлайн-режиме открытие документа по номеру выключено.',
+            };
+        }
+
+        try {
+            const remote = await getCanvasById(id);
+            restoreSnapshot({
+                shapes: (remote.content.shapes as SerializedShape[] | undefined) ?? [],
+                selectedIds: (remote.content.selectedIds as string[] | undefined) ?? [],
+                selectionRect: remote.content.selectionRect as { start: Point; end: Point } | null | undefined,
+            });
+            documentId.value = remote.id;
+            serverError.value = null;
+            return { success: true, message: 'Документ успешно открыт.' };
+        } catch (error) {
+            if (error instanceof CanvasNotFoundError) {
+                return {
+                    success: false,
+                    message: 'Документ с таким номером не найден.',
+                };
+            }
+
+            if (error instanceof CanvasApiError) {
+                isOfflineMode.value = true;
+                documentId.value = '0';
+                serverError.value = error.message;
+                return {
+                    success: false,
+                    message:
+                        'Сервер недоступен. Режим работы переключен на локальный (офлайн).',
+                };
+            }
+
+            return { success: false, message: 'Не удалось открыть документ.' };
+        }
+    }
+
+    async function syncDocument() {
+        if (isOfflineMode.value || documentId.value === '0') {
+            return;
+        }
+
+        try {
+            await updateCanvas(
+                documentId.value,
+                snapshotToServerContent(createSnapshot())
+            );
+            serverError.value = null;
+        } catch (error) {
+            isOfflineMode.value = true;
+            documentId.value = '0';
+            serverError.value =
+                error instanceof Error ? error.message : 'Сервер недоступен';
         }
     }
 
@@ -612,11 +747,13 @@ export const useCanvasStore = defineStore('canvas', () => {
     }
 
     loadFromLocalStorage();
+    void initDocument();
 
     watch(
-        [shapes, selectedIds, zoom, pan],
+        [shapes, selectedIds, zoom, pan, documentId, isOfflineMode],
         () => {
             saveToLocalStorage();
+            void syncDocument();
         },
         { deep: true }
     );
@@ -635,6 +772,9 @@ export const useCanvasStore = defineStore('canvas', () => {
         dragStartPositions,
         zoom,
         pan,
+        documentId,
+        isOfflineMode,
+        serverError,
         addShape,
         updateShape,
         deleteShape,
@@ -659,6 +799,7 @@ export const useCanvasStore = defineStore('canvas', () => {
         zoomAtCenter,
         setPan,
         movePan,
+        openDocumentById,
         startInteraction,
         endInteraction,
         exportToJson,

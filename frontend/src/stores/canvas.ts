@@ -550,7 +550,9 @@ export const useCanvasStore = defineStore('canvas', () => {
                 isOfflineMode: isOfflineMode.value,
                 shapes: shapes.value.map(serializeShape),
                 selectedIds: selectedIds.value,
-                selectionRect: selectionRect.value ? { ...selectionRect.value } : null,
+                selectionRect: selectionRect.value
+                    ? { ...selectionRect.value }
+                    : null,
                 zoom: zoom.value,
                 pan: pan.value,
             };
@@ -602,9 +604,18 @@ export const useCanvasStore = defineStore('canvas', () => {
                 const remote = await getCanvasById(documentId.value);
                 if (localScene.shapes.length === 0) {
                     restoreSnapshot({
-                        shapes: (remote.content.shapes as SerializedShape[] | undefined) ?? [],
-                        selectedIds: (remote.content.selectedIds as string[] | undefined) ?? [],
-                        selectionRect: remote.content.selectionRect as { start: Point; end: Point } | null | undefined,
+                        shapes:
+                            (remote.content.shapes as
+                                | SerializedShape[]
+                                | undefined) ?? [],
+                        selectedIds:
+                            (remote.content.selectedIds as
+                                | string[]
+                                | undefined) ?? [],
+                        selectionRect: remote.content.selectionRect as
+                            | { start: Point; end: Point }
+                            | null
+                            | undefined,
                     });
                 } else {
                     await updateCanvas(
@@ -644,9 +655,15 @@ export const useCanvasStore = defineStore('canvas', () => {
         try {
             const remote = await getCanvasById(id);
             restoreSnapshot({
-                shapes: (remote.content.shapes as SerializedShape[] | undefined) ?? [],
-                selectedIds: (remote.content.selectedIds as string[] | undefined) ?? [],
-                selectionRect: remote.content.selectionRect as { start: Point; end: Point } | null | undefined,
+                shapes:
+                    (remote.content.shapes as SerializedShape[] | undefined) ??
+                    [],
+                selectedIds:
+                    (remote.content.selectedIds as string[] | undefined) ?? [],
+                selectionRect: remote.content.selectionRect as
+                    | { start: Point; end: Point }
+                    | null
+                    | undefined,
             });
             documentId.value = remote.id;
             serverError.value = null;

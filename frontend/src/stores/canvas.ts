@@ -575,45 +575,44 @@ export const useCanvasStore = defineStore('canvas', () => {
             console.error('Ошибка загрузки:', e);
         }
     }
+async function initDocument() {
+    const localScene = createInternalSnapshot();
 
-    async function initDocument() {
-        const localScene = createInternalSnapshot();
-
-        try {
-            if (documentId.value !== '0') {
-                const remote = await getCanvasById(documentId.value);
-                if (localScene.shapes.length === 0) {
-                    const apiSnapshot: ApiSceneSnapshot = {
-                        shapes: (remote.content.shapes as SerializedShape[] | undefined) ?? [],
-                        selectedId: (remote.content.selectedId as string | null | undefined) ?? null,
-                    };
-                    restoreInternalSnapshot(apiToInternalSnapshot(apiSnapshot));
-                } else {
-                    await updateCanvas(
-                        documentId.value,
-                        snapshotToServerContent(localScene)
-                    );
-                }
-
-                isOfflineMode.value = false;
-                serverError.value = null;
-                return;
+    try {
+        if (documentId.value !== '0') {
+            const remote = await getCanvasById(documentId.value);
+            if (localScene.shapes.length === 0) {
+                const apiSnapshot: ApiSceneSnapshot = {
+                    shapes: (remote.content.shapes as SerializedShape[] | undefined) ?? [],
+                    selectedId: (remote.content.selectedId as string | null | undefined) ?? null,
+                };
+                restoreInternalSnapshot(apiToInternalSnapshot(apiSnapshot));
+            } else {
+                await updateCanvas(
+                    documentId.value,
+                    snapshotToServerContent(localScene)
+                );
             }
 
-            const created = await createCanvas(
-                snapshotToServerContent(localScene)
-            );
-
             isOfflineMode.value = false;
-            documentId.value = created.id;
             serverError.value = null;
-        } catch (error) {
-            isOfflineMode.value = true;
-            documentId.value = '0';
-            serverError.value =
-                error instanceof Error ? error.message : 'Сервер недоступен';
+            return;
         }
+
+        const created = await createCanvas(
+            snapshotToServerContent(localScene)
+        );
+
+        isOfflineMode.value = false;
+        documentId.value = created.id;
+        serverError.value = null;
+    } catch (error) {
+        isOfflineMode.value = true;
+        documentId.value = '0';
+        serverError.value =
+            error instanceof Error ? error.message : 'Сервер недоступен';
     }
+}
 
     async function openDocumentById(id: string): Promise<{
         success: boolean;
@@ -746,8 +745,8 @@ export const useCanvasStore = defineStore('canvas', () => {
 
     return {
         shapes,
-        selectedId, // для совместимости со старыми компонентами
-        selectedIds, // для новой функциональности
+        selectedId, 
+        selectedIds, 
         selectedShapes,
         hasSelection,
         selectionCount,

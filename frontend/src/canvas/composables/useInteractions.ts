@@ -113,14 +113,14 @@ export function useInteractions(
         const worldX = getLocalPoint(e).x;
         const worldY = getLocalPoint(e).y;
 
-        const delta =
-            e.deltaY > 0 ? -canvasStore.ZOOM_STEP : canvasStore.ZOOM_STEP;
+
+        const delta = e.deltaY > 0 ? -canvasStore.ZOOM_STEP : canvasStore.ZOOM_STEP;
         const newZoom = Math.max(
-            canvasStore.MIN_ZOOM,
+            canvasStore.MIN_ZOOM, 
             Math.min(canvasStore.MAX_ZOOM, oldZoom + delta)
         );
         const newZoomFactor = newZoom / 100;
-
+        
         const newPanX = screenX - centerX - (worldX - centerX) * newZoomFactor;
         const newPanY = screenY - centerY - (worldY - centerY) * newZoomFactor;
 

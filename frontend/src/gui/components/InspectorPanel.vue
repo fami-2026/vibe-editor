@@ -489,12 +489,12 @@ function handleClickOutside(event: MouseEvent) {
 }
 onMounted(() => {
     window.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('click', handleClickOutside); 
+    document.addEventListener('click', handleClickOutside);
 });
 
 onUnmounted(() => {
     window.removeEventListener('keydown', handleKeyDown);
-    document.removeEventListener('click', handleClickOutside); 
+    document.removeEventListener('click', handleClickOutside);
 });
 
 const canvasStore = useCanvasStore();
@@ -668,7 +668,7 @@ function thumbFillOpacity(shape: Shape): number {
 
     const opacity = (shape as unknown as Record<string, unknown>)
         .fillOpacity as number | undefined;
-    return typeof opacity === 'number' ? Math.max(0, Math.min(1,opacity)) : 1;
+    return typeof opacity === 'number' ? Math.max(0, Math.min(1, opacity)) : 1;
 }
 
 function thumbStroke(shape: Shape): string {

@@ -489,12 +489,12 @@ function handleClickOutside(event: MouseEvent) {
 }
 onMounted(() => {
     window.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('click', handleClickOutside); // Добавьте эту строку
+    document.addEventListener('click', handleClickOutside); 
 });
 
 onUnmounted(() => {
     window.removeEventListener('keydown', handleKeyDown);
-    document.removeEventListener('click', handleClickOutside); // Добавьте эту строку
+    document.removeEventListener('click', handleClickOutside); 
 });
 
 const canvasStore = useCanvasStore();
